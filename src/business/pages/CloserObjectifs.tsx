@@ -337,39 +337,39 @@ export function CloserObjectifs() {
     return (
       <div
         key={obj.id}
-        className="bg-white dark:bg-white/5 rounded-2xl p-6 shadow-[0_20px_40px_rgba(28,25,23,0.04)] border border-stone-200/60 dark:border-white/10 hover:shadow-xl transition-all group relative overflow-hidden"
+        className="min-w-0 bg-white dark:bg-white/5 rounded-2xl p-4 sm:p-6 shadow-[0_20px_40px_rgba(28,25,23,0.04)] border border-stone-200/60 dark:border-white/10 hover:shadow-xl transition-all group relative overflow-hidden"
       >
         {/* Verified icon for completed */}
         {isComplete && (
-          <div className="absolute top-4 right-4">
-            <svg className="w-7 h-7 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
+          <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
+            <svg className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
             </svg>
           </div>
         )}
 
         {/* Tags */}
-        <div className="flex flex-wrap gap-2 mb-5">
-          <span className={cn('px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider', metricBadge.bg, metricBadge.text)}>
+        <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-5 pr-8 sm:pr-0">
+          <span className={cn('whitespace-nowrap px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] font-bold uppercase tracking-wider', metricBadge.bg, metricBadge.text)}>
             {getMetricLabel(obj.metric)}
           </span>
-          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-stone-100 text-stone-500">
+          <span className="whitespace-nowrap px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-stone-100 text-stone-500">
             {PERIOD_LABELS[obj.period] || obj.period}
           </span>
           {type === 'org' && (
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-stone-200 text-stone-700">
+            <span className="whitespace-nowrap px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-stone-200 text-stone-700">
               <Building2 className="h-3 w-3 mr-1 inline" /> Org
             </span>
           )}
         </div>
 
         {/* Title */}
-        <h3 className="text-lg font-extrabold mb-4 text-stone-900 dark:text-white truncate group-hover:text-emerald-700 transition-colors" style={{ fontFamily: 'Manrope, sans-serif' }}>
+        <h3 className="text-base sm:text-lg font-extrabold mb-2 sm:mb-4 text-stone-900 dark:text-white truncate group-hover:text-emerald-700 transition-colors" style={{ fontFamily: 'Manrope, sans-serif' }}>
           {obj.label}
         </h3>
 
         {/* Progress */}
-        <div className="space-y-3 mb-4">
+        <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
           <div className="flex justify-between items-end">
             <span className="text-sm font-extrabold text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
               {formatValue(obj.metric, currentValue)}
@@ -421,24 +421,24 @@ export function CloserObjectifs() {
     return (
       <div
         key={obj.id}
-        className="bg-white dark:bg-white/5 rounded-2xl p-6 shadow-[0_20px_40px_rgba(28,25,23,0.04)] border border-stone-200/60 dark:border-white/10 hover:shadow-xl transition-all group relative overflow-hidden"
+        className="min-w-0 bg-white dark:bg-white/5 rounded-2xl p-4 sm:p-6 shadow-[0_20px_40px_rgba(28,25,23,0.04)] border border-stone-200/60 dark:border-white/10 hover:shadow-xl transition-all group relative overflow-hidden"
       >
         {/* Completed badge */}
         {isComplete && (
-          <div className="absolute top-4 right-4">
-            <svg className="w-7 h-7 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
+          <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
+            <svg className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
             </svg>
           </div>
         )}
 
         {/* Header with visibility */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex flex-wrap gap-2">
-            <span className={cn('px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider', metricBadge.bg, metricBadge.text)}>
+        <div className="flex items-start justify-between mb-3 sm:mb-4 pr-8 sm:pr-0">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
+            <span className={cn('whitespace-nowrap px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] font-bold uppercase tracking-wider', metricBadge.bg, metricBadge.text)}>
               {getMetricLabel(obj.metric)}
             </span>
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-stone-100 text-stone-500">
+            <span className="whitespace-nowrap px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-stone-100 text-stone-500">
               {PERIOD_LABELS[obj.period] || obj.period}
             </span>
           </div>
@@ -456,16 +456,16 @@ export function CloserObjectifs() {
         </div>
 
         {/* Title */}
-        <h3 className="text-lg font-extrabold mb-2 text-stone-900 dark:text-white truncate group-hover:text-emerald-700 transition-colors" style={{ fontFamily: 'Manrope, sans-serif' }}>
+        <h3 className="text-base sm:text-lg font-extrabold mb-1.5 sm:mb-2 text-stone-900 dark:text-white truncate group-hover:text-emerald-700 transition-colors" style={{ fontFamily: 'Manrope, sans-serif' }}>
           {obj.label}
         </h3>
 
         {obj.metric === 'custom' && obj.description && (
-          <p className="text-xs text-stone-500 dark:text-neutral-400 mb-4 line-clamp-2">{obj.description}</p>
+          <p className="text-xs text-stone-500 dark:text-neutral-400 mb-3 sm:mb-4 line-clamp-2">{obj.description}</p>
         )}
 
         {/* Progress */}
-        <div className="space-y-3 mb-4">
+        <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
           <div className="flex justify-between items-end">
             <span className="text-sm font-extrabold text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
               {formatValue(obj.metric, currentValue)}
@@ -489,7 +489,7 @@ export function CloserObjectifs() {
 
         {/* Deadline */}
         {deadlineStr && (
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-3 sm:mb-4">
             <CalendarDays className={cn('h-3.5 w-3.5', overdue ? 'text-red-500' : 'text-stone-400')} />
             <span className={cn('text-xs font-medium', overdue ? 'text-red-600' : 'text-stone-500 dark:text-neutral-400')}>
               {overdue ? t.objectives_overdue + ' (' + deadlineStr + ')' : t.objectives_deadline + ' : ' + deadlineStr}
@@ -499,10 +499,10 @@ export function CloserObjectifs() {
 
         {/* Actions */}
         <div className="flex gap-2 border-t border-stone-100 dark:border-white/10 pt-3">
-          <button onClick={() => openEdit(obj)} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-semibold text-stone-500 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-white/5 hover:text-stone-900 dark:hover:text-white transition-colors">
+          <button onClick={() => openEdit(obj)} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2.5 sm:py-2 text-xs font-semibold text-stone-500 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-white/5 hover:text-stone-900 dark:hover:text-white transition-colors">
             <Pencil className="h-3.5 w-3.5" /> {t.common_edit}
           </button>
-          <button onClick={() => deletePersonalObjective(obj)} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-semibold text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">
+          <button onClick={() => deletePersonalObjective(obj)} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2.5 sm:py-2 text-xs font-semibold text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">
             <Trash2 className="h-3.5 w-3.5" /> Supprimer
           </button>
         </div>
@@ -515,28 +515,30 @@ export function CloserObjectifs() {
     : personalObjectives
 
   return (
-    <div className="space-y-10">
-      {/* Hero Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="space-y-2">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+    <div className="space-y-5 sm:space-y-8 lg:space-y-10">
+      {/* Hero Header — mobile : titre + bouton « + » compact sur la même ligne */}
+      <div className="flex flex-row items-start md:items-end justify-between gap-3 md:gap-6">
+        <div className="min-w-0 space-y-1 sm:space-y-2">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
             Mes Objectifs
           </h1>
-          <p className="text-stone-500 dark:text-neutral-400 max-w-lg">Suivez vos objectifs et votre progression</p>
+          <p className="text-sm sm:text-base text-stone-500 dark:text-neutral-400 max-w-lg">Suivez vos objectifs et votre progression</p>
         </div>
         {activeTab === 'personal' && (
           <button
             onClick={openCreate}
-            className="px-6 py-3 bg-stone-900 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
+            aria-label="Nouvel objectif"
+            className="flex h-10 w-10 shrink-0 items-center justify-center sm:inline-block sm:h-auto sm:w-auto px-0 sm:px-6 py-0 sm:py-3 bg-stone-900 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
             style={{ fontFamily: 'Manrope, sans-serif' }}
           >
-            + Nouvel objectif
+            <Plus className="h-5 w-5 sm:hidden" />
+            <span className="hidden sm:inline">+ Nouvel objectif</span>
           </button>
         )}
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-6 border-b border-stone-200 dark:border-white/10">
+      <div className="grid grid-cols-3 gap-1 rounded-full bg-stone-100 dark:bg-white/5 p-1 sm:flex sm:gap-6 sm:rounded-none sm:bg-transparent sm:dark:bg-transparent sm:p-0 sm:border-b border-stone-200 dark:border-white/10">
         {tabs.map(tab => {
           const Icon = tab.icon
           return (
@@ -544,17 +546,17 @@ export function CloserObjectifs() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex items-center gap-2 px-1 pb-3 text-sm transition-all relative",
+                "flex min-w-0 items-center justify-center sm:justify-start gap-1 sm:gap-2 rounded-full sm:rounded-none px-1 py-2 sm:py-0 sm:pb-3 text-xs sm:text-sm whitespace-nowrap transition-all relative",
                 activeTab === tab.id
-                  ? "text-stone-900 dark:text-white font-semibold border-b-2 border-stone-900 dark:border-white"
+                  ? "bg-white dark:bg-neutral-800 shadow-sm sm:bg-transparent sm:dark:bg-transparent sm:shadow-none text-stone-900 dark:text-white font-semibold sm:border-b-2 border-stone-900 dark:border-white"
                   : "text-stone-400 dark:text-neutral-500 font-medium hover:text-stone-600 dark:hover:text-neutral-300"
               )}
               style={{ fontFamily: 'Manrope, sans-serif' }}
             >
-              <Icon className="h-4 w-4" />
-              {tab.label}
+              <Icon className="hidden sm:block h-4 w-4" />
+              <span className="truncate">{tab.label}</span>
               <span className={cn(
-                "text-xs rounded-full px-1.5 py-0.5 font-semibold",
+                "shrink-0 text-[10px] sm:text-xs rounded-full px-1.5 py-0.5 font-semibold",
                 activeTab === tab.id ? "bg-stone-900 dark:bg-white text-white dark:text-neutral-900" : "bg-stone-100 dark:bg-white/5 text-stone-400 dark:text-neutral-500"
               )}>
                 {tab.count}
@@ -566,19 +568,19 @@ export function CloserObjectifs() {
 
       {/* Content */}
       {currentObjectives.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-40 h-40 bg-stone-50 dark:bg-white/5 rounded-full flex items-center justify-center mb-8 relative">
-            <Target className="h-16 w-16 text-stone-300 dark:text-neutral-600" />
-            <div className="absolute -bottom-2 -right-2 w-14 h-14 bg-white dark:bg-white/5 rounded-2xl shadow-xl flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center py-10 sm:py-24 text-center">
+          <div className="w-24 h-24 sm:w-40 sm:h-40 bg-stone-50 dark:bg-white/5 rounded-full flex items-center justify-center mb-5 sm:mb-8 relative">
+            <Target className="h-10 w-10 sm:h-16 sm:w-16 text-stone-300 dark:text-neutral-600" />
+            <div className="absolute -bottom-2 -right-2 w-10 h-10 sm:w-14 sm:h-14 bg-white dark:bg-white/5 rounded-xl sm:rounded-2xl shadow-xl flex items-center justify-center">
               <Target className="h-6 w-6 text-emerald-600" />
             </div>
           </div>
-          <h2 className="text-2xl font-extrabold mb-3 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <h2 className="text-lg sm:text-2xl font-extrabold mb-2 sm:mb-3 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {activeTab === 'org' && "Aucun objectif d'organisation"}
             {activeTab === 'assigned' && "Aucun objectif assigné"}
             {activeTab === 'personal' && "Aucun objectif personnel"}
           </h2>
-          <p className="text-stone-500 dark:text-neutral-400 max-w-sm mx-auto mb-8">
+          <p className="text-sm sm:text-base text-stone-500 dark:text-neutral-400 max-w-sm mx-auto mb-6 sm:mb-8">
             {activeTab === 'org' && "Votre manager n'a pas encore défini d'objectif pour l'organisation."}
             {activeTab === 'assigned' && "Aucun objectif ne vous a encore été assigné par votre manager."}
             {activeTab === 'personal' && "Créez vos propres objectifs pour suivre votre progression."}
@@ -586,7 +588,7 @@ export function CloserObjectifs() {
           {activeTab === 'personal' && (
             <button
               onClick={openCreate}
-              className="px-8 py-3.5 bg-stone-900 text-white rounded-full font-extrabold text-sm shadow-xl hover:scale-105 transition-transform"
+              className="px-8 py-3 sm:py-3.5 bg-stone-900 text-white rounded-full font-extrabold text-sm shadow-xl hover:scale-105 active:scale-[0.98] transition-transform"
               style={{ fontFamily: 'Manrope, sans-serif' }}
             >
               Créer mon premier objectif
@@ -594,7 +596,7 @@ export function CloserObjectifs() {
           )}
         </div>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {activeTab === 'personal'
             ? (personalObjectives as PersonalObjective[]).map(obj => renderPersonalCard(obj))
             : (currentObjectives as Objective[]).map(obj => renderObjectiveCard(obj, activeTab as 'org' | 'assigned'))
@@ -606,19 +608,21 @@ export function CloserObjectifs() {
       {isModalOpen && (
         <>
           <div className="fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-md" onClick={() => { setIsModalOpen(false); resetForm() }} />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-            <div className="pointer-events-auto w-full max-w-lg max-h-[90vh] flex flex-col bg-white/70 dark:bg-neutral-900/90 backdrop-blur-2xl rounded-2xl shadow-2xl ring-1 ring-white/40 dark:ring-white/10 overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 pointer-events-none">
+            <div className="pointer-events-auto w-full max-w-lg max-h-[92dvh] sm:max-h-[90vh] flex flex-col bg-white/90 sm:bg-white/70 dark:bg-neutral-900/95 sm:dark:bg-neutral-900/90 backdrop-blur-2xl rounded-t-3xl sm:rounded-2xl shadow-2xl ring-1 ring-white/40 dark:ring-white/10 overflow-hidden" onClick={e => e.stopPropagation()}>
+              {/* Poignée (mobile) */}
+              <div className="sm:hidden mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-stone-300 dark:bg-neutral-700" />
               {/* Modal header */}
-              <div className="flex items-center justify-between px-6 py-5 border-b border-stone-100 dark:border-white/10 flex-shrink-0">
-                <h3 className="text-xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-5 border-b border-stone-100 dark:border-white/10 flex-shrink-0">
+                <h3 className="min-w-0 text-lg sm:text-xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
                   {editingObj ? "Modifier l'objectif" : 'Nouvel objectif personnel'}
                 </h3>
-                <button onClick={() => { setIsModalOpen(false); resetForm() }} className="p-2 hover:bg-stone-100 dark:hover:bg-white/5 rounded-full transition-colors">
+                <button onClick={() => { setIsModalOpen(false); resetForm() }} aria-label="Fermer" className="shrink-0 p-2 hover:bg-stone-100 dark:hover:bg-white/5 rounded-full transition-colors">
                   <X className="h-5 w-5 text-stone-400 dark:text-neutral-500" />
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-4 sm:space-y-5">
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 mb-2">Nom de l'objectif *</label>
                   <input type="text" value={formLabel} onChange={(e) => setFormLabel(e.target.value)}
@@ -630,7 +634,7 @@ export function CloserObjectifs() {
                   <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 mb-2">Métrique</label>
                   <div className="relative">
                     <select value={formMetric} onChange={(e) => setFormMetric(e.target.value)}
-                      className="w-full appearance-none rounded-xl border border-stone-200 bg-stone-50/50 px-4 py-2.5 pr-10 text-sm text-stone-900 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900">
+                      className="w-full appearance-none rounded-xl border border-stone-200 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 px-4 py-2.5 pr-10 text-sm text-stone-900 dark:text-white focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900">
                       {METRICS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
@@ -662,7 +666,7 @@ export function CloserObjectifs() {
                   <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 mb-2">Période</label>
                   <div className="relative">
                     <select value={formPeriod} onChange={(e) => setFormPeriod(e.target.value)}
-                      className="w-full appearance-none rounded-xl border border-stone-200 bg-stone-50/50 px-4 py-2.5 pr-10 text-sm text-stone-900 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900">
+                      className="w-full appearance-none rounded-xl border border-stone-200 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 px-4 py-2.5 pr-10 text-sm text-stone-900 dark:text-white focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900">
                       {PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
@@ -676,19 +680,19 @@ export function CloserObjectifs() {
                 </div>
 
                 {/* Visibility toggle */}
-                <div className="rounded-xl border border-stone-200 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                <div className="rounded-xl border border-stone-200 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 p-3 sm:p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
                       {formVisibleToOwner ? (
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50">
                           <Eye className="h-4 w-4 text-emerald-600" />
                         </div>
                       ) : (
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-stone-100">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-stone-100">
                           <EyeOff className="h-4 w-4 text-stone-400" />
                         </div>
                       )}
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-sm font-semibold text-stone-900 dark:text-white">
                           {formVisibleToOwner ? 'Visible par le manager' : 'Objectif privé'}
                         </p>
@@ -703,7 +707,7 @@ export function CloserObjectifs() {
                       type="button"
                       onClick={() => setFormVisibleToOwner(!formVisibleToOwner)}
                       className={cn(
-                        'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                        'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors',
                         formVisibleToOwner ? 'bg-emerald-500' : 'bg-stone-300'
                       )}
                     >
@@ -716,13 +720,13 @@ export function CloserObjectifs() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 border-t border-stone-100 dark:border-white/10 px-6 py-4 flex-shrink-0">
+              <div className="flex justify-end gap-3 border-t border-stone-100 dark:border-white/10 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-4 flex-shrink-0">
                 <button onClick={() => { setIsModalOpen(false); resetForm() }}
-                  className="rounded-xl border border-stone-200 dark:border-white/10 px-5 py-2.5 text-sm font-semibold text-stone-500 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors">
+                  className="flex-1 sm:flex-none rounded-xl border border-stone-200 dark:border-white/10 px-5 py-2.5 text-sm font-semibold text-stone-500 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors">
                   Annuler
                 </button>
                 <button onClick={handleSave} disabled={saving}
-                  className="flex items-center gap-2 rounded-xl bg-stone-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-stone-800 disabled:opacity-50 transition-colors">
+                  className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-stone-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-stone-800 disabled:opacity-50 transition-colors">
                   {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                   {editingObj ? 'Enregistrer' : 'Créer'}
                 </button>

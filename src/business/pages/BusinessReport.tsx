@@ -1060,18 +1060,31 @@ export function BusinessReport() {
   return (
     <div style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* ─── Header ─── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10">
-        <div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-1">Business Report</h1>
-          <p className="text-stone-500 dark:text-neutral-400 text-sm">{t.report_subtitle}</p>
+      {/* Mobile / iPad : titre + bouton PDF (icône) sur une ligne, périodes en rangée défilante dessous.
+          Bureau (lg) : `lg:contents` rend la structure d'origine (titre à gauche, périodes + export à droite). */}
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-8 lg:mb-10">
+        <div className="flex items-start justify-between gap-3 lg:contents">
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-1">Business Report</h1>
+            <p className="text-stone-500 dark:text-neutral-400 text-xs sm:text-sm">{t.report_subtitle}</p>
+          </div>
+          <button
+            onClick={handleExportPDF}
+            disabled={exporting}
+            aria-label={t.report_export_pdf_btn}
+            title={t.report_export_pdf_btn}
+            className="lg:hidden flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-stone-900 dark:bg-neutral-700 text-white hover:bg-stone-800 dark:hover:bg-neutral-600 disabled:opacity-50 transition-all active:scale-95"
+          >
+            {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          </button>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex gap-1 items-baseline">
+        <div className="flex items-center gap-3 lg:flex-wrap">
+          <div className="flex flex-1 lg:flex-none gap-1 items-baseline min-w-0 lg:min-w-[auto] overflow-x-auto overscroll-x-contain no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 border-b border-stone-200/70 dark:border-neutral-800 lg:border-0 lg:overflow-visible">
             {PERIODS.map(p => (
               <button
                 key={p.days}
                 onClick={() => setPeriodDays(p.days)}
-                className={`px-3 py-1.5 text-xs font-bold tracking-tight transition-all rounded-lg ${
+                className={`shrink-0 whitespace-nowrap px-3 py-1.5 text-xs font-bold tracking-tight transition-all rounded-lg ${
                   periodDays === p.days
                     ? 'text-stone-900 dark:text-white border-b-2 border-emerald-600'
                     : 'text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300'
@@ -1084,7 +1097,7 @@ export function BusinessReport() {
           <button
             onClick={handleExportPDF}
             disabled={exporting}
-            className="flex items-center gap-2 rounded-full bg-stone-900 dark:bg-neutral-700 px-5 py-2 text-sm font-bold text-white hover:bg-stone-800 dark:hover:bg-neutral-600 disabled:opacity-50 transition-all active:scale-95"
+            className="hidden lg:flex items-center gap-2 rounded-full bg-stone-900 dark:bg-neutral-700 px-5 py-2 text-sm font-bold text-white hover:bg-stone-800 dark:hover:bg-neutral-600 disabled:opacity-50 transition-all active:scale-95"
           >
             {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
             {t.report_export_pdf_btn}
@@ -1093,100 +1106,101 @@ export function BusinessReport() {
       </div>
 
       {/* ─── KPI Bento Grid ─── */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 mb-3 sm:mb-4 lg:mb-6">
         {/* CA Généré */}
-        <div className="glass-card p-7 rounded-2xl flex flex-col justify-between group hover:shadow-lg transition-all duration-300">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 rounded-2xl">
-              <DollarSign className="h-5 w-5 text-emerald-700 dark:text-emerald-400" />
+        <div className="glass-card p-4 sm:p-6 lg:p-7 rounded-2xl flex flex-col justify-between min-w-0 group hover:shadow-lg transition-all duration-300">
+          <div className="flex justify-between items-start gap-2 mb-3 sm:mb-4">
+            <div className="shrink-0 p-1.5 sm:p-3 rounded-lg sm:rounded-2xl bg-emerald-50 dark:bg-emerald-900/30">
+              <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-700 dark:text-emerald-400" />
             </div>
             <Delta current={totalCA} previous={prevStats?.ca} label={t.report_vs_previous} />
           </div>
           <div>
-            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">{t.report_ca_generated}</p>
-            <p className="text-3xl font-extrabold text-stone-900 dark:text-white">{formatCurrency(totalCA)}</p>
+            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-wider sm:tracking-[0.15em] mb-1">{t.report_ca_generated}</p>
+            <p className="text-2xl sm:text-3xl font-extrabold text-stone-900 dark:text-white truncate">{formatCurrency(totalCA)}</p>
           </div>
         </div>
 
         {/* Ventes */}
-        <div className="glass-card p-7 rounded-2xl flex flex-col justify-between hover:shadow-lg transition-all duration-300">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-stone-100 dark:bg-neutral-800 rounded-2xl">
-              <ShoppingCart className="h-5 w-5 text-stone-700 dark:text-neutral-200" />
+        <div className="glass-card p-4 sm:p-6 lg:p-7 rounded-2xl flex flex-col justify-between min-w-0 hover:shadow-lg transition-all duration-300">
+          <div className="flex justify-between items-start gap-2 mb-3 sm:mb-4">
+            <div className="shrink-0 p-1.5 sm:p-3 rounded-lg sm:rounded-2xl bg-stone-100 dark:bg-neutral-800">
+              <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-stone-700 dark:text-neutral-200" />
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-stone-500 dark:text-neutral-400 font-bold text-[10px] bg-stone-100 dark:bg-neutral-800 px-2.5 py-1 rounded-full">{formatCurrency(avgDeal)} {t.report_avg_short}</span>
+            <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-1.5">
+              <span className="hidden sm:inline text-stone-500 dark:text-neutral-400 font-bold text-[10px] bg-stone-100 dark:bg-neutral-800 px-2.5 py-1 rounded-full whitespace-nowrap">{formatCurrency(avgDeal)} {t.report_avg_short}</span>
               <Delta current={wonLeads.length} previous={prevStats?.sales} label={t.report_vs_previous} />
             </div>
           </div>
           <div>
-            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">{t.report_sales}</p>
-            <p className="text-3xl font-extrabold text-stone-900 dark:text-white">{wonLeads.length}</p>
+            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-wider sm:tracking-[0.15em] mb-1">{t.report_sales}</p>
+            <p className="text-2xl sm:text-3xl font-extrabold text-stone-900 dark:text-white truncate">{wonLeads.length}</p>
+            <p className="sm:hidden truncate text-[11px] font-semibold text-stone-400 dark:text-neutral-500">{formatCurrency(avgDeal)} {t.report_avg_short}</p>
           </div>
         </div>
 
         {/* Taux de Closing */}
-        <div className="glass-card p-7 rounded-2xl flex flex-col justify-between hover:shadow-lg transition-all duration-300 border-l-4 border-stone-400 dark:border-neutral-500">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-stone-100 dark:bg-neutral-800 rounded-2xl">
-              <Target className="h-5 w-5 text-stone-700 dark:text-neutral-200" />
+        <div className="glass-card p-4 sm:p-6 lg:p-7 rounded-2xl flex flex-col justify-between min-w-0 hover:shadow-lg transition-all duration-300 border-l-4 border-stone-400 dark:border-neutral-500">
+          <div className="flex justify-between items-start gap-2 mb-3 sm:mb-4">
+            <div className="shrink-0 p-1.5 sm:p-3 rounded-lg sm:rounded-2xl bg-stone-100 dark:bg-neutral-800">
+              <Target className="h-4 w-4 sm:h-5 sm:w-5 text-stone-700 dark:text-neutral-200" />
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-stone-700 dark:text-neutral-200 font-bold text-[10px] bg-stone-100 dark:bg-neutral-800 px-2.5 py-1 rounded-full">
+            <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-1.5">
+              <span className="text-stone-700 dark:text-neutral-200 font-bold text-[10px] bg-stone-100 dark:bg-neutral-800 px-2.5 py-1 rounded-full whitespace-nowrap">
                 {closingRate >= 25 ? t.report_closing_rate_high : closingRate >= 15 ? t.report_closing_rate_normal : t.report_closing_rate_low}
               </span>
               <Delta current={closingRate} previous={prevStats?.closingRate} label={t.report_vs_previous} />
             </div>
           </div>
           <div>
-            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">{t.report_closing_rate}</p>
-            <p className="text-3xl font-extrabold text-stone-900 dark:text-white">{formatPct(closingRate)}</p>
+            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-wider sm:tracking-[0.15em] mb-1">{t.report_closing_rate}</p>
+            <p className="text-2xl sm:text-3xl font-extrabold text-stone-900 dark:text-white truncate">{formatPct(closingRate)}</p>
           </div>
         </div>
 
         {/* Commission estimée */}
-        <div className="glass-card p-7 rounded-2xl flex flex-col justify-between hover:shadow-lg transition-all duration-300">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 rounded-2xl">
-              <Activity className="h-5 w-5 text-emerald-700 dark:text-emerald-400" />
+        <div className="glass-card p-4 sm:p-6 lg:p-7 rounded-2xl flex flex-col justify-between min-w-0 hover:shadow-lg transition-all duration-300">
+          <div className="flex justify-between items-start gap-2 mb-3 sm:mb-4">
+            <div className="shrink-0 p-1.5 sm:p-3 rounded-lg sm:rounded-2xl bg-emerald-50 dark:bg-emerald-900/30">
+              <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-700 dark:text-emerald-400" />
             </div>
             <Delta current={totalCommission} previous={prevStats?.commission} label={t.report_vs_previous} />
           </div>
           <div>
-            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">{t.report_estimated_commission}</p>
-            <p className="text-3xl font-extrabold text-stone-900 dark:text-white">{formatCurrency(totalCommission)}</p>
-            <p className="text-[10px] text-stone-400 dark:text-neutral-500 mt-1">{t.report_commission_note}</p>
+            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-wider sm:tracking-[0.15em] mb-1">{t.report_estimated_commission}</p>
+            <p className="text-2xl sm:text-3xl font-extrabold text-stone-900 dark:text-white truncate">{formatCurrency(totalCommission)}</p>
+            <p className="hidden sm:block text-[10px] text-stone-400 dark:text-neutral-500 mt-1">{t.report_commission_note}</p>
           </div>
         </div>
       </section>
 
       {/* Secondary KPIs row */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-14">
-        <div className="glass-card p-5 rounded-2xl hover:shadow-lg transition-all duration-300">
-          <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">{t.report_total_leads}</p>
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 mb-4 sm:mb-6 lg:mb-14">
+        <div className="glass-card p-4 lg:p-5 rounded-2xl min-w-0 hover:shadow-lg transition-all duration-300">
+          <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-wider sm:tracking-[0.15em] mb-1">{t.report_total_leads}</p>
           <div className="flex items-center gap-2">
-            <p className="text-2xl font-extrabold text-stone-900 dark:text-white">{totalLeads}</p>
+            <p className="text-xl sm:text-2xl font-extrabold text-stone-900 dark:text-white">{totalLeads}</p>
             <Delta current={totalLeads} previous={prevStats?.leads} label={t.report_vs_previous} />
           </div>
         </div>
-        <div className="glass-card p-5 rounded-2xl hover:shadow-lg transition-all duration-300">
-          <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">{t.report_show_up}</p>
+        <div className="glass-card p-4 lg:p-5 rounded-2xl min-w-0 hover:shadow-lg transition-all duration-300">
+          <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-wider sm:tracking-[0.15em] mb-1">{t.report_show_up}</p>
           <div className="flex items-center gap-2">
-            <p className="text-2xl font-extrabold text-stone-900 dark:text-white">{doneAppts}</p>
+            <p className="text-xl sm:text-2xl font-extrabold text-stone-900 dark:text-white">{doneAppts}</p>
             <Delta current={doneAppts} previous={prevStats?.showUp} label={t.report_vs_previous} />
           </div>
         </div>
-        <div className="glass-card p-5 rounded-2xl hover:shadow-lg transition-all duration-300">
-          <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">{t.report_no_show}</p>
+        <div className="glass-card p-4 lg:p-5 rounded-2xl min-w-0 hover:shadow-lg transition-all duration-300">
+          <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-wider sm:tracking-[0.15em] mb-1">{t.report_no_show}</p>
           <div className="flex items-center gap-2">
-            <p className="text-2xl font-extrabold text-red-600">{noshowLeads.length}</p>
+            <p className="text-xl sm:text-2xl font-extrabold text-red-600">{noshowLeads.length}</p>
             <Delta current={noshowLeads.length} previous={prevStats?.noshow} label={t.report_vs_previous} inverted />
           </div>
         </div>
-        <div className="glass-card p-5 rounded-2xl hover:shadow-lg transition-all duration-300">
-          <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">{t.report_loss_rate}</p>
+        <div className="glass-card p-4 lg:p-5 rounded-2xl min-w-0 hover:shadow-lg transition-all duration-300">
+          <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-wider sm:tracking-[0.15em] mb-1">{t.report_loss_rate}</p>
           <div className="flex items-center gap-2">
-            <p className="text-2xl font-extrabold text-stone-900 dark:text-white">{formatPct(lostRate)}</p>
+            <p className="text-xl sm:text-2xl font-extrabold text-stone-900 dark:text-white">{formatPct(lostRate)}</p>
             <Delta current={lostRate} previous={prevStats?.lostRate} label={t.report_vs_previous} inverted />
           </div>
         </div>
@@ -1194,12 +1208,12 @@ export function BusinessReport() {
 
       {/* ─── Objectifs (B9) ─── */}
       {objectiveProgress.length > 0 && (
-        <section className="glass-card rounded-2xl p-7 mb-14">
-          <div className="flex items-center gap-3 mb-6">
+        <section className="glass-card rounded-2xl p-4 sm:p-6 lg:p-7 mb-4 sm:mb-6 lg:mb-14">
+          <div className="flex items-center gap-3 mb-4 sm:mb-6">
             <Target className="h-5 w-5 text-stone-400" />
-            <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">{t.report_objectives}</h3>
+            <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-white">{t.report_objectives}</h3>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 sm:gap-y-5">
             {objectiveProgress.map(o => {
               const fmt = (v: number) =>
                 o.format === 'currency' ? formatCurrency(v) : o.format === 'percent' ? formatPct(v) : String(Math.round(v))
@@ -1207,7 +1221,12 @@ export function BusinessReport() {
               return (
                 <div key={o.id}>
                   <div className="flex justify-between items-baseline mb-2 gap-3">
-                    <span className="text-sm font-bold text-stone-900 dark:text-white truncate">
+                    {/* Mobile : libellé tronqué sur une ligne, période en dessous */}
+                    <span className="sm:hidden flex min-w-0 flex-col">
+                      <span className="text-sm font-bold text-stone-900 dark:text-white truncate">{o.label}</span>
+                      <span className="whitespace-nowrap text-[10px] font-medium text-stone-400 dark:text-neutral-500 uppercase tracking-wider">{o.periodLabel}</span>
+                    </span>
+                    <span className="hidden sm:block text-sm font-bold text-stone-900 dark:text-white truncate">
                       {o.label}
                       <span className="ml-2 text-[10px] font-medium text-stone-400 dark:text-neutral-500 uppercase tracking-wider">{o.periodLabel}</span>
                     </span>
@@ -1230,21 +1249,21 @@ export function BusinessReport() {
       )}
 
       {/* ─── Évolution (B1) ─── */}
-      <section className="glass-card rounded-2xl p-7 mb-14">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-7">
+      <section className="glass-card rounded-2xl p-4 sm:p-6 lg:p-7 mb-4 sm:mb-6 lg:mb-14">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 sm:mb-6 lg:mb-7">
           <div>
-            <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">{t.report_evolution}</h3>
-            <p className="text-sm text-stone-400 dark:text-neutral-500">{t.report_evolution_desc}</p>
+            <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-white">{t.report_evolution}</h3>
+            <p className="text-xs sm:text-sm text-stone-400 dark:text-neutral-500">{t.report_evolution_desc}</p>
           </div>
         </div>
         {timeSeries.length === 0 ? (
           <div className="flex items-center justify-center h-64 text-sm text-stone-400 dark:text-neutral-500">{t.report_no_data}</div>
         ) : (
-          <div className="h-72 w-full">
+          <div className="h-56 sm:h-72 w-full min-w-0">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={timeSeries} margin={{ top: 8, right: 8, bottom: 0, left: -12 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" vertical={false} />
-                <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#a8a29e' }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#a8a29e' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
                 <YAxis yAxisId="ca" tick={{ fontSize: 11, fill: '#a8a29e' }} axisLine={false} tickLine={false} />
                 <YAxis yAxisId="count" orientation="right" tick={{ fontSize: 11, fill: '#a8a29e' }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip
@@ -1263,15 +1282,15 @@ export function BusinessReport() {
 
       {/* ─── Activity Feed (Today only) ─── */}
       {periodDays === 1 && (
-        <section className="glass-card rounded-2xl p-7 mb-14">
-          <div className="flex items-center justify-between mb-5">
-            <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">{t.report_activity_feed_today}</h3>
+        <section className="glass-card rounded-2xl p-4 sm:p-6 lg:p-7 mb-4 sm:mb-6 lg:mb-14">
+          <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 mb-4 sm:mb-5">
+            <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-white">{t.report_activity_feed_today}</h3>
             {members.length > 0 && (
-              <div className="relative">
+              <div className="relative sm:shrink-0">
                 <select
                   value={activityFilterMember}
                   onChange={(e) => setActivityFilterMember(e.target.value)}
-                  className="appearance-none rounded-full border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 pl-8 pr-9 py-2 text-xs font-semibold text-stone-600 dark:text-neutral-300 focus:border-emerald-500 focus:outline-none"
+                  className="w-full sm:w-auto appearance-none rounded-full border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 pl-8 pr-9 py-2 text-xs font-semibold text-stone-600 dark:text-neutral-300 focus:border-emerald-500 focus:outline-none"
                 >
                   <option value="all">{t.report_all_members}</option>
                   <option value="owner">{t.report_me_owner}</option>
@@ -1286,8 +1305,8 @@ export function BusinessReport() {
           </div>
 
           {todayActivities.length === 0 ? (
-            <div className="text-center py-10">
-              <Activity className="h-10 w-10 text-stone-200 dark:text-neutral-700 mx-auto mb-2" />
+            <div className="text-center py-8 sm:py-10">
+              <Activity className="h-8 w-8 sm:h-10 sm:w-10 text-stone-200 dark:text-neutral-700 mx-auto mb-2" />
               <p className="text-sm text-stone-400 dark:text-neutral-500">{t.report_no_activity_today}</p>
             </div>
           ) : (
@@ -1295,7 +1314,7 @@ export function BusinessReport() {
               {todayActivities.map(event => {
                 const EventIcon = event.icon
                 return (
-                  <div key={event.id} className="flex items-start gap-3 py-3 px-3 rounded-xl hover:bg-stone-50 dark:hover:bg-neutral-800/50 transition-colors">
+                  <div key={event.id} className="flex items-start gap-3 py-2.5 sm:py-3 -mx-2 px-2 sm:mx-0 sm:px-3 rounded-xl hover:bg-stone-50 dark:hover:bg-neutral-800/50 transition-colors">
                     <div className={`flex h-8 w-8 items-center justify-center rounded-xl shrink-0 ${event.color}`}>
                       <EventIcon className="h-4 w-4" />
                     </div>
@@ -1318,36 +1337,36 @@ export function BusinessReport() {
       )}
 
       {/* ─── Nature du revenu (B3) + Encaissement (B8) ─── */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-7 mb-14">
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-7 mb-4 sm:mb-6 lg:mb-14">
         {/* Revenue mix */}
-        <div className="glass-card p-7 rounded-2xl">
-          <div className="flex items-center gap-3 mb-6">
+        <div className="glass-card p-4 sm:p-6 lg:p-7 rounded-2xl">
+          <div className="flex items-center gap-3 mb-4 sm:mb-6">
             <Repeat className="h-5 w-5 text-stone-400" />
-            <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">{t.report_revenue_split}</h3>
+            <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-white">{t.report_revenue_split}</h3>
           </div>
           {(() => {
             const total = revenueMix.oneShot + revenueMix.mrr
             const oneShotPct = total > 0 ? (revenueMix.oneShot / total) * 100 : 0
             return (
               <>
-                <div className="w-full bg-stone-100 dark:bg-neutral-800 h-3 rounded-full overflow-hidden mb-6 flex">
+                <div className="w-full bg-stone-100 dark:bg-neutral-800 h-3 rounded-full overflow-hidden mb-4 sm:mb-6 flex">
                   <div className="h-full" style={{ width: `${oneShotPct}%`, backgroundColor: '#006c49' }} />
                   <div className="h-full" style={{ width: `${100 - oneShotPct}%`, backgroundColor: '#ffb95f' }} />
                 </div>
-                <div className="grid grid-cols-2 gap-5 mb-5">
+                <div className="grid grid-cols-2 gap-3 sm:gap-5 mb-4 sm:mb-5">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#006c49' }} />
-                      <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em]">{t.report_one_shot}</p>
+                      <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-wider sm:tracking-[0.15em]">{t.report_one_shot}</p>
                     </div>
-                    <p className="text-2xl font-extrabold text-stone-900 dark:text-white">{formatCurrency(revenueMix.oneShot)}</p>
+                    <p className="text-xl sm:text-2xl font-extrabold text-stone-900 dark:text-white">{formatCurrency(revenueMix.oneShot)}</p>
                   </div>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#ffb95f' }} />
-                      <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em]">{t.report_mrr}</p>
+                      <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-wider sm:tracking-[0.15em]">{t.report_mrr}</p>
                     </div>
-                    <p className="text-2xl font-extrabold text-stone-900 dark:text-white">{formatCurrency(revenueMix.mrr)}</p>
+                    <p className="text-xl sm:text-2xl font-extrabold text-stone-900 dark:text-white">{formatCurrency(revenueMix.mrr)}</p>
                   </div>
                 </div>
                 <div className="space-y-2 pt-4 border-t border-stone-100 dark:border-neutral-800">
@@ -1360,20 +1379,20 @@ export function BusinessReport() {
         </div>
 
         {/* Encaissement */}
-        <div className="glass-card p-7 rounded-2xl">
-          <div className="flex items-center gap-3 mb-6">
+        <div className="glass-card p-4 sm:p-6 lg:p-7 rounded-2xl">
+          <div className="flex items-center gap-3 mb-4 sm:mb-6">
             <Wallet className="h-5 w-5 text-stone-400" />
-            <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">{t.report_cash}</h3>
+            <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-white">{t.report_cash}</h3>
           </div>
           {cashStats.count === 0 ? (
-            <div className="flex items-center justify-center h-40 text-sm text-stone-400 dark:text-neutral-500">{t.report_no_invoices}</div>
+            <div className="flex items-center justify-center h-28 sm:h-40 text-sm text-stone-400 dark:text-neutral-500">{t.report_no_invoices}</div>
           ) : (
             <>
-              <div className="mb-6">
-                <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">{t.report_signed}</p>
-                <p className="text-3xl font-extrabold text-stone-900 dark:text-white">{formatCurrency(cashStats.signed)}</p>
+              <div className="mb-4 sm:mb-6">
+                <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-wider sm:tracking-[0.15em] mb-1">{t.report_signed}</p>
+                <p className="text-2xl sm:text-3xl font-extrabold text-stone-900 dark:text-white">{formatCurrency(cashStats.signed)}</p>
               </div>
-              <div className="w-full bg-stone-100 dark:bg-neutral-800 h-3 rounded-full overflow-hidden mb-6">
+              <div className="w-full bg-stone-100 dark:bg-neutral-800 h-3 rounded-full overflow-hidden mb-4 sm:mb-6">
                 <div
                   className="h-full rounded-full transition-all duration-700"
                   style={{ width: `${cashStats.signed > 0 ? (cashStats.collected / cashStats.signed) * 100 : 0}%`, backgroundColor: '#006c49' }}
@@ -1390,50 +1409,51 @@ export function BusinessReport() {
       </section>
 
       {/* ─── Charts Section ─── */}
-      <section className="grid grid-cols-1 lg:grid-cols-5 gap-7 mb-14">
+      <section className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-6 lg:gap-7 mb-4 sm:mb-6 lg:mb-14">
         {/* Donut chart: Répartition des leads */}
-        <div className="lg:col-span-2 glass-card p-7 rounded-2xl">
-          <h3 className="text-lg font-extrabold text-stone-900 dark:text-white mb-7">{t.report_leads_by_stage}</h3>
+        <div className="lg:col-span-2 glass-card p-4 sm:p-6 lg:p-7 rounded-2xl">
+          <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-white mb-4 sm:mb-6 lg:mb-7">{t.report_leads_by_stage}</h3>
           {stageData.length === 0 ? (
-            <div className="flex items-center justify-center h-64 text-sm text-stone-400 dark:text-neutral-500">{t.report_no_data}</div>
+            <div className="flex items-center justify-center h-40 sm:h-64 text-sm text-stone-400 dark:text-neutral-500">{t.report_no_data}</div>
           ) : (
-            <>
-              <div className="relative w-56 h-56 mx-auto mb-7">
+            // Mobile : anneau à gauche, légende à droite ; à partir de sm : empilés (rendu d'origine)
+            <div className="flex items-center gap-4 sm:block">
+              <div className="relative w-28 h-28 shrink-0 sm:w-56 sm:h-56 sm:mx-auto sm:mb-6 lg:mb-7">
                 <div className="w-full h-full rounded-full" style={{ background: conicGradient }} />
-                <div className="absolute inset-8 bg-white dark:bg-neutral-900 rounded-full flex items-center justify-center shadow-inner">
+                <div className="absolute inset-4 sm:inset-8 bg-white dark:bg-neutral-900 rounded-full flex items-center justify-center shadow-inner">
                   <div className="text-center">
-                    <p className="text-2xl font-black text-stone-900 dark:text-white">{totalLeads}</p>
-                    <p className="text-[10px] text-stone-400 dark:text-neutral-500 font-bold uppercase tracking-[0.15em]">Leads</p>
+                    <p className="text-xl sm:text-2xl font-black text-stone-900 dark:text-white">{totalLeads}</p>
+                    <p className="text-[10px] text-stone-400 dark:text-neutral-500 font-bold uppercase tracking-wider sm:tracking-[0.15em]">Leads</p>
                   </div>
                 </div>
               </div>
-              <div className="space-y-3">
+              <div className="min-w-0 flex-1 space-y-2 sm:space-y-3">
                 {stageData.map(s => (
-                  <div key={s.name} className="flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: s.color }} />
-                      <span className="text-sm font-medium text-stone-700 dark:text-neutral-200">{s.name}</span>
+                  <div key={s.name} className="flex justify-between items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+                      <div className="w-3 h-3 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
+                      <span className="max-sm:truncate text-sm font-medium text-stone-700 dark:text-neutral-200">{s.name}</span>
                     </div>
-                    <span className="font-bold text-stone-900 dark:text-white">{totalLeads > 0 ? Math.round((s.value / totalLeads) * 100) : 0}%</span>
+                    <span className="shrink-0 text-sm sm:text-base font-bold text-stone-900 dark:text-white">{totalLeads > 0 ? Math.round((s.value / totalLeads) * 100) : 0}%</span>
                   </div>
                 ))}
               </div>
-            </>
+            </div>
           )}
         </div>
 
         {/* Horizontal bars: CA par campagne */}
-        <div className="lg:col-span-3 glass-card p-7 rounded-2xl">
-          <h3 className="text-lg font-extrabold text-stone-900 dark:text-white mb-7">{t.report_ca_by_campaign}</h3>
+        <div className="lg:col-span-3 glass-card p-4 sm:p-6 lg:p-7 rounded-2xl">
+          <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-white mb-4 sm:mb-6 lg:mb-7">{t.report_ca_by_campaign}</h3>
           {campaignStats.filter(c => c.ca > 0).length === 0 ? (
-            <div className="flex items-center justify-center h-64 text-sm text-stone-400 dark:text-neutral-500">{t.report_no_data}</div>
+            <div className="flex items-center justify-center h-40 sm:h-64 text-sm text-stone-400 dark:text-neutral-500">{t.report_no_data}</div>
           ) : (
-            <div className="space-y-5">
+            <div className="space-y-4 sm:space-y-5">
               {campaignStats.filter(c => c.ca > 0).map((c, i) => (
                 <div key={c.id}>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="font-bold text-stone-900 dark:text-white">{c.name}</span>
-                    <span className="font-bold" style={{ color: BAR_COLORS[i % BAR_COLORS.length] }}>{formatCurrency(c.ca)}</span>
+                  <div className="flex justify-between gap-3 text-sm mb-2">
+                    <span className="min-w-0 max-sm:truncate font-bold text-stone-900 dark:text-white">{c.name}</span>
+                    <span className="shrink-0 whitespace-nowrap font-bold" style={{ color: BAR_COLORS[i % BAR_COLORS.length] }}>{formatCurrency(c.ca)}</span>
                   </div>
                   <div className="w-full bg-stone-100 dark:bg-neutral-800 h-3 rounded-full overflow-hidden">
                     <div
@@ -1449,26 +1469,39 @@ export function BusinessReport() {
       </section>
 
       {/* ─── Performance par source (B4) + CA par offre (B5) ─── */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-7 mb-14">
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-7 mb-4 sm:mb-6 lg:mb-14">
         {/* Sources — masqué tant qu'aucun lead n'a de source renseignée */}
         {sourceStats.some(s => s.source !== t.report_no_source) && (
         <div className="glass-card rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-3 p-7 border-b border-stone-100 dark:border-neutral-800">
+          <div className="flex items-center gap-3 p-4 sm:p-6 lg:p-7 border-b border-stone-100 dark:border-neutral-800">
             <Megaphone className="h-5 w-5 text-stone-400" />
-            <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">{t.report_by_source}</h3>
+            <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-white">{t.report_by_source}</h3>
           </div>
           {sourceStats.length === 0 ? (
-            <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-10">{t.report_no_data_period}</p>
+            <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-8 sm:py-10">{t.report_no_data_period}</p>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            {/* Mobile : liste compacte (titre + méta, CA à droite) */}
+            <ul className="sm:hidden lg:block xl:hidden divide-y divide-stone-100 dark:divide-neutral-800">
+              {sourceStats.map(s => (
+                <li key={s.source} className="flex items-center gap-3 px-4 lg:px-7 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-stone-900 dark:text-white">{s.source}</p>
+                    <p className="truncate text-xs text-stone-400 dark:text-neutral-500">{s.leads} {t.report_leads_label} · {s.won} {t.report_won} · {formatPct(s.closingRate)} {t.report_conv}</p>
+                  </div>
+                  <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-stone-900 dark:text-white">{formatCurrency(s.ca)}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden sm:block lg:hidden xl:block overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-stone-50 dark:bg-neutral-800/50">
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">{t.report_source}</th>
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-center">{t.report_leads_label}</th>
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-center">{t.report_won}</th>
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-center">{t.report_conv}</th>
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-right">{t.report_ca}</th>
+                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-stone-400 dark:text-neutral-500">{t.report_source}</th>
+                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-center">{t.report_leads_label}</th>
+                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-center">{t.report_won}</th>
+                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-center">{t.report_conv}</th>
+                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-right">{t.report_ca}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-50 dark:divide-neutral-800">
@@ -1484,27 +1517,28 @@ export function BusinessReport() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
         )}
 
         {/* Offres */}
-        <div className="glass-card p-7 rounded-2xl">
-          <div className="flex items-center gap-3 mb-7">
+        <div className="glass-card p-4 sm:p-6 lg:p-7 rounded-2xl">
+          <div className="flex items-center gap-3 mb-4 sm:mb-6 lg:mb-7">
             <ShoppingCart className="h-5 w-5 text-stone-400" />
-            <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">{t.report_by_offer}</h3>
+            <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-white">{t.report_by_offer}</h3>
           </div>
           {offerStats.length === 0 ? (
-            <div className="flex items-center justify-center h-40 text-sm text-stone-400 dark:text-neutral-500">{t.report_no_data_period}</div>
+            <div className="flex items-center justify-center h-28 sm:h-40 text-sm text-stone-400 dark:text-neutral-500">{t.report_no_data_period}</div>
           ) : (
-            <div className="space-y-5">
+            <div className="space-y-4 sm:space-y-5">
               {offerStats.map((o, i) => {
                 const maxOffer = Math.max(offerStats[0]?.ca || 0, 1)
                 return (
                   <div key={o.offer}>
                     <div className="flex justify-between text-sm mb-2 gap-3">
                       <span className="font-bold text-stone-900 dark:text-white truncate">{o.offer}</span>
-                      <span className="font-bold whitespace-nowrap" style={{ color: BAR_COLORS[i % BAR_COLORS.length] }}>
+                      <span className="shrink-0 font-bold whitespace-nowrap" style={{ color: BAR_COLORS[i % BAR_COLORS.length] }}>
                         {formatCurrency(o.ca)} <span className="text-stone-400 dark:text-neutral-500 font-medium">· {o.count}</span>
                       </span>
                     </div>
@@ -1520,24 +1554,39 @@ export function BusinessReport() {
       </section>
 
       {/* ─── Formulaires + Liens de tracking ─── */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-7 mb-14">
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-7 mb-4 sm:mb-6 lg:mb-14">
         {/* Formulaires */}
         <div className="glass-card rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-3 p-7 border-b border-stone-100 dark:border-neutral-800">
+          <div className="flex items-center gap-3 p-4 sm:p-6 lg:p-7 border-b border-stone-100 dark:border-neutral-800">
             <ClipboardList className="h-5 w-5 text-stone-400" />
-            <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">{t.report_forms}</h3>
+            <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-white">{t.report_forms}</h3>
           </div>
           {formStats.length === 0 ? (
-            <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-10">{t.report_no_forms}</p>
+            <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-8 sm:py-10">{t.report_no_forms}</p>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            <ul className="sm:hidden lg:block xl:hidden divide-y divide-stone-100 dark:divide-neutral-800">
+              {formStats.map(f => (
+                <li key={f.id} className="flex items-center gap-3 px-4 lg:px-7 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="flex min-w-0 items-center gap-2">
+                      <span className="truncate text-sm font-bold text-stone-900 dark:text-white">{f.name}</span>
+                      {!f.is_active && <span className="shrink-0 whitespace-nowrap rounded-full bg-stone-100 dark:bg-neutral-800 px-2 py-0.5 text-[11px] font-bold text-stone-400 dark:text-neutral-500">{t.report_paused}</span>}
+                    </p>
+                    <p className="truncate text-xs text-stone-400 dark:text-neutral-500">{f.responses} {t.report_responses} · {f.leads} {t.report_leads_created}</p>
+                  </div>
+                  <span className="shrink-0 whitespace-nowrap text-sm font-bold text-stone-700 dark:text-neutral-200">{formatPct(f.conversion)}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden sm:block lg:hidden xl:block overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-stone-50 dark:bg-neutral-800/50">
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">{t.report_form}</th>
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-center">{t.report_responses}</th>
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-center">{t.report_leads_created}</th>
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-right">{t.report_conv}</th>
+                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-stone-400 dark:text-neutral-500">{t.report_form}</th>
+                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-center">{t.report_responses}</th>
+                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-center">{t.report_leads_created}</th>
+                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-right">{t.report_conv}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-50 dark:divide-neutral-800">
@@ -1555,27 +1604,43 @@ export function BusinessReport() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
 
         {/* Liens de tracking */}
         <div className="glass-card rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-3 p-7 border-b border-stone-100 dark:border-neutral-800">
+          <div className="flex items-center gap-3 p-4 sm:p-6 lg:p-7 border-b border-stone-100 dark:border-neutral-800">
             <Link2 className="h-5 w-5 text-stone-400" />
-            <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">{t.report_tracking_links}</h3>
+            <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-white">{t.report_tracking_links}</h3>
           </div>
           {trackingStats.length === 0 ? (
-            <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-10">{t.report_no_tracking_links}</p>
+            <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-8 sm:py-10">{t.report_no_tracking_links}</p>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            <ul className="sm:hidden lg:block xl:hidden divide-y divide-stone-100 dark:divide-neutral-800">
+              {trackingStats.map(l => (
+                <li key={l.id} className="flex items-center gap-3 px-4 lg:px-7 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="flex min-w-0 items-baseline gap-2">
+                      <span className="max-w-[65%] shrink-0 truncate text-sm font-bold text-stone-900 dark:text-white">{l.name}</span>
+                      <span className="min-w-0 truncate text-[10px] text-stone-400 dark:text-neutral-500">/t/{l.slug}</span>
+                    </p>
+                    <p className="truncate text-xs text-stone-400 dark:text-neutral-500">{l.clicks} {t.report_clicks} · {l.visitors} {t.report_unique_visitors} · {l.returning} {t.report_returning}</p>
+                  </div>
+                  <span className="shrink-0 whitespace-nowrap text-sm font-bold text-stone-700 dark:text-neutral-200">{humanDuration(l.avgSecs, lang)}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden sm:block lg:hidden xl:block overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-stone-50 dark:bg-neutral-800/50">
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">{t.report_link}</th>
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-center">{t.report_clicks}</th>
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-center">{t.report_unique_visitors}</th>
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-center">{t.report_returning}</th>
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-right">{t.report_avg_time}</th>
+                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-stone-400 dark:text-neutral-500">{t.report_link}</th>
+                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-center">{t.report_clicks}</th>
+                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-center">{t.report_unique_visitors}</th>
+                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-center">{t.report_returning}</th>
+                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-right">{t.report_avg_time}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-50 dark:divide-neutral-800">
@@ -1594,41 +1659,42 @@ export function BusinessReport() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
       </section>
 
       {/* ─── Loss Reason Pie Chart ─── */}
       {lossReasonData.length > 0 && (
-      <section className="glass-card p-7 rounded-2xl mb-14">
-        <h3 className="text-lg font-extrabold text-stone-900 dark:text-white mb-7">{t.report_loss_reasons}</h3>
-        <div className="flex flex-col lg:flex-row items-center gap-8">
-          <div className="relative w-56 h-56 mx-auto lg:mx-0">
+      <section className="glass-card p-4 sm:p-6 lg:p-7 rounded-2xl mb-4 sm:mb-6 lg:mb-14">
+        <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-white mb-4 sm:mb-6 lg:mb-7">{t.report_loss_reasons}</h3>
+        <div className="flex flex-col lg:flex-row items-center gap-4 sm:gap-8">
+          <div className="relative w-40 h-40 sm:w-56 sm:h-56 mx-auto lg:mx-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={lossReasonData} cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={3} dataKey="value">
+                <Pie data={lossReasonData} cx="50%" cy="50%" innerRadius="46.729%" outerRadius="79.4393%" paddingAngle={3} dataKey="value">
                   {lossReasonData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                 </Pie>
                 <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e7e5e4', fontSize: 12 }} formatter={(v: number) => [v, 'Deals']} />
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex-1 space-y-3">
+          <div className="flex-1 space-y-2 sm:space-y-3 w-full">
             {lossReasonData.map(d => {
               const total = lossReasonData.reduce((s, r) => s + r.value, 0)
               const isAutre = d.name === 'Autre'
               return (
                 <div
                   key={d.name}
-                  className={`flex justify-between items-center ${isAutre ? 'cursor-pointer hover:bg-stone-50 dark:hover:bg-neutral-800 -mx-3 px-3 py-1.5 rounded-xl transition-colors' : ''}`}
+                  className={`flex justify-between items-center gap-3 ${isAutre ? 'cursor-pointer hover:bg-stone-50 dark:hover:bg-neutral-800 active:bg-stone-100 dark:active:bg-neutral-800 -mx-3 px-3 py-1.5 rounded-xl transition-colors' : ''}`}
                   onClick={isAutre ? () => setShowAutreModal(true) : undefined}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
-                    <span className={`text-sm font-medium text-stone-700 dark:text-neutral-200 ${isAutre ? 'underline decoration-dashed underline-offset-4' : ''}`}>{d.name}</span>
-                    {isAutre && <ArrowRight className="h-3.5 w-3.5 text-stone-400" />}
+                    <span className={`text-sm font-medium text-stone-700 dark:text-neutral-200 max-sm:truncate ${isAutre ? 'underline decoration-dashed underline-offset-4' : ''}`}>{d.name}</span>
+                    {isAutre && <ArrowRight className="h-3.5 w-3.5 text-stone-400 shrink-0" />}
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 shrink-0">
                     <span className="text-sm font-bold text-stone-900 dark:text-white">{d.value}</span>
                     <span className="text-xs text-stone-400 dark:text-neutral-500 w-10 text-right">{total > 0 ? Math.round((d.value / total) * 100) : 0}%</span>
                   </div>
@@ -1642,27 +1708,27 @@ export function BusinessReport() {
 
       {/* ─── Motifs de disqualification (B2) ─── */}
       {unqualifiedReasonData.length > 0 && (
-      <section className="glass-card p-7 rounded-2xl mb-14">
-        <h3 className="text-lg font-extrabold text-stone-900 dark:text-white mb-7">{t.report_unqualified_reasons}</h3>
-        <div className="flex flex-col lg:flex-row items-center gap-8">
-          <div className="relative w-56 h-56 mx-auto lg:mx-0">
+      <section className="glass-card p-4 sm:p-6 lg:p-7 rounded-2xl mb-4 sm:mb-6 lg:mb-14">
+        <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-white mb-4 sm:mb-6 lg:mb-7">{t.report_unqualified_reasons}</h3>
+        <div className="flex flex-col lg:flex-row items-center gap-4 sm:gap-8">
+          <div className="relative w-40 h-40 sm:w-56 sm:h-56 mx-auto lg:mx-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={unqualifiedReasonData} cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={3} dataKey="value">
+                <Pie data={unqualifiedReasonData} cx="50%" cy="50%" innerRadius="46.729%" outerRadius="79.4393%" paddingAngle={3} dataKey="value">
                   {unqualifiedReasonData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                 </Pie>
                 <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e7e5e4', fontSize: 12 }} formatter={((v: number) => [v, 'Leads']) as any} />
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex-1 space-y-3 w-full">
+          <div className="flex-1 space-y-2 sm:space-y-3 w-full">
             {unqualifiedReasonData.map(d => {
               const total = unqualifiedReasonData.reduce((s, r) => s + r.value, 0)
               const isAutre = d.key === 'other'
               return (
                 <div
                   key={d.key}
-                  className={`flex justify-between items-center ${isAutre ? 'cursor-pointer hover:bg-stone-50 dark:hover:bg-neutral-800 -mx-3 px-3 py-1.5 rounded-xl transition-colors' : ''}`}
+                  className={`flex justify-between items-center gap-3 ${isAutre ? 'cursor-pointer hover:bg-stone-50 dark:hover:bg-neutral-800 active:bg-stone-100 dark:active:bg-neutral-800 -mx-3 px-3 py-1.5 rounded-xl transition-colors' : ''}`}
                   onClick={isAutre ? () => setShowUnqualifiedModal(true) : undefined}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -1684,24 +1750,26 @@ export function BusinessReport() {
 
       {/* ─── Détail des disqualifications « Autre » ─── */}
       {showUnqualifiedModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowUnqualifiedModal(false)} />
-          <div className="relative w-full max-w-3xl max-h-[85vh] bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl border border-stone-200/20 dark:border-neutral-700 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between p-6 border-b border-stone-100 dark:border-neutral-800">
-              <div>
-                <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">{t.report_unqualified_detail_title}</h3>
+          <div className="relative w-full max-w-3xl max-h-[92dvh] sm:max-h-[85vh] bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-3xl shadow-2xl border border-stone-200/20 dark:border-neutral-700 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            {/* Poignée (feuille du bas, mobile) */}
+            <div className="sm:hidden mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-stone-300 dark:bg-neutral-700" />
+            <div className="flex shrink-0 items-center justify-between gap-3 px-4 py-3 sm:p-6 border-b border-stone-100 dark:border-neutral-800">
+              <div className="min-w-0">
+                <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-white">{t.report_unqualified_detail_title}</h3>
                 <p className="text-xs text-stone-500 dark:text-neutral-400 mt-1">{unqualifiedAutreDetails.length} {unqualifiedAutreDetails.length > 1 ? t.report_results : t.report_result}</p>
               </div>
-              <button onClick={() => setShowUnqualifiedModal(false)} className="p-2 rounded-xl hover:bg-stone-100 dark:hover:bg-neutral-800 transition-colors">
+              <button onClick={() => setShowUnqualifiedModal(false)} aria-label="Fermer" className="shrink-0 p-2 rounded-xl hover:bg-stone-100 dark:hover:bg-neutral-800 transition-colors">
                 <X className="h-5 w-5 text-stone-500" />
               </button>
             </div>
-            <div className="flex flex-wrap items-center gap-3 px-6 py-4 border-b border-stone-100 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50">
-              <Filter className="h-4 w-4 text-stone-400 shrink-0" />
+            <div className="grid grid-cols-2 gap-2 px-4 py-3 shrink-0 [&>*:last-child:nth-child(even)]:col-span-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3 sm:px-6 sm:py-4 border-b border-stone-100 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50">
+              <Filter className="hidden sm:block h-4 w-4 text-stone-400 shrink-0" />
               <select
                 value={autreFilterCampaign}
                 onChange={e => setAutreFilterCampaign(e.target.value)}
-                className="text-xs font-bold bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-stone-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-stone-900/10"
+                className="w-full min-w-0 sm:w-auto text-xs font-bold bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-stone-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-stone-900/10"
               >
                 <option value="all">{t.report_all_campaigns}</option>
                 {campaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -1709,7 +1777,7 @@ export function BusinessReport() {
               <select
                 value={autreFilterCloser}
                 onChange={e => setAutreFilterCloser(e.target.value)}
-                className="text-xs font-bold bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-stone-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-stone-900/10"
+                className="w-full min-w-0 sm:w-auto text-xs font-bold bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-stone-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-stone-900/10"
               >
                 <option value="all">{t.report_all_closers}</option>
                 {members.filter(m => ['Closer', 'Setter-Closer', 'Owner', 'Head of Sales'].includes(m.role)).map(m => (
@@ -1717,15 +1785,29 @@ export function BusinessReport() {
                 ))}
               </select>
             </div>
-            <div className="overflow-y-auto flex-1">
+            <div className="overflow-y-auto overscroll-contain flex-1 pb-[env(safe-area-inset-bottom)] sm:pb-0">
               {unqualifiedAutreDetails.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-stone-400 dark:text-neutral-500">
-                  <UserX className="h-10 w-10 mb-3 opacity-50" />
+                <div className="flex flex-col items-center justify-center py-8 sm:py-16 text-stone-400 dark:text-neutral-500">
+                  <UserX className="h-8 w-8 sm:h-10 sm:w-10 mb-2 sm:mb-3 opacity-50" />
                   <p className="text-sm font-medium">{t.report_no_autre_found}</p>
                   <p className="text-xs mt-1">{t.report_try_modify_filters}</p>
                 </div>
               ) : (
-                <table className="w-full">
+                <>
+                <ul className="sm:hidden divide-y divide-stone-100 dark:divide-neutral-800">
+                  {unqualifiedAutreDetails.map(row => (
+                    <li key={row.id} className="flex items-start gap-3 px-4 py-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 text-sm font-medium text-stone-900 dark:text-white">{row.motif}</p>
+                        <p className="mt-0.5 truncate text-xs text-stone-500 dark:text-neutral-400">{row.prospect} · {row.closer}</p>
+                      </div>
+                      <span className="shrink-0 whitespace-nowrap pt-0.5 text-xs text-stone-400 dark:text-neutral-500">
+                        {new Date(row.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <table className="hidden sm:table w-full">
                   <thead>
                     <tr className="border-b border-stone-100 dark:border-neutral-800">
                       <th className="text-left text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 px-6 py-3">{t.report_reason}</th>
@@ -1749,6 +1831,7 @@ export function BusinessReport() {
                     ))}
                   </tbody>
                 </table>
+                </>
               )}
             </div>
           </div>
@@ -1756,15 +1839,15 @@ export function BusinessReport() {
       )}
 
       {/* ─── Vitesse & relances (B6/B7) + Activité téléphonique (B10) ─── */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-7 mb-14">
-        <div className="glass-card p-7 rounded-2xl">
-          <div className="flex items-center gap-3 mb-6">
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-7 mb-4 sm:mb-6 lg:mb-14">
+        <div className="glass-card p-4 sm:p-6 lg:p-7 rounded-2xl">
+          <div className="flex items-center gap-3 mb-4 sm:mb-6">
             <Zap className="h-5 w-5 text-stone-400" />
-            <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">{t.report_speed_relances}</h3>
+            <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-white">{t.report_speed_relances}</h3>
           </div>
-          <div className="mb-6">
-            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">{t.report_speed_to_lead}</p>
-            <p className="text-3xl font-extrabold text-stone-900 dark:text-white">
+          <div className="mb-4 sm:mb-6">
+            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-wider sm:tracking-[0.15em] mb-1">{t.report_speed_to_lead}</p>
+            <p className="text-2xl sm:text-3xl font-extrabold text-stone-900 dark:text-white">
               {speedStats.contactedCount > 0 ? humanDuration(speedStats.avgDelay, lang) : '—'}
             </p>
           </div>
@@ -1786,23 +1869,24 @@ export function BusinessReport() {
           </div>
 
           {/* Taux de réponse par canal de premier contact */}
-          <div className="mt-7 pt-6 border-t border-stone-200/60 dark:border-neutral-700/60">
-            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">{t.report_channel_rate}</p>
-            <p className="text-xs text-stone-400 dark:text-neutral-500 mb-4">{t.report_channel_sub}</p>
+          <div className="mt-5 pt-4 sm:mt-7 sm:pt-6 border-t border-stone-200/60 dark:border-neutral-700/60">
+            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-wider sm:tracking-[0.15em] mb-1">{t.report_channel_rate}</p>
+            <p className="text-xs text-stone-400 dark:text-neutral-500 mb-3 sm:mb-4">{t.report_channel_sub}</p>
             {!channelStats.any ? (
               <p className="text-sm text-stone-400 dark:text-neutral-500 italic">{t.report_channel_empty}</p>
             ) : (
               <>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
                   {channelStats.rows.map(row => {
                     const meta = CONTACT_CHANNELS.find(c => c.key === row.key)!
                     return (
-                      <div key={row.key} className="rounded-xl border border-stone-200/70 dark:border-neutral-700/60 p-3">
-                        <div className="flex items-center gap-1.5 mb-1.5">
+                      <div key={row.key} className="min-w-0 rounded-xl border border-stone-200/70 dark:border-neutral-700/60 p-2.5 sm:p-3">
+                        {/* Mobile : emoji au-dessus du libellé pour garder le libellé entier */}
+                        <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-1.5 mb-1.5">
                           <span className="text-sm leading-none">{meta.emoji}</span>
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-neutral-500 truncate">{lang === 'en' ? meta.en : meta.fr}</span>
+                          <span className="max-w-full text-[10px] font-bold uppercase tracking-wider sm:tracking-widest text-stone-400 dark:text-neutral-500 truncate">{lang === 'en' ? meta.en : meta.fr}</span>
                         </div>
-                        <p className="text-2xl font-extrabold text-stone-900 dark:text-white">{formatPct(row.rate)}</p>
+                        <p className="text-lg sm:text-2xl font-extrabold text-stone-900 dark:text-white">{formatPct(row.rate)}</p>
                         <p className="text-[11px] text-stone-400 dark:text-neutral-500 mt-0.5">{row.replied} / {row.sent}</p>
                         <div className="mt-2 h-1.5 rounded-full bg-stone-200/70 dark:bg-neutral-700/60 overflow-hidden">
                           <div className="h-full rounded-full bg-emerald-500" style={{ width: `${Math.min(100, row.rate)}%` }} />
@@ -1821,26 +1905,26 @@ export function BusinessReport() {
           </div>
         </div>
 
-        <div className="glass-card p-7 rounded-2xl">
-          <div className="flex items-center gap-3 mb-6">
+        <div className="glass-card p-4 sm:p-6 lg:p-7 rounded-2xl">
+          <div className="flex items-center gap-3 mb-4 sm:mb-6">
             <Phone className="h-5 w-5 text-stone-400" />
-            <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">{t.report_calls}</h3>
+            <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-white">{t.report_calls}</h3>
           </div>
           {callStats.total === 0 ? (
-            <div className="flex items-center justify-center h-40 text-sm text-stone-400 dark:text-neutral-500">{t.report_no_calls}</div>
+            <div className="flex items-center justify-center h-28 sm:h-40 text-sm text-stone-400 dark:text-neutral-500">{t.report_no_calls}</div>
           ) : (
             <>
-              <div className="grid grid-cols-2 gap-5 mb-6">
-                <div>
-                  <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">{t.report_calls_total}</p>
-                  <p className="text-3xl font-extrabold text-stone-900 dark:text-white">{callStats.total}</p>
+              <div className="grid grid-cols-2 gap-3 sm:gap-5 mb-4 sm:mb-6">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-wider sm:tracking-[0.15em] mb-1 truncate">{t.report_calls_total}</p>
+                  <p className="text-2xl sm:text-3xl font-extrabold text-stone-900 dark:text-white">{callStats.total}</p>
                 </div>
-                <div>
-                  <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">{t.report_talk_time}</p>
-                  <p className="text-3xl font-extrabold text-stone-900 dark:text-white">{humanDuration(callStats.talkSecs, lang)}</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-wider sm:tracking-[0.15em] mb-1 truncate">{t.report_talk_time}</p>
+                  <p className="text-2xl sm:text-3xl font-extrabold text-stone-900 dark:text-white">{humanDuration(callStats.talkSecs, lang)}</p>
                 </div>
               </div>
-              <div className="space-y-2 mb-5">
+              <div className="space-y-2 mb-4 sm:mb-5">
                 <StatLine label={t.report_calls_answered} value={callStats.answered} color="emerald" />
                 <StatLine label={t.report_answer_rate} value={formatPct(callStats.answerRate)} color="emerald" isText />
               </div>
@@ -1852,8 +1936,8 @@ export function BusinessReport() {
                     const m = members.find(x => x.id === memberId)
                     const name = m ? `${m.first_name} ${m.last_name}` : t.report_you
                     return (
-                      <div key={memberId} className="flex items-center justify-between py-1.5">
-                        <span className="text-sm font-medium text-stone-500 dark:text-neutral-400 truncate">{name}</span>
+                      <div key={memberId} className="flex items-center justify-between gap-3 py-1.5">
+                        <span className="min-w-0 text-sm font-medium text-stone-500 dark:text-neutral-400 truncate">{name}</span>
                         <span className="text-sm font-bold text-stone-900 dark:text-white whitespace-nowrap">
                           {row.calls} · {humanDuration(row.secs, lang)}
                         </span>
@@ -1868,28 +1952,30 @@ export function BusinessReport() {
 
       {/* ─── Autre Loss Reasons Modal ─── */}
       {showAutreModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowAutreModal(false)} />
-          <div className="relative w-full max-w-3xl max-h-[85vh] bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl border border-stone-200/20 dark:border-neutral-700 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+          <div className="relative w-full max-w-3xl max-h-[92dvh] sm:max-h-[85vh] bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-3xl shadow-2xl border border-stone-200/20 dark:border-neutral-700 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            {/* Poignée (feuille du bas, mobile) */}
+            <div className="sm:hidden mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-stone-300 dark:bg-neutral-700" />
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-stone-100 dark:border-neutral-800">
-              <div>
-                <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">{t.report_autre_detail_title}</h3>
+            <div className="flex shrink-0 items-center justify-between gap-3 px-4 py-3 sm:p-6 border-b border-stone-100 dark:border-neutral-800">
+              <div className="min-w-0">
+                <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-white">{t.report_autre_detail_title}</h3>
                 <p className="text-xs text-stone-500 dark:text-neutral-400 mt-1">{autreDetails.length} {autreDetails.length > 1 ? t.report_results : t.report_result}</p>
               </div>
-              <button onClick={() => setShowAutreModal(false)} className="p-2 rounded-xl hover:bg-stone-100 dark:hover:bg-neutral-800 transition-colors">
+              <button onClick={() => setShowAutreModal(false)} aria-label="Fermer" className="shrink-0 p-2 rounded-xl hover:bg-stone-100 dark:hover:bg-neutral-800 transition-colors">
                 <X className="h-5 w-5 text-stone-500" />
               </button>
             </div>
 
             {/* Filters */}
-            <div className="flex flex-wrap items-center gap-3 px-6 py-4 border-b border-stone-100 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50">
-              <Filter className="h-4 w-4 text-stone-400 shrink-0" />
+            <div className="grid grid-cols-2 gap-2 px-4 py-3 shrink-0 [&>*:last-child:nth-child(even)]:col-span-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3 sm:px-6 sm:py-4 border-b border-stone-100 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50">
+              <Filter className="hidden sm:block h-4 w-4 text-stone-400 shrink-0" />
               {/* Period */}
               <select
                 value={autreFilterPeriod}
                 onChange={e => setAutreFilterPeriod(Number(e.target.value))}
-                className="text-xs font-bold bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-stone-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-stone-900/10"
+                className="w-full min-w-0 sm:w-auto text-xs font-bold bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-stone-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-stone-900/10"
               >
                 {PERIODS.map(p => <option key={p.days} value={p.days}>{p.label}</option>)}
               </select>
@@ -1897,7 +1983,7 @@ export function BusinessReport() {
               <select
                 value={autreFilterCampaign}
                 onChange={e => setAutreFilterCampaign(e.target.value)}
-                className="text-xs font-bold bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-stone-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-stone-900/10"
+                className="w-full min-w-0 sm:w-auto text-xs font-bold bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-stone-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-stone-900/10"
               >
                 <option value="all">{t.report_all_campaigns}</option>
                 {campaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -1906,7 +1992,7 @@ export function BusinessReport() {
               <select
                 value={autreFilterCloser}
                 onChange={e => setAutreFilterCloser(e.target.value)}
-                className="text-xs font-bold bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-stone-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-stone-900/10"
+                className="w-full min-w-0 sm:w-auto text-xs font-bold bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-stone-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-stone-900/10"
               >
                 <option value="all">{t.report_all_closers}</option>
                 {members.filter(m => ['Closer', 'Setter-Closer', 'Owner', 'Head of Sales'].includes(m.role)).map(m => (
@@ -1918,7 +2004,7 @@ export function BusinessReport() {
                 <select
                   value={autreFilterTeam}
                   onChange={e => setAutreFilterTeam(e.target.value)}
-                  className="text-xs font-bold bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-stone-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-stone-900/10"
+                  className="w-full min-w-0 sm:w-auto text-xs font-bold bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-stone-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-stone-900/10"
                 >
                   <option value="all">{t.report_all_teams}</option>
                   {teams.map(t => (
@@ -1929,15 +2015,29 @@ export function BusinessReport() {
             </div>
 
             {/* Table */}
-            <div className="overflow-y-auto flex-1">
+            <div className="overflow-y-auto overscroll-contain flex-1 pb-[env(safe-area-inset-bottom)] sm:pb-0">
               {autreDetails.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-stone-400 dark:text-neutral-500">
-                  <UserX className="h-10 w-10 mb-3 opacity-50" />
+                <div className="flex flex-col items-center justify-center py-8 sm:py-16 text-stone-400 dark:text-neutral-500">
+                  <UserX className="h-8 w-8 sm:h-10 sm:w-10 mb-2 sm:mb-3 opacity-50" />
                   <p className="text-sm font-medium">{t.report_no_autre_found}</p>
                   <p className="text-xs mt-1">{t.report_try_modify_filters}</p>
                 </div>
               ) : (
-                <table className="w-full">
+                <>
+                <ul className="sm:hidden divide-y divide-stone-100 dark:divide-neutral-800">
+                  {autreDetails.map(row => (
+                    <li key={row.id} className="flex items-start gap-3 px-4 py-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 text-sm font-medium text-stone-900 dark:text-white">{row.motif}</p>
+                        <p className="mt-0.5 truncate text-xs text-stone-500 dark:text-neutral-400">{row.prospect} · {row.closer}</p>
+                      </div>
+                      <span className="shrink-0 whitespace-nowrap pt-0.5 text-xs text-stone-400 dark:text-neutral-500">
+                        {new Date(row.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <table className="hidden sm:table w-full">
                   <thead>
                     <tr className="border-b border-stone-100 dark:border-neutral-800">
                       <th className="text-left text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 px-6 py-3">{t.report_reason}</th>
@@ -1961,6 +2061,7 @@ export function BusinessReport() {
                     ))}
                   </tbody>
                 </table>
+                </>
               )}
             </div>
           </div>
@@ -1968,24 +2069,54 @@ export function BusinessReport() {
       )}
 
       {/* ─── Campaign Performance Table ─── */}
-      <section className="glass-card rounded-2xl overflow-hidden mb-14">
-        <div className="p-7 border-b border-stone-100 dark:border-neutral-800">
-          <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">{t.report_campaign_performance}</h3>
+      <section className="glass-card rounded-2xl overflow-hidden mb-4 sm:mb-6 lg:mb-14">
+        <div className="p-4 sm:p-6 lg:p-7 border-b border-stone-100 dark:border-neutral-800">
+          <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-white">{t.report_campaign_performance}</h3>
         </div>
         {campaignStats.length === 0 ? (
-          <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-10">{t.report_no_campaign}</p>
+          <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-8 sm:py-10">{t.report_no_campaign}</p>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <ul className="xl:hidden divide-y divide-stone-100 dark:divide-neutral-800">
+            {campaignStats.map(c => (
+              <li key={c.id} className="flex items-center gap-3 px-4 sm:px-6 lg:px-7 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="flex min-w-0 items-center gap-2">
+                    <span className="truncate text-sm font-bold text-stone-900 dark:text-white">{c.name}</span>
+                    <span className={`shrink-0 whitespace-nowrap px-2 py-0.5 rounded-full text-[11px] font-bold ${c.is_active ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-stone-100 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400'}`}>
+                      {c.is_active ? t.report_active : t.report_paused}
+                    </span>
+                  </p>
+                  <p className="truncate text-xs text-stone-400 dark:text-neutral-500">{formatDate(c.created_at)} · {c.views.toLocaleString(lang === 'en' ? 'en-US' : 'fr-FR')} {t.report_views} · {formatPct(c.conversionRate)} {t.report_conv}</p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-sm font-extrabold text-stone-900 dark:text-white">{formatCurrency(c.ca)}</p>
+                  <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">{formatCurrency(c.commission)}</p>
+                </div>
+              </li>
+            ))}
+            <li className="flex items-center gap-3 px-4 sm:px-6 lg:px-7 py-3 bg-stone-50 dark:bg-neutral-800/30">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-stone-900 dark:text-white">{t.report_total}</p>
+                <p className="truncate text-xs text-stone-400 dark:text-neutral-500">{campaignStats.reduce((s, c) => s + c.views, 0).toLocaleString(lang === 'en' ? 'en-US' : 'fr-FR')} {t.report_views}</p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="text-sm font-extrabold text-stone-900 dark:text-white">{formatCurrency(totalCA)}</p>
+                <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">{formatCurrency(totalCommission)}</p>
+              </div>
+            </li>
+          </ul>
+          <div className="hidden xl:block overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-stone-50 dark:bg-neutral-800/50">
-                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">{t.report_campaign}</th>
-                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">{t.report_status}</th>
-                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">{t.report_date}</th>
-                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">{t.report_views}</th>
-                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">{t.report_conv}</th>
-                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">{t.report_ca}</th>
-                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-right">{t.report_commission}</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-stone-400 dark:text-neutral-500">{t.report_campaign}</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-stone-400 dark:text-neutral-500">{t.report_status}</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-stone-400 dark:text-neutral-500">{t.report_date}</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-stone-400 dark:text-neutral-500">{t.report_views}</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-stone-400 dark:text-neutral-500">{t.report_conv}</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-stone-400 dark:text-neutral-500">{t.report_ca}</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-right">{t.report_commission}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-50 dark:divide-neutral-800">
@@ -2017,18 +2148,19 @@ export function BusinessReport() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </section>
 
       {/* ─── Team + Financial Summary ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-7 mb-14">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-7 mb-4 sm:mb-6 lg:mb-14">
         {/* Team Performance */}
         <div className="lg:col-span-2 glass-card rounded-2xl overflow-hidden">
-          <div className="p-7 border-b border-stone-100 dark:border-neutral-800">
-            <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">{t.report_team_performance}</h3>
+          <div className="p-4 sm:p-6 lg:p-7 border-b border-stone-100 dark:border-neutral-800">
+            <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-white">{t.report_team_performance}</h3>
           </div>
           {members.length === 0 ? (
-            <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-10">{t.report_no_team_member}</p>
+            <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-8 sm:py-10">{t.report_no_team_member}</p>
           ) : (
             <div className="divide-y divide-stone-50 dark:divide-neutral-800">
               {members.map(m => {
@@ -2055,22 +2187,22 @@ export function BusinessReport() {
                         navigate(`/business/closer-kpi?member=${m.id}`)
                       }
                     }}
-                    className="flex items-center justify-between px-7 py-4 hover:bg-stone-50 dark:hover:bg-neutral-800/50 transition-colors cursor-pointer">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-stone-200 dark:bg-neutral-700 flex items-center justify-center text-sm font-bold text-stone-600 dark:text-neutral-300 overflow-hidden">
+                    className="flex items-center justify-between gap-3 px-4 sm:px-6 lg:px-7 py-3 sm:py-4 hover:bg-stone-50 dark:hover:bg-neutral-800/50 active:bg-stone-100 dark:active:bg-neutral-800 transition-colors cursor-pointer">
+                    <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+                      <div className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-full bg-stone-200 dark:bg-neutral-700 flex items-center justify-center text-xs sm:text-sm font-bold text-stone-600 dark:text-neutral-300 overflow-hidden">
                         {m.avatar_url ? (
                           <img src={m.avatar_url} alt={`${m.first_name} ${m.last_name}`} className="w-full h-full object-cover" />
                         ) : (
                           <>{m.first_name[0]}{m.last_name?.[0] || ''}</>
                         )}
                       </div>
-                      <div>
-                        <p className="font-bold text-stone-900 dark:text-white">{m.first_name} {m.last_name}</p>
-                        <p className="text-[10px] text-stone-400 dark:text-neutral-500">{m.email}</p>
+                      <div className="min-w-0">
+                        <p className="max-lg:truncate text-sm sm:text-base font-bold text-stone-900 dark:text-white">{m.first_name} {m.last_name}</p>
+                        <p className="max-lg:truncate text-[10px] text-stone-400 dark:text-neutral-500"><span className="sm:hidden">{m.role} · </span>{m.email}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-5">
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded ${ROLE_COLORS[m.role] || 'bg-stone-100 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400'}`}>
+                    <div className="flex shrink-0 items-center gap-3 sm:gap-5">
+                      <span className={`hidden sm:inline whitespace-nowrap text-xs font-semibold px-2.5 py-1 rounded ${ROLE_COLORS[m.role] || 'bg-stone-100 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400'}`}>
                         {m.role}
                       </span>
                       {setterBooked > 0 && (
@@ -2099,52 +2231,52 @@ export function BusinessReport() {
         </div>
 
         {/* Financial Summary Card (gradient) */}
-        <div className="rounded-2xl p-7 text-white relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #ffb95f 0%, #006c49 100%)' }}>
+        <div className="rounded-2xl p-4 sm:p-6 lg:p-7 text-white relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #ffb95f 0%, #006c49 100%)' }}>
           <div className="relative z-10 flex flex-col h-full">
-            <h3 className="text-lg font-extrabold mb-7">{t.report_financial_summary}</h3>
-            <div className="space-y-5 flex-grow">
+            <h3 className="text-base sm:text-lg font-extrabold mb-4 sm:mb-6 lg:mb-7">{t.report_financial_summary}</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-3 sm:gap-x-6 gap-y-4 [&>*:last-child:nth-child(odd)]:col-span-2 sm:[&>*:last-child:nth-child(odd)]:col-span-1 lg:block lg:space-y-5 flex-grow">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.15em] opacity-70 mb-1">{t.report_closing_rate}</p>
-                <p className="text-4xl font-black">{formatPct(closingRate)}</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] opacity-70 mb-1">{t.report_closing_rate}</p>
+                <p className="text-2xl sm:text-4xl font-black">{formatPct(closingRate)}</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.15em] opacity-70 mb-1">{t.report_avg_deal}</p>
-                <p className="text-2xl font-bold">{formatCurrency(avgDeal)}</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] opacity-70 mb-1">{t.report_avg_deal}</p>
+                <p className="text-xl sm:text-2xl font-bold">{formatCurrency(avgDeal)}</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.15em] opacity-70 mb-1">{t.report_show_up_rate}</p>
-                <p className="text-2xl font-bold">{formatPct(showUpRate)}</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] opacity-70 mb-1">{t.report_show_up_rate}</p>
+                <p className="text-xl sm:text-2xl font-bold">{formatPct(showUpRate)}</p>
               </div>
               {totalPerBooking > 0 && (
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] opacity-70 mb-1">{t.report_per_booking_total}</p>
-                  <p className="text-2xl font-bold">{formatCurrency(totalPerBooking)}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] opacity-70 mb-1">{t.report_per_booking_total}</p>
+                  <p className="text-xl sm:text-2xl font-bold">{formatCurrency(totalPerBooking)}</p>
                 </div>
               )}
               {revenueMix.mrr > 0 && (
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] opacity-70 mb-1">{t.report_mrr}</p>
-                  <p className="text-2xl font-bold">{formatCurrency(revenueMix.mrr)}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] opacity-70 mb-1">{t.report_mrr}</p>
+                  <p className="text-xl sm:text-2xl font-bold">{formatCurrency(revenueMix.mrr)}</p>
                 </div>
               )}
             </div>
           </div>
           {/* Glass sphere effect */}
-          <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+          <div className="hidden lg:block absolute -right-20 -bottom-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
         </div>
       </div>
 
       {/* ─── Bottom Cards ─── */}
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-7 mb-14">
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-7 mb-4 sm:mb-6 lg:mb-14">
         {/* Rendez-vous */}
-        <div className="glass-card p-7 rounded-2xl">
-          <div className="flex items-center gap-4 mb-5">
-            <div className="w-11 h-11 bg-stone-100 dark:bg-neutral-800 rounded-full flex items-center justify-center">
-              <Calendar className="h-5 w-5 text-stone-700 dark:text-neutral-200" />
+        <div className="glass-card p-4 sm:p-6 lg:p-7 rounded-2xl">
+          <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-5">
+            <div className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 bg-stone-100 dark:bg-neutral-800 rounded-full flex items-center justify-center">
+              <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-stone-700 dark:text-neutral-200" />
             </div>
             <div>
-              <h4 className="font-extrabold text-lg text-stone-900 dark:text-white">{t.report_appointments}</h4>
-              <p className="text-sm text-stone-400 dark:text-neutral-500">{totalAppts} {t.report_total_short} · {doneAppts} {doneAppts !== 1 ? t.report_done_plural : t.report_done}</p>
+              <h4 className="font-extrabold text-base sm:text-lg text-stone-900 dark:text-white">{t.report_appointments}</h4>
+              <p className="text-xs sm:text-sm text-stone-400 dark:text-neutral-500">{totalAppts} {t.report_total_short} · {doneAppts} {doneAppts !== 1 ? t.report_done_plural : t.report_done}</p>
             </div>
           </div>
           <div className="space-y-2">
@@ -2158,14 +2290,14 @@ export function BusinessReport() {
         </div>
 
         {/* Pipeline Détaillé */}
-        <div className="glass-card p-7 rounded-2xl border-t-4 border-stone-900 dark:border-neutral-400">
-          <div className="flex items-center gap-4 mb-5">
-            <div className="w-11 h-11 bg-stone-900 dark:bg-neutral-700 rounded-full flex items-center justify-center">
-              <TrendingUp className="h-5 w-5 text-white" />
+        <div className="glass-card p-4 sm:p-6 lg:p-7 rounded-2xl border-t-4 border-stone-900 dark:border-neutral-400">
+          <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-5">
+            <div className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 bg-stone-900 dark:bg-neutral-700 rounded-full flex items-center justify-center">
+              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
             </div>
             <div>
-              <h4 className="font-extrabold text-lg text-stone-900 dark:text-white">{t.report_detailed_pipeline}</h4>
-              <p className="text-sm text-stone-400 dark:text-neutral-500">{t.report_total_value} {formatCurrency(totalPipeline)}</p>
+              <h4 className="font-extrabold text-base sm:text-lg text-stone-900 dark:text-white">{t.report_detailed_pipeline}</h4>
+              <p className="text-xs sm:text-sm text-stone-400 dark:text-neutral-500">{t.report_total_value} {formatCurrency(totalPipeline)}</p>
             </div>
           </div>
           {/* Pipeline bar */}
@@ -2185,12 +2317,12 @@ export function BusinessReport() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="text-center">
-              <p className="text-2xl font-black text-stone-900 dark:text-white">{filteredProspects.filter(p => p.stage === 'prospect').length}</p>
-              <p className="text-[10px] text-stone-400 dark:text-neutral-500 font-bold uppercase tracking-[0.15em]">{t.report_prospects}</p>
+              <p className="text-xl sm:text-2xl font-black text-stone-900 dark:text-white">{filteredProspects.filter(p => p.stage === 'prospect').length}</p>
+              <p className="text-[10px] text-stone-400 dark:text-neutral-500 font-bold uppercase tracking-wider sm:tracking-[0.15em]">{t.report_prospects}</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-black text-stone-900 dark:text-white">{wonLeads.length}</p>
-              <p className="text-[10px] text-stone-400 dark:text-neutral-500 font-bold uppercase tracking-[0.15em]">{t.report_won}</p>
+              <p className="text-xl sm:text-2xl font-black text-stone-900 dark:text-white">{wonLeads.length}</p>
+              <p className="text-[10px] text-stone-400 dark:text-neutral-500 font-bold uppercase tracking-wider sm:tracking-[0.15em]">{t.report_won}</p>
             </div>
           </div>
         </div>
@@ -2543,9 +2675,9 @@ function StatLine({ label, value, color, isText }: { label: string; value: numbe
     red: 'text-red-600 dark:text-red-400', slate: 'text-stone-500 dark:text-neutral-400',
   }
   return (
-    <div className="flex items-center justify-between py-1.5">
-      <span className="text-sm font-medium text-stone-500 dark:text-neutral-400">{label}</span>
-      <span className={`text-sm font-bold ${colorMap[color] || 'text-stone-900 dark:text-white'}`}>
+    <div className="flex items-center justify-between gap-3 py-1.5">
+      <span className="min-w-0 text-sm font-medium text-stone-500 dark:text-neutral-400">{label}</span>
+      <span className={`shrink-0 whitespace-nowrap text-sm font-bold ${colorMap[color] || 'text-stone-900 dark:text-white'}`}>
         {value}
       </span>
     </div>

@@ -445,23 +445,25 @@ export function BusinessObjectives() {
   }
 
   return (
-    <div className="space-y-10">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="space-y-2">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+    <div className="space-y-5 sm:space-y-8 lg:space-y-10">
+      {/* Header — mobile : titre + bouton « + » compact sur la même ligne */}
+      <div className="flex flex-row items-start md:items-end justify-between gap-3 md:gap-6">
+        <div className="min-w-0 space-y-1 sm:space-y-2">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {t.objectives_title}
           </h1>
-          <p className="text-[#444748] dark:text-neutral-300 max-w-lg">{t.objectives_subtitle}</p>
+          <p className="text-sm sm:text-base text-[#444748] dark:text-neutral-300 max-w-lg">{t.objectives_subtitle}</p>
         </div>
         {!isTeamMember && (
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-3">
             <button
               onClick={openCreate}
-              className="px-8 py-3 bg-gradient-to-r from-[#ff6b6b] to-[#a239ca] text-white rounded-full font-bold text-sm shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
+              aria-label={t.objectives_new_objective}
+              className="flex h-10 w-10 items-center justify-center sm:inline-block sm:h-auto sm:w-auto px-0 sm:px-8 py-0 sm:py-3 bg-gradient-to-r from-[#ff6b6b] to-[#a239ca] text-white rounded-full font-bold text-sm shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
               style={{ fontFamily: 'Manrope, sans-serif' }}
             >
-              + {t.objectives_new_objective}
+              <Plus className="h-5 w-5 sm:hidden" />
+              <span className="hidden sm:inline">+ {t.objectives_new_objective}</span>
             </button>
           </div>
         )}
@@ -469,21 +471,21 @@ export function BusinessObjectives() {
 
       {/* Empty state */}
       {objectives.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-48 h-48 bg-[#f5f3f2] dark:bg-neutral-900 rounded-full flex items-center justify-center mb-8 relative">
-            <Target className="h-20 w-20 text-[#c4c7c7]/40" />
-            <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-white dark:bg-neutral-800 rounded-2xl shadow-xl flex items-center justify-center">
-              <Target className="h-6 w-6 text-[#006c49]" />
+        <div className="flex flex-col items-center justify-center py-10 sm:py-24 text-center">
+          <div className="w-28 h-28 sm:w-48 sm:h-48 bg-[#f5f3f2] dark:bg-neutral-900 rounded-full flex items-center justify-center mb-5 sm:mb-8 relative">
+            <Target className="h-12 w-12 sm:h-20 sm:w-20 text-[#c4c7c7]/40" />
+            <div className="absolute -bottom-2 -right-2 w-10 h-10 sm:w-16 sm:h-16 bg-white dark:bg-neutral-800 rounded-xl sm:rounded-2xl shadow-xl flex items-center justify-center">
+              <Target className="h-5 w-5 sm:h-6 sm:w-6 text-[#006c49]" />
             </div>
           </div>
-          <h2 className="text-3xl font-extrabold mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.objectives_no_objectives}</h2>
-          <p className="text-[#444748] dark:text-neutral-300 max-w-sm mx-auto mb-10">
+          <h2 className="text-xl sm:text-3xl font-extrabold mb-2 sm:mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.objectives_no_objectives}</h2>
+          <p className="text-sm sm:text-base text-[#444748] dark:text-neutral-300 max-w-sm mx-auto mb-6 sm:mb-10">
             {isTeamMember ? t.objectives_no_assigned_desc : t.objectives_no_personal_desc}
           </p>
           {!isTeamMember && (
             <button
               onClick={openCreate}
-              className="px-10 py-4 bg-[#1b1c1b] text-white rounded-full font-extrabold text-sm shadow-xl hover:scale-105 transition-transform"
+              className="px-8 sm:px-10 py-3 sm:py-4 bg-[#1b1c1b] text-white rounded-full font-extrabold text-sm shadow-xl hover:scale-105 active:scale-[0.98] transition-transform"
               style={{ fontFamily: 'Manrope, sans-serif' }}
             >
               {t.objectives_create_first}
@@ -494,7 +496,7 @@ export function BusinessObjectives() {
 
       {/* Objective cards — Bento grid */}
       {objectives.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5 lg:gap-8">
           {objectives.map((obj) => {
             const currentValue = calculateCurrentValue(obj)
             const progress = currentValue !== null && obj.target_value > 0
@@ -510,45 +512,45 @@ export function BusinessObjectives() {
               <div
                 key={obj.id}
                 onClick={() => setDetailObjective(obj)}
-                className={`bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border hover:shadow-2xl transition-all group relative overflow-hidden cursor-pointer ${
+                className={`min-w-0 bg-white dark:bg-neutral-800 rounded-2xl p-4 sm:p-6 lg:p-8 active:scale-[0.99] lg:active:scale-100 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border hover:shadow-2xl transition-all group relative overflow-hidden cursor-pointer ${
                   isComplete ? 'border-[#c4c7c7]/10 dark:border-neutral-700/30' : 'border-[#c4c7c7]/10 dark:border-neutral-700/30'
                 }`}
               >
                 {/* Verified icon for completed */}
                 {isComplete && (
-                  <div className="absolute top-4 right-4">
-                    <svg className="w-8 h-8 text-[#006c49]" viewBox="0 0 24 24" fill="currentColor">
+                  <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
+                    <svg className="w-6 h-6 sm:w-8 sm:h-8 text-[#006c49]" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
                     </svg>
                   </div>
                 )}
 
                 {/* Tags */}
-                <div className="flex justify-between items-start mb-6">
-                  <div className="flex flex-wrap gap-2">
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${metricBadge.bg} ${metricBadge.text}`}>
+                <div className="flex justify-between items-start gap-2 mb-3 sm:mb-6">
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                    <span className={`whitespace-nowrap px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${metricBadge.bg} ${metricBadge.text}`}>
                       {getMetricLabel(obj.metric)}
                     </span>
-                    <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#eae8e7] text-[#444748] dark:text-neutral-300">
+                    <span className="whitespace-nowrap px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#eae8e7] text-[#444748] dark:text-neutral-300">
                       {PERIOD_LABELS[obj.period] || obj.period}
                     </span>
                     {obj.scope === 'global_org' && (
-                      <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#ffddb8] text-[#653e00]">
+                      <span className="whitespace-nowrap px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#ffddb8] text-[#653e00]">
                         Organisation
                       </span>
                     )}
                     {obj.scope === 'global_role' && obj.assigned_to_role && (
-                      <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#d0ebff] text-[#004a7c]">
+                      <span className="whitespace-nowrap px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#d0ebff] text-[#004a7c]">
                         {obj.assigned_to_role}
                       </span>
                     )}
                   </div>
                   {!isTeamMember && !isComplete && (
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={(e) => { e.stopPropagation(); openEdit(obj) }} className="p-1.5 hover:bg-[#eae8e7] dark:hover:bg-neutral-800 rounded-full transition-colors">
+                    <div className="flex shrink-0 gap-1 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
+                      <button onClick={(e) => { e.stopPropagation(); openEdit(obj) }} aria-label="Modifier" className="p-2 sm:p-1.5 hover:bg-[#eae8e7] dark:hover:bg-neutral-800 rounded-full transition-colors">
                         <Pencil className="h-4 w-4 text-[#444748] dark:text-neutral-300" />
                       </button>
-                      <button onClick={(e) => { e.stopPropagation(); deleteObjective(obj) }} className="p-1.5 hover:bg-[#ffdad6] hover:text-[#ba1a1a] rounded-full transition-colors">
+                      <button onClick={(e) => { e.stopPropagation(); deleteObjective(obj) }} aria-label="Supprimer" className="p-2 sm:p-1.5 [@media(hover:none)]:text-[#444748] [@media(hover:none)]:dark:text-neutral-300 hover:bg-[#ffdad6] hover:text-[#ba1a1a] rounded-full transition-colors">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
@@ -556,18 +558,18 @@ export function BusinessObjectives() {
                 </div>
 
                 {/* Title */}
-                <h3 className="text-xl font-extrabold mb-4 text-[#1b1c1b] dark:text-white group-hover:text-[#006c49] transition-colors" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                <h3 className="text-base sm:text-xl font-extrabold mb-2 sm:mb-4 text-[#1b1c1b] dark:text-white group-hover:text-[#006c49] transition-colors" style={{ fontFamily: 'Manrope, sans-serif' }}>
                   {obj.label}
                 </h3>
 
                 {/* Description for custom metric */}
                 {obj.metric === 'custom' && obj.description && (
-                  <p className="text-sm text-[#444748] dark:text-neutral-300 mb-4 line-clamp-2">{obj.description}</p>
+                  <p className="text-xs sm:text-sm text-[#444748] dark:text-neutral-300 mb-3 sm:mb-4 line-clamp-2">{obj.description}</p>
                 )}
 
                 {/* Progress */}
-                <div className="space-y-4">
-                  <div className="flex justify-between items-end">
+                <div className="space-y-2 sm:space-y-4">
+                  <div className="flex justify-between items-end gap-3">
                     <div className="text-sm font-semibold text-[#1b1c1b] dark:text-white">
                       {formatValue(obj.metric, currentValue)} <span className="text-[#444748] dark:text-neutral-300 font-normal">/ {formatValue(obj.metric, obj.target_value)}</span>
                     </div>
@@ -588,8 +590,8 @@ export function BusinessObjectives() {
                 </div>
 
                 {/* Footer */}
-                <div className="mt-8 pt-6 border-t border-[#c4c7c7]/5 dark:border-neutral-700/30 flex items-center justify-between">
-                  <div>
+                <div className="mt-4 pt-3 sm:mt-8 sm:pt-6 border-t border-[#c4c7c7]/5 dark:border-neutral-700/30 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
                     {overdue && deadlineStr ? (
                       <div className="flex items-center gap-2 text-[#ba1a1a] text-xs font-bold">
                         <CalendarDays className="h-3.5 w-3.5" />
@@ -609,7 +611,7 @@ export function BusinessObjectives() {
                   </div>
 
                   {/* Assignment info */}
-                  <div>
+                  <div className="min-w-0 max-sm:max-w-[55%]">
                     {obj.assigned_to_members && obj.assigned_to_members.length > 1 ? (
                       <div className="flex -space-x-2">
                         {obj.assigned_to_members.slice(0, 3).map(mid => {
@@ -628,9 +630,9 @@ export function BusinessObjectives() {
                         )}
                       </div>
                     ) : memberName ? (
-                      <span className="text-[#ffb95f] font-bold text-sm flex items-center gap-1">
-                        <User className="h-3.5 w-3.5" style={{ fill: 'currentColor' }} />
-                        {memberName}
+                      <span className="text-[#ffb95f] font-bold text-sm flex items-center gap-1 min-w-0">
+                        <User className="h-3.5 w-3.5 shrink-0" style={{ fill: 'currentColor' }} />
+                        <span className="max-sm:truncate">{memberName}</span>
                       </span>
                     ) : null}
                   </div>
@@ -643,13 +645,13 @@ export function BusinessObjectives() {
           {!isTeamMember && (
             <button
               onClick={openCreate}
-              className="bg-[#f5f3f2] dark:bg-neutral-900 rounded-2xl p-8 border-2 border-dashed border-[#c4c7c7]/40 dark:border-neutral-700 flex flex-col items-center justify-center gap-4 hover:bg-[#eae8e7] dark:hover:bg-neutral-800 hover:border-[#1b1c1b]/20 transition-all group/add min-h-[280px]"
+              className="bg-[#f5f3f2] dark:bg-neutral-900 rounded-2xl p-4 sm:p-8 border-2 border-dashed border-[#c4c7c7]/40 dark:border-neutral-700 flex flex-row sm:flex-col items-center justify-start sm:justify-center gap-3 sm:gap-4 hover:bg-[#eae8e7] dark:hover:bg-neutral-800 hover:border-[#1b1c1b]/20 active:scale-[0.99] lg:active:scale-100 transition-all group/add sm:min-h-[280px]"
             >
-              <div className="w-16 h-16 bg-white dark:bg-neutral-800 rounded-full flex items-center justify-center shadow-sm group-hover/add:scale-110 transition-transform">
-                <Plus className="h-8 w-8 text-[#1b1c1b] dark:text-white" />
+              <div className="w-10 h-10 sm:w-16 sm:h-16 shrink-0 bg-white dark:bg-neutral-800 rounded-full flex items-center justify-center shadow-sm group-hover/add:scale-110 transition-transform">
+                <Plus className="h-5 w-5 sm:h-8 sm:w-8 text-[#1b1c1b] dark:text-white" />
               </div>
-              <div className="text-center">
-                <p className="font-extrabold text-lg text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.objectives_add}</p>
+              <div className="min-w-0 text-left sm:text-center">
+                <p className="font-extrabold text-base sm:text-lg text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.objectives_add}</p>
                 <p className="text-xs text-[#444748] dark:text-neutral-300">{t.objectives_define_next}</p>
               </div>
             </button>
@@ -680,13 +682,15 @@ export function BusinessObjectives() {
         return (
           <>
             <div className="fixed inset-0 z-50 bg-[#1b1c1b]/40 backdrop-blur-md" onClick={() => setDetailObjective(null)} />
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-6 pointer-events-none">
-              <div className="pointer-events-auto w-full max-w-2xl max-h-[90vh] flex flex-col bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl overflow-hidden" style={{ boxShadow: 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.08)' }} onClick={e => e.stopPropagation()}>
+            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 pointer-events-none">
+              <div className="pointer-events-auto w-full max-w-2xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden" style={{ boxShadow: 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.08)' }} onClick={e => e.stopPropagation()}>
 
+                {/* Poignée (mobile) */}
+                <div className="sm:hidden mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-stone-300 dark:bg-neutral-700" />
                 {/* Header */}
-                <div className="px-8 py-6 flex justify-between items-start flex-shrink-0">
-                  <div className="flex-1">
-                    <div className="flex flex-wrap gap-2 mb-3">
+                <div className="px-4 pt-3 pb-3 sm:px-8 sm:py-6 flex justify-between items-start flex-shrink-0">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-2 sm:mb-3">
                       <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${metricBadge.bg} ${metricBadge.text}`}>
                         {getMetricLabel(obj.metric)}
                       </span>
@@ -706,26 +710,26 @@ export function BusinessObjectives() {
                         <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#ffdad6] text-[#ba1a1a]">En retard</span>
                       )}
                     </div>
-                    <h2 className="text-2xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{obj.label}</h2>
+                    <h2 className="text-lg sm:text-2xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{obj.label}</h2>
                     {obj.metric === 'custom' && obj.description && (
                       <p className="text-sm text-[#444748] dark:text-neutral-300 mt-2">{obj.description}</p>
                     )}
                   </div>
-                  <button onClick={() => setDetailObjective(null)} className="p-2 hover:bg-[#eae8e7] dark:hover:bg-neutral-800 rounded-full transition-colors ml-4 flex-shrink-0">
+                  <button onClick={() => setDetailObjective(null)} aria-label="Fermer" className="p-2 hover:bg-[#eae8e7] dark:hover:bg-neutral-800 rounded-full transition-colors ml-3 sm:ml-4 flex-shrink-0">
                     <X className="h-5 w-5 text-[#444748] dark:text-neutral-300" />
                   </button>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto px-8 pb-8 space-y-6">
+                <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-4 sm:px-8 sm:pb-8 space-y-4 sm:space-y-6">
 
                   {/* Big progress */}
-                  <div className="rounded-2xl bg-[#f5f3f2] dark:bg-neutral-900 p-6 space-y-4">
-                    <div className="flex items-end justify-between">
+                  <div className="rounded-2xl bg-[#f5f3f2] dark:bg-neutral-900 p-4 sm:p-6 space-y-3 sm:space-y-4">
+                    <div className="flex items-end justify-between gap-3">
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-widest text-[#444748] dark:text-neutral-300/60 mb-1">Progression</p>
                         <div className="flex items-baseline gap-2">
-                          <span className={`text-4xl font-extrabold ${getProgressTextColor(progress)}`} style={{ fontFamily: 'Manrope, sans-serif' }}>
+                          <span className={`text-3xl sm:text-4xl font-extrabold ${getProgressTextColor(progress)}`} style={{ fontFamily: 'Manrope, sans-serif' }}>
                             {progress !== null ? `${progress}%` : '—'}
                           </span>
                           {isComplete && (
@@ -735,9 +739,9 @@ export function BusinessObjectives() {
                           )}
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#444748] dark:text-neutral-300/60 mb-1">Valeur actuelle</p>
-                        <p className="text-2xl font-extrabold text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                      <div className="min-w-0 text-right">
+                        <p className="text-[10px] font-bold uppercase tracking-wider sm:tracking-widest text-[#444748] dark:text-neutral-300/60 mb-1">Valeur actuelle</p>
+                        <p className="text-xl sm:text-2xl font-extrabold text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
                           {formatValue(obj.metric, currentValue)}
                         </p>
                       </div>
@@ -757,23 +761,23 @@ export function BusinessObjectives() {
                   </div>
 
                   {/* Stats grid */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="rounded-2xl bg-[#f5f3f2] dark:bg-neutral-900 p-4 text-center">
+                  <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                    <div className="min-w-0 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-900 p-3 sm:p-4 text-center">
                       <TrendingUp className="h-5 w-5 text-[#006c49] mx-auto mb-2" />
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#444748] dark:text-neutral-300/60 mb-1">Atteint</p>
-                      <p className="text-lg font-extrabold text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatValue(obj.metric, currentValue)}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider sm:tracking-widest text-[#444748] dark:text-neutral-300/60 mb-1">Atteint</p>
+                      <p className="truncate text-base sm:text-lg font-extrabold text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatValue(obj.metric, currentValue)}</p>
                     </div>
-                    <div className="rounded-2xl bg-[#f5f3f2] dark:bg-neutral-900 p-4 text-center">
+                    <div className="min-w-0 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-900 p-3 sm:p-4 text-center">
                       <Target className="h-5 w-5 text-[#ffb95f] mx-auto mb-2" />
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#444748] dark:text-neutral-300/60 mb-1">Restant</p>
-                      <p className="text-lg font-extrabold text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                      <p className="text-[10px] font-bold uppercase tracking-wider sm:tracking-widest text-[#444748] dark:text-neutral-300/60 mb-1">Restant</p>
+                      <p className="truncate text-base sm:text-lg font-extrabold text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
                         {remaining !== null ? formatValue(obj.metric, remaining) : '—'}
                       </p>
                     </div>
-                    <div className="rounded-2xl bg-[#f5f3f2] dark:bg-neutral-900 p-4 text-center">
+                    <div className="min-w-0 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-900 p-3 sm:p-4 text-center">
                       <Clock className="h-5 w-5 text-[#444748] dark:text-neutral-300 mx-auto mb-2" />
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#444748] dark:text-neutral-300/60 mb-1">Échéance</p>
-                      <p className={`text-sm font-extrabold ${overdue ? 'text-[#ba1a1a]' : 'text-[#1b1c1b] dark:text-white'}`} style={{ fontFamily: 'Manrope, sans-serif' }}>
+                      <p className="text-[10px] font-bold uppercase tracking-wider sm:tracking-widest text-[#444748] dark:text-neutral-300/60 mb-1">Échéance</p>
+                      <p className={`text-xs sm:text-sm font-extrabold ${overdue ? 'text-[#ba1a1a]' : 'text-[#1b1c1b] dark:text-white'}`} style={{ fontFamily: 'Manrope, sans-serif' }}>
                         {deadlineStr || 'Non définie'}
                       </p>
                     </div>
@@ -788,12 +792,12 @@ export function BusinessObjectives() {
                       {assignedMembers.length > 0 && (
                         <div className="space-y-2">
                           {assignedMembers.map(m => (
-                            <div key={m.id} className="flex items-center gap-3 rounded-full bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-2.5">
-                              <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-xs font-bold text-[#1b1c1b] dark:text-white shadow-sm">
+                            <div key={m.id} className="flex items-center gap-3 rounded-full bg-[#f5f3f2] dark:bg-neutral-900 px-3 sm:px-4 py-2 sm:py-2.5">
+                              <div className="w-8 h-8 shrink-0 rounded-full bg-white flex items-center justify-center text-xs font-bold text-[#1b1c1b] dark:text-white shadow-sm">
                                 {m.first_name[0]}{m.last_name?.[0] || ''}
                               </div>
-                              <span className="text-sm font-bold text-[#1b1c1b] dark:text-white">{m.name}</span>
-                              <span className={`ml-auto inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold ${ROLE_COLORS[m.role] || 'bg-[#eae8e7] text-[#444748] dark:text-neutral-300'}`}>
+                              <span className="min-w-0 max-sm:truncate text-sm font-bold text-[#1b1c1b] dark:text-white">{m.name}</span>
+                              <span className={`ml-auto shrink-0 whitespace-nowrap inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold ${ROLE_COLORS[m.role] || 'bg-[#eae8e7] text-[#444748] dark:text-neutral-300'}`}>
                                 {m.role}
                               </span>
                             </div>
@@ -812,24 +816,25 @@ export function BusinessObjectives() {
 
                 {/* Footer actions */}
                 {!isTeamMember && (
-                  <div className="px-8 py-5 bg-[#f5f3f2] dark:bg-neutral-900 flex items-center justify-between flex-shrink-0">
+                  <div className="px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-5 bg-[#f5f3f2] dark:bg-neutral-900 flex items-center justify-between gap-3 flex-shrink-0">
                     <button
                       onClick={() => { setDetailObjective(null); deleteObjective(obj) }}
-                      className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-[#ba1a1a] hover:bg-[#ffdad6] rounded-full transition-colors"
+                      className="shrink-0 flex items-center gap-2 px-3 sm:px-5 py-2.5 text-sm font-bold text-[#ba1a1a] hover:bg-[#ffdad6] rounded-full transition-colors"
                     >
                       <Trash2 className="h-4 w-4" /> Supprimer
                     </button>
-                    <div className="flex gap-3">
+                    <div className="flex flex-1 sm:flex-none justify-end gap-3">
+                      {/* Mobile : on ferme via la croix / la poignée */}
                       <button
                         onClick={() => setDetailObjective(null)}
-                        className="px-6 py-2.5 font-bold text-sm text-[#444748] dark:text-neutral-300 hover:text-[#1b1c1b] dark:text-white transition-colors"
+                        className="hidden sm:block px-6 py-2.5 font-bold text-sm text-[#444748] dark:text-neutral-300 hover:text-[#1b1c1b] dark:text-white transition-colors"
                         style={{ fontFamily: 'Manrope, sans-serif' }}
                       >
                         Fermer
                       </button>
                       <button
                         onClick={() => { setDetailObjective(null); openEdit(obj) }}
-                        className="px-8 py-2.5 bg-[#1b1c1b] text-white rounded-full font-bold text-sm shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                        className="flex-1 sm:flex-none justify-center px-8 py-2.5 bg-[#1b1c1b] text-white rounded-full font-bold text-sm shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
                         style={{ fontFamily: 'Manrope, sans-serif' }}
                       >
                         <Pencil className="h-4 w-4" /> Modifier
@@ -847,20 +852,22 @@ export function BusinessObjectives() {
       {isModalOpen && (
         <>
           <div className="fixed inset-0 z-50 bg-[#1b1c1b]/40 backdrop-blur-md" onClick={() => { setIsModalOpen(false); resetForm() }} />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-6 pointer-events-none">
-            <div className="pointer-events-auto w-full max-w-xl max-h-[90vh] flex flex-col bg-white/70 dark:bg-white/5 backdrop-blur-2xl rounded-2xl shadow-2xl ring-1 ring-white/40 dark:ring-neutral-700 overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 pointer-events-none">
+            <div className="pointer-events-auto w-full max-w-xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col bg-white/90 sm:bg-white/70 dark:bg-neutral-800/95 sm:dark:bg-white/5 backdrop-blur-2xl rounded-t-3xl sm:rounded-2xl shadow-2xl ring-1 ring-white/40 dark:ring-neutral-700 overflow-hidden" onClick={e => e.stopPropagation()}>
+              {/* Poignée (mobile) */}
+              <div className="sm:hidden mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-stone-300 dark:bg-neutral-700" />
               {/* Modal header */}
-              <div className="px-8 py-6 border-b border-[#c4c7c7]/10 dark:border-neutral-700/30 flex justify-between items-center flex-shrink-0">
-                <h2 className="text-2xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              <div className="px-4 py-3 sm:px-8 sm:py-6 border-b border-[#c4c7c7]/10 dark:border-neutral-700/30 flex justify-between items-center gap-3 flex-shrink-0">
+                <h2 className="min-w-0 text-lg sm:text-2xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
                   {editingObjective ? "Modifier l'objectif" : 'Nouvel Objectif'}
                 </h2>
-                <button onClick={() => { setIsModalOpen(false); resetForm() }} className="p-2 hover:bg-[#eae8e7] dark:hover:bg-neutral-800 rounded-full transition-colors">
+                <button onClick={() => { setIsModalOpen(false); resetForm() }} aria-label="Fermer" className="shrink-0 p-2 hover:bg-[#eae8e7] dark:hover:bg-neutral-800 rounded-full transition-colors">
                   <X className="h-5 w-5 text-[#444748] dark:text-neutral-300" />
                 </button>
               </div>
 
               {/* Content */}
-              <div className="flex-1 overflow-y-auto p-8 space-y-6">
+              <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-8 space-y-4 sm:space-y-6">
                 {/* Label */}
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748] dark:text-neutral-300">Titre de l'objectif</label>
@@ -869,12 +876,12 @@ export function BusinessObjectives() {
                     value={formLabel}
                     onChange={(e) => setFormLabel(e.target.value)}
                     placeholder="Ex: Atteindre 50k€ de CA"
-                    className="w-full bg-transparent border-0 border-b border-[#c4c7c7]/40 dark:border-neutral-700 focus:ring-0 focus:border-[#006c49] py-3 text-lg font-semibold placeholder:text-[#c4c7c7] text-[#1b1c1b] dark:text-white"
+                    className="w-full bg-transparent border-0 border-b border-[#c4c7c7]/40 dark:border-neutral-700 focus:ring-0 focus:border-[#006c49] py-2 sm:py-3 text-base sm:text-lg font-semibold placeholder:text-[#c4c7c7] text-[#1b1c1b] dark:text-white"
                   />
                 </div>
 
                 {/* Metric + Period */}
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-3 sm:gap-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748] dark:text-neutral-300">Type</label>
                     <select
@@ -912,7 +919,7 @@ export function BusinessObjectives() {
                 )}
 
                 {/* Target value + Deadline */}
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-3 sm:gap-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748] dark:text-neutral-300">Valeur Cible</label>
                     <input
@@ -972,10 +979,10 @@ export function BusinessObjectives() {
                               type="checkbox"
                               checked={formAssignedMembers.includes(m.id)}
                               onChange={() => toggleMember(m.id)}
-                              className="h-4 w-4 rounded border-[#c4c7c7] text-[#006c49] focus:ring-[#006c49]"
+                              className="h-4 w-4 shrink-0 rounded border-[#c4c7c7] text-[#006c49] focus:ring-[#006c49]"
                             />
-                            <span className="text-sm font-medium text-[#1b1c1b] dark:text-white">{m.first_name} {m.last_name}</span>
-                            <span className={`ml-auto inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${ROLE_COLORS[m.role] || 'bg-[#eae8e7] text-[#444748] dark:text-neutral-300'}`}>
+                            <span className="min-w-0 max-sm:truncate text-sm font-medium text-[#1b1c1b] dark:text-white">{m.first_name} {m.last_name}</span>
+                            <span className={`ml-auto shrink-0 whitespace-nowrap inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${ROLE_COLORS[m.role] || 'bg-[#eae8e7] text-[#444748] dark:text-neutral-300'}`}>
                               {m.role}
                             </span>
                           </label>
@@ -1020,10 +1027,10 @@ export function BusinessObjectives() {
               </div>
 
               {/* Footer */}
-              <div className="px-8 py-6 bg-[#f5f3f2] dark:bg-neutral-900 flex justify-end gap-4 flex-shrink-0">
+              <div className="px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-6 bg-[#f5f3f2] dark:bg-neutral-900 flex justify-end gap-3 sm:gap-4 flex-shrink-0">
                 <button
                   onClick={() => { setIsModalOpen(false); resetForm() }}
-                  className="px-6 py-3 font-bold text-sm text-[#444748] dark:text-neutral-300 hover:text-[#1b1c1b] dark:text-white transition-colors"
+                  className="px-4 sm:px-6 py-3 font-bold text-sm text-[#444748] dark:text-neutral-300 hover:text-[#1b1c1b] dark:text-white transition-colors"
                   style={{ fontFamily: 'Manrope, sans-serif' }}
                 >
                   Annuler
@@ -1031,7 +1038,7 @@ export function BusinessObjectives() {
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="px-10 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm shadow-lg hover:shadow-xl transition-all disabled:opacity-50 flex items-center gap-2"
+                  className="flex-1 sm:flex-none justify-center px-10 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm shadow-lg hover:shadow-xl active:scale-[0.98] transition-all disabled:opacity-50 flex items-center gap-2"
                   style={{ fontFamily: 'Manrope, sans-serif' }}
                 >
                   {saving && <Loader2 className="h-4 w-4 animate-spin" />}
