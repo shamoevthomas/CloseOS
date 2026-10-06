@@ -41,8 +41,8 @@ export default function BusinessAdminReferral() {
 
   if (!authed) {
     return (
-      <div className="min-h-screen bg-[#f4f2f1] flex items-center justify-center p-4">
-        <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-8">
+      <div className="min-h-screen min-h-dvh bg-[#f4f2f1] flex items-center justify-center p-4">
+        <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-6 sm:p-8">
           <h1 className="text-xl font-extrabold text-stone-900 tracking-tight mb-1" style={{ fontFamily: 'Manrope, sans-serif' }}>
             Admin Referral
           </h1>
@@ -90,20 +90,21 @@ function ReferralDashboard({ password }: { password: string }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f2f1]">
-      <div className="max-w-5xl mx-auto px-6 py-10">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-extrabold text-stone-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+    <div className="min-h-screen min-h-dvh bg-[#f4f2f1]">
+      <div className="max-w-5xl mx-auto px-4 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-10">
+        <div className="flex items-center justify-between gap-3 mb-5 sm:mb-8">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-stone-900 tracking-tight truncate sm:overflow-visible" style={{ fontFamily: 'Manrope, sans-serif' }}>
               Liens de parrainage
             </h1>
-            <p className="text-sm text-stone-500 mt-1">Gerez vos partenaires et suivez les commissions</p>
+            <p className="text-xs sm:text-sm text-stone-500 mt-0.5 sm:mt-1">Gerez vos partenaires et suivez les commissions</p>
           </div>
           <button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 rounded-full bg-stone-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-stone-800 transition-colors"
+            aria-label="Creer un lien"
+            className="flex h-10 w-10 sm:h-auto sm:w-auto shrink-0 items-center justify-center gap-2 rounded-full bg-stone-900 sm:px-5 sm:py-2.5 text-sm font-bold text-white hover:bg-stone-800 active:scale-95 sm:active:scale-100 transition-all sm:transition-colors"
           >
-            <Plus className="h-4 w-4" /> Creer un lien
+            <Plus className="h-5 w-5 sm:h-4 sm:w-4" /><span className="hidden sm:inline"> Creer un lien</span>
           </button>
         </div>
 
@@ -112,12 +113,12 @@ function ReferralDashboard({ password }: { password: string }) {
             <Loader2 className="h-6 w-6 animate-spin text-stone-400" />
           </div>
         ) : links.length === 0 ? (
-          <div className="text-center py-20 text-stone-400">
-            <Users className="h-10 w-10 mx-auto mb-3 opacity-40" />
+          <div className="text-center py-8 sm:py-20 text-stone-400">
+            <Users className="h-8 w-8 sm:h-10 sm:w-10 mx-auto mb-2 sm:mb-3 opacity-40" />
             <p className="text-sm">Aucun lien de parrainage</p>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {links.map(link => (
               <LinkCard key={link.id} link={link} onClick={() => setSelectedLink(link.id)} />
             ))}
@@ -152,26 +153,26 @@ function LinkCard({ link, onClick }: { link: any; onClick: () => void }) {
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-2xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all cursor-pointer border border-stone-100"
+      className="bg-white rounded-2xl p-4 sm:p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all active:scale-[0.98] sm:active:scale-100 cursor-pointer border border-stone-100"
     >
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          <h3 className="font-extrabold text-stone-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+      <div className="flex items-start justify-between gap-2 mb-3 sm:mb-4">
+        <div className="min-w-0">
+          <h3 className="font-extrabold text-stone-900 tracking-tight truncate sm:overflow-visible sm:whitespace-normal" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {link.partner_name}
           </h3>
           <div className="flex items-center gap-1.5 mt-1">
             <p className="text-xs text-stone-400 font-mono truncate max-w-[180px]">/business?ref={link.slug}</p>
-            <button onClick={handleCopy} className="text-stone-400 hover:text-stone-600 transition-colors">
+            <button onClick={handleCopy} aria-label="Copier" className="shrink-0 -m-2 p-2 sm:m-0 sm:p-0 text-stone-400 hover:text-stone-600 transition-colors">
               {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
             </button>
           </div>
         </div>
         {!link.is_active && (
-          <span className="text-[10px] font-bold uppercase bg-stone-100 text-stone-500 px-2 py-0.5 rounded-full">Inactif</span>
+          <span className="shrink-0 whitespace-nowrap text-[10px] font-bold uppercase bg-stone-100 text-stone-500 px-2 py-0.5 rounded-full">Inactif</span>
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2.5 border-t border-stone-100 pt-3 sm:gap-3 sm:border-t-0 sm:pt-0">
         <Stat icon={Eye} label="Vues" value={link.views || 0} />
         <Stat icon={Users} label="Actifs" value={`${link.stats.active_conversions}/${link.stats.total_conversions}`} />
         <Stat icon={DollarSign} label="CA total" value={`${(link.stats.total_paid || 0).toFixed(0)}€`} />
@@ -183,10 +184,10 @@ function LinkCard({ link, onClick }: { link: any; onClick: () => void }) {
 
 function Stat({ icon: Icon, label, value, color }: { icon: any; label: string; value: string | number; color?: string }) {
   return (
-    <div className="rounded-xl bg-stone-50 p-3">
+    <div className="min-w-0 sm:rounded-xl sm:bg-stone-50 sm:p-3">
       <div className="flex items-center gap-1.5 mb-1">
-        <Icon className="h-3 w-3 text-stone-400" />
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">{label}</span>
+        <Icon className="h-3 w-3 shrink-0 text-stone-400" />
+        <span className="truncate sm:overflow-visible text-[10px] font-semibold uppercase tracking-wider text-stone-400">{label}</span>
       </div>
       <p className={`text-sm font-bold ${color || 'text-stone-900'}`} style={{ fontFamily: 'Manrope, sans-serif' }}>{value}</p>
     </div>
@@ -263,13 +264,16 @@ function CreateLinkModal({ password, onClose, onCreated }: { password: string; o
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-5">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm p-0 sm:p-4" onClick={onClose}>
+      <div className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl px-5 pt-0 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:p-6 max-h-[92dvh] sm:max-h-[90vh] overflow-y-auto overscroll-contain" onClick={e => e.stopPropagation()}>
+        {/* Poignée de la feuille (mobile) */}
+        <div className="sm:hidden mx-auto mt-2 h-1 w-10 rounded-full bg-stone-300" />
+        {/* En-tête collant sur mobile : le bouton fermer reste visible */}
+        <div className="sticky top-0 z-10 -mx-5 px-5 py-2 bg-white sm:static sm:mx-0 sm:px-0 sm:py-0 flex items-center justify-between mb-3 sm:mb-5">
           <h2 className="text-lg font-extrabold text-stone-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
             Nouveau lien
           </h2>
-          <button onClick={onClose} className="p-2 text-stone-400 hover:text-stone-600"><X className="h-5 w-5" /></button>
+          <button onClick={onClose} aria-label="Fermer" className="-mr-2 sm:mr-0 p-2.5 sm:p-2 text-stone-400 hover:text-stone-600"><X className="h-5 w-5" /></button>
         </div>
 
         <div className="space-y-4">
@@ -284,7 +288,7 @@ function CreateLinkModal({ password, onClose, onCreated }: { password: string; o
             <div className="flex items-center gap-2">
               <span className="text-xs text-stone-400 shrink-0">/business?ref=</span>
               <input value={slug} onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                placeholder="thomas" className="flex-1 rounded-xl border border-stone-200 bg-stone-50 py-2.5 px-4 text-sm text-stone-900 placeholder:text-stone-400 outline-none focus:ring-2 focus:ring-stone-900/10 font-mono" />
+                placeholder="thomas" className="flex-1 min-w-0 rounded-xl border border-stone-200 bg-stone-50 py-2.5 px-4 text-sm text-stone-900 placeholder:text-stone-400 outline-none focus:ring-2 focus:ring-stone-900/10 font-mono" />
             </div>
           </div>
 
@@ -294,29 +298,29 @@ function CreateLinkModal({ password, onClose, onCreated }: { password: string; o
               {PLANS.map(plan => (
                 <div key={plan} className="rounded-xl bg-stone-50 p-3">
                   {/* Default row */}
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold text-stone-700 min-w-[140px]">{PLAN_LABELS[plan]}</span>
+                  <div className="flex flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-2 sm:gap-3">
+                    <span className="flex-1 sm:flex-initial min-w-0 sm:min-w-[140px] text-sm font-semibold text-stone-700">{PLAN_LABELS[plan]}</span>
                     {!advancedOpen[plan] && (
-                      <>
+                      <div className="order-last sm:order-none w-full sm:w-auto flex items-center gap-3">
                         <div className="flex items-center gap-1.5">
                           <input type="number" min={0} step={1} value={config[plan]?.fixed || 0}
                             onChange={e => updateConfig(plan, 'fixed', Number(e.target.value))}
-                            className="w-16 rounded-lg border border-stone-200 bg-white py-1.5 px-2 text-sm text-stone-900 text-center outline-none" />
+                            className="w-14 sm:w-16 rounded-lg border border-stone-200 bg-white py-1.5 px-2 text-sm text-stone-900 text-center outline-none" />
                           <span className="text-xs text-stone-400">€</span>
                         </div>
                         <span className="text-stone-300">+</span>
                         <div className="flex items-center gap-1.5">
                           <input type="number" min={0} max={100} step={1} value={config[plan]?.percent || 0}
                             onChange={e => updateConfig(plan, 'percent', Number(e.target.value))}
-                            className="w-16 rounded-lg border border-stone-200 bg-white py-1.5 px-2 text-sm text-stone-900 text-center outline-none" />
+                            className="w-14 sm:w-16 rounded-lg border border-stone-200 bg-white py-1.5 px-2 text-sm text-stone-900 text-center outline-none" />
                           <span className="text-xs text-stone-400">%</span>
                         </div>
-                      </>
+                      </div>
                     )}
                     <button
                       type="button"
                       onClick={() => advancedOpen[plan] ? removeAdvanced(plan) : toggleAdvanced(plan)}
-                      className="ml-auto flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-stone-400 hover:text-stone-600 transition-colors"
+                      className="ml-auto -my-2 py-2 sm:my-0 sm:py-0 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-stone-400 hover:text-stone-600 transition-colors"
                     >
                       Avance
                       <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${advancedOpen[plan] ? 'rotate-180' : ''}`} />
@@ -327,19 +331,19 @@ function CreateLinkModal({ password, onClose, onCreated }: { password: string; o
                   {advancedOpen[plan] && config[plan]?.per_billing && (
                     <div className="mt-3 space-y-2 pl-2 border-l-2 border-stone-200 ml-1">
                       {BILLING_CYCLES.map(cycle => (
-                        <div key={cycle} className="flex items-center gap-3">
-                          <span className="text-xs font-medium text-stone-500 min-w-[80px]">{BILLING_LABELS[cycle]}</span>
+                        <div key={cycle} className="flex items-center gap-2 sm:gap-3">
+                          <span className="text-xs font-medium text-stone-500 min-w-[72px] sm:min-w-[80px]">{BILLING_LABELS[cycle]}</span>
                           <div className="flex items-center gap-1.5">
                             <input type="number" min={0} step={1} value={config[plan]?.per_billing?.[cycle]?.fixed || 0}
                               onChange={e => updateBillingConfig(plan, cycle, 'fixed', Number(e.target.value))}
-                              className="w-16 rounded-lg border border-stone-200 bg-white py-1.5 px-2 text-sm text-stone-900 text-center outline-none" />
+                              className="w-14 sm:w-16 rounded-lg border border-stone-200 bg-white py-1.5 px-2 text-sm text-stone-900 text-center outline-none" />
                             <span className="text-xs text-stone-400">€</span>
                           </div>
                           <span className="text-stone-300">+</span>
                           <div className="flex items-center gap-1.5">
                             <input type="number" min={0} max={100} step={1} value={config[plan]?.per_billing?.[cycle]?.percent || 0}
                               onChange={e => updateBillingConfig(plan, cycle, 'percent', Number(e.target.value))}
-                              className="w-16 rounded-lg border border-stone-200 bg-white py-1.5 px-2 text-sm text-stone-900 text-center outline-none" />
+                              className="w-14 sm:w-16 rounded-lg border border-stone-200 bg-white py-1.5 px-2 text-sm text-stone-900 text-center outline-none" />
                             <span className="text-xs text-stone-400">%</span>
                           </div>
                         </div>
@@ -354,7 +358,7 @@ function CreateLinkModal({ password, onClose, onCreated }: { password: string; o
           {error && <p className="text-xs text-red-500">{error}</p>}
 
           <button onClick={handleCreate} disabled={saving}
-            className="w-full rounded-full bg-stone-900 py-3 text-sm font-bold text-white hover:bg-stone-800 transition-colors disabled:opacity-50">
+            className="w-full rounded-full bg-stone-900 py-3.5 sm:py-3 text-sm font-bold text-white hover:bg-stone-800 active:scale-[0.98] sm:active:scale-100 transition-all sm:transition-colors disabled:opacity-50">
             {saving ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Creer le lien'}
           </button>
         </div>
@@ -399,7 +403,7 @@ function LinkDetail({ linkId, password, onBack }: { linkId: string; password: st
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f4f2f1] flex items-center justify-center">
+      <div className="min-h-screen min-h-dvh bg-[#f4f2f1] flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-stone-400" />
       </div>
     );
@@ -413,35 +417,35 @@ function LinkDetail({ linkId, password, onBack }: { linkId: string; password: st
   const mrrCommission = conversions.filter(c => c.status === 'active').reduce((s, c) => s + Number(c.monthly_commission || 0), 0);
 
   return (
-    <div className="min-h-screen bg-[#f4f2f1]">
-      <div className="max-w-5xl mx-auto px-6 py-10">
+    <div className="min-h-screen min-h-dvh bg-[#f4f2f1]">
+      <div className="max-w-5xl mx-auto px-4 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-10">
         {/* Header */}
-        <button onClick={onBack} className="flex items-center gap-2 text-sm text-stone-500 hover:text-stone-700 mb-6 transition-colors">
+        <button onClick={onBack} className="flex items-center gap-2 min-h-[40px] sm:min-h-0 text-sm text-stone-500 hover:text-stone-700 mb-2 sm:mb-6 transition-colors">
           <ArrowLeft className="h-4 w-4" /> Retour
         </button>
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-100 mb-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-xl font-extrabold text-stone-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-stone-100 mb-4 sm:mb-6">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1 sm:flex-initial">
+              <h1 className="text-lg sm:text-xl font-extrabold truncate sm:overflow-visible sm:whitespace-normal text-stone-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
                 {link.partner_name}
               </h1>
               <div className="flex items-center gap-2 mt-2">
-                <code className="text-xs bg-stone-100 text-stone-600 px-3 py-1.5 rounded-lg">
+                <code className="min-w-0 truncate sm:overflow-visible sm:whitespace-normal text-xs bg-stone-100 text-stone-600 px-3 py-1.5 rounded-lg">
                   {window.location.origin}/business?ref={link.slug}
                 </code>
-                <button onClick={handleCopy} className="text-stone-400 hover:text-stone-600 transition-colors">
+                <button onClick={handleCopy} aria-label="Copier" className="shrink-0 p-2 -m-2 sm:m-0 sm:p-0 text-stone-400 hover:text-stone-600 transition-colors">
                   {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
                 </button>
               </div>
             </div>
             <button onClick={handleDelete} disabled={deleting}
-              className="p-2 text-stone-400 hover:text-red-500 transition-colors">
+              aria-label="Supprimer" className="shrink-0 -mr-1 sm:mr-0 p-2.5 sm:p-2 text-stone-400 hover:text-red-500 transition-colors">
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-3 sm:gap-4 mt-4 pt-4 border-t border-stone-100 sm:mt-6 sm:pt-0 sm:border-t-0">
             <StatBlock label="Vues" value={link.views || 0} />
             <StatBlock label="Abonnes actifs" value={`${activeCount}/${conversions.length}`} />
             <StatBlock label="CA total" value={`${totalPaid.toFixed(0)}€`} />
@@ -449,7 +453,7 @@ function LinkDetail({ linkId, password, onBack }: { linkId: string; password: st
           </div>
 
           {/* Commission config display */}
-          <div className="mt-5 pt-5 border-t border-stone-100">
+          <div className="mt-4 pt-4 sm:mt-5 sm:pt-5 border-t border-stone-100">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400 mb-2">Commission configuree</p>
             <div className="space-y-2">
               {PLANS.map(plan => {
@@ -480,12 +484,12 @@ function LinkDetail({ linkId, password, onBack }: { linkId: string; password: st
         </div>
 
         {/* Filter */}
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-3 sm:mb-4 overflow-x-auto overscroll-x-contain no-scrollbar snap-x scroll-px-4 sm:scroll-px-0 -mx-4 px-4 sm:mx-0 sm:px-0">
           {['all', ...PLANS].map(p => (
             <button
               key={p}
               onClick={() => setPlanFilter(p)}
-              className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
+              className={`shrink-0 snap-start whitespace-nowrap rounded-full px-4 py-2 sm:py-1.5 text-xs font-semibold transition-colors ${
                 planFilter === p ? 'bg-stone-900 text-white' : 'bg-white text-stone-600 hover:bg-stone-100 border border-stone-200'
               }`}
             >
@@ -496,11 +500,43 @@ function LinkDetail({ linkId, password, onBack }: { linkId: string; password: st
 
         {/* Conversions table */}
         {conversions.length === 0 ? (
-          <div className="text-center py-16 text-stone-400">
+          <div className="text-center py-8 sm:py-16 text-stone-400">
             <p className="text-sm">Aucune conversion</p>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
+          <>
+          {/* Mobile + iPad portrait : liste compacte (une ligne par conversion) */}
+          <div className="lg:hidden bg-white rounded-2xl shadow-sm border border-stone-100 divide-y divide-stone-100">
+            {conversions.map(conv => {
+              const st = STATUS_LABELS[conv.status] || STATUS_LABELS.trial;
+              return (
+                <div key={conv.id} className="flex items-start gap-3 px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-stone-900">{conv.user_name || '—'}</p>
+                    <p className="truncate text-xs text-stone-400">{conv.user_email || '—'}</p>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      <span className="whitespace-nowrap text-[11px] bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full font-medium">
+                        {PLAN_LABELS[conv.subscription_plan] || conv.subscription_plan || '—'}
+                      </span>
+                      <span className={`whitespace-nowrap text-[11px] px-2 py-0.5 rounded-full font-semibold ${st.color}`}>{st.label}</span>
+                      <span className="whitespace-nowrap text-[11px] text-stone-400">
+                        {BILLING_LABELS[conv.billing_cycle] || conv.billing_cycle || '—'} · {conv.created_at ? new Date(conv.created_at).toLocaleDateString('fr-FR') : '—'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="whitespace-nowrap text-sm font-semibold text-stone-900">
+                      <span className="mr-1 text-[10px] font-semibold uppercase tracking-wider text-stone-400">CA</span>{Number(conv.total_paid || 0).toFixed(0)}€
+                    </p>
+                    <p className="whitespace-nowrap text-sm font-semibold text-emerald-600">
+                      <span className="mr-1 text-[10px] font-semibold uppercase tracking-wider text-stone-400">Comm.</span>{Number(conv.total_commission || 0).toFixed(0)}€
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="hidden lg:block bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -552,6 +588,7 @@ function LinkDetail({ linkId, password, onBack }: { linkId: string; password: st
               </table>
             </div>
           </div>
+          </>
         )}
       </div>
     </div>
@@ -560,9 +597,9 @@ function LinkDetail({ linkId, password, onBack }: { linkId: string; password: st
 
 function StatBlock({ label, value, color }: { label: string; value: string | number; color?: string }) {
   return (
-    <div className="rounded-xl bg-stone-50 p-4">
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400 mb-1">{label}</p>
-      <p className={`text-lg font-extrabold ${color || 'text-stone-900'}`} style={{ fontFamily: 'Manrope, sans-serif' }}>{value}</p>
+    <div className="min-w-0 sm:rounded-xl sm:bg-stone-50 sm:p-4">
+      <p className="truncate sm:overflow-visible text-[10px] font-semibold uppercase tracking-wider text-stone-400 mb-1">{label}</p>
+      <p className={`text-base sm:text-lg font-extrabold ${color || 'text-stone-900'}`} style={{ fontFamily: 'Manrope, sans-serif' }}>{value}</p>
     </div>
   );
 }

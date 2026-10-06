@@ -38,26 +38,29 @@ export function BusinessPaywallModal({ daysLeft, dismissable }: { daysLeft?: num
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="relative w-full max-w-md rounded-2xl bg-white p-8 sm:p-10 shadow-2xl text-center">
+    <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
+      <div className="relative w-full sm:max-w-md max-h-[92dvh] sm:max-h-none overflow-y-auto overscroll-contain sm:overflow-visible rounded-t-3xl sm:rounded-2xl bg-white px-6 pt-8 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-10 shadow-2xl text-center">
+        {/* Poignée de la feuille (mobile, uniquement si on peut la fermer) */}
+        {dismissable && <div className="sm:hidden absolute top-2 left-1/2 -translate-x-1/2 h-1 w-10 rounded-full bg-stone-300" />}
         {dismissable && (
           <button
             onClick={() => setDismissed(true)}
-            className="absolute top-4 right-4 p-2 rounded-full hover:bg-stone-100 transition-colors text-stone-400 hover:text-stone-600"
+            aria-label={lang === 'fr' ? 'Fermer' : 'Close'}
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2.5 sm:p-2 rounded-full hover:bg-stone-100 transition-colors text-stone-400 hover:text-stone-600"
           >
             <X className="h-5 w-5" />
           </button>
         )}
 
-        <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-5 ${isWarning ? 'bg-amber-50' : 'bg-red-50'}`}>
+        <div className={`inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full mb-4 sm:mb-5 ${isWarning ? 'bg-amber-50' : 'bg-red-50'}`}>
           {isWarning
-            ? <Clock className="h-7 w-7 text-amber-500" />
-            : <Lock className="h-7 w-7 text-red-500" />
+            ? <Clock className="h-6 w-6 sm:h-7 sm:w-7 text-amber-500" />
+            : <Lock className="h-6 w-6 sm:h-7 sm:w-7 text-red-500" />
           }
         </div>
 
         <h2
-          className="text-2xl font-extrabold text-stone-900 tracking-tight mb-3"
+          className="text-xl sm:text-2xl font-extrabold text-stone-900 tracking-tight mb-2 sm:mb-3"
           style={{ fontFamily: 'Manrope, sans-serif' }}
         >
           {isWarning
@@ -68,7 +71,7 @@ export function BusinessPaywallModal({ daysLeft, dismissable }: { daysLeft?: num
           }
         </h2>
 
-        <p className="text-stone-500 mb-8 leading-relaxed">
+        <p className="text-sm sm:text-base text-stone-500 mb-6 sm:mb-8 leading-relaxed sm:leading-relaxed">
           {isWarning
             ? (lang === 'fr'
               ? 'Souscrivez maintenant pour ne pas perdre l\u2019acc\u00e8s \u00e0 votre compte et vos donn\u00e9es.'
@@ -100,13 +103,13 @@ export function BusinessPaywallModal({ daysLeft, dismissable }: { daysLeft?: num
         {dismissable && (
           <button
             onClick={() => setDismissed(true)}
-            className="mt-3 text-xs text-stone-400 hover:text-stone-600 hover:underline"
+            className="mt-1 sm:mt-3 min-h-[40px] sm:min-h-0 px-4 sm:px-0 text-xs text-stone-400 hover:text-stone-600 hover:underline"
           >
             {lang === 'fr' ? 'Plus tard' : 'Later'}
           </button>
         )}
 
-        <p className="mt-4 text-xs text-stone-400">
+        <p className="mt-3 sm:mt-4 text-xs text-stone-400">
           {t.paywall_contact_question}{' '}
           <a href="mailto:support@closeos.fr" className="text-stone-600 hover:underline">
             support@closeos.fr

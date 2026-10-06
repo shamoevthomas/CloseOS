@@ -263,11 +263,11 @@ export function BusinessOnboardingModal() {
     };
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 backdrop-blur-md p-4 overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-stone-900/40 backdrop-blur-sm sm:backdrop-blur-md p-0 sm:p-4 overflow-y-auto">
         {/* Crop overlay */}
         {imageSrc && (
-          <div className="fixed inset-0 z-[60] bg-black flex flex-col items-center justify-center p-4">
-            <div className="w-full max-w-lg h-[400px] relative rounded-xl overflow-hidden border border-stone-700/30 bg-stone-900 mb-6">
+          <div className="fixed inset-0 z-[60] bg-black flex flex-col items-center justify-center p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <div className="w-full max-w-lg h-[55dvh] max-h-[400px] sm:h-[400px] relative rounded-xl overflow-hidden border border-stone-700/30 bg-stone-900 mb-6">
               <Cropper image={imageSrc} crop={crop} zoom={zoom} aspect={1} onCropChange={setCrop} onCropComplete={onCropComplete} onZoomChange={setZoom} />
             </div>
             <div className="w-full max-w-lg space-y-6">
@@ -276,11 +276,11 @@ export function BusinessOnboardingModal() {
                 <input type="range" value={zoom} min={1} max={3} step={0.1} onChange={(e) => setZoom(Number(e.target.value))} className="w-full h-2 bg-stone-700 rounded-lg appearance-none cursor-pointer accent-stone-400" />
                 <ZoomIn className="h-5 w-5 text-stone-400" />
               </div>
-              <div className="flex gap-4 justify-center">
-                <button onClick={() => { setImageSrc(null); setZoom(1); }} disabled={uploading} className="px-6 py-3 rounded-full border border-stone-700 text-stone-300 font-bold hover:bg-stone-800 transition-colors flex items-center gap-2">
+              <div className="flex gap-3 sm:gap-4 justify-center">
+                <button onClick={() => { setImageSrc(null); setZoom(1); }} disabled={uploading} className="flex-1 sm:flex-initial justify-center px-4 sm:px-6 py-3 rounded-full border border-stone-700 text-stone-300 font-bold hover:bg-stone-800 transition-colors flex items-center gap-2">
                   <X className="h-4 w-4" /> {t.onboarding_tm_cancel_crop}
                 </button>
-                <button onClick={saveTmCroppedImage} disabled={uploading} className="px-6 py-3 rounded-full bg-stone-900 text-white font-bold hover:bg-stone-800 transition-colors shadow-lg flex items-center gap-2 active:scale-95">
+                <button onClick={saveTmCroppedImage} disabled={uploading} className="flex-1 sm:flex-initial justify-center whitespace-nowrap px-4 sm:px-6 py-3 rounded-full bg-stone-900 text-white font-bold hover:bg-stone-800 transition-colors shadow-lg flex items-center gap-2 active:scale-95">
                   {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                   {t.onboarding_tm_validate_photo}
                 </button>
@@ -289,9 +289,9 @@ export function BusinessOnboardingModal() {
           </div>
         )}
 
-        <div className="w-full max-w-lg rounded-xl border border-stone-200/20 dark:border-neutral-700 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] animate-in zoom-in-95 duration-200">
+        <div className="w-full sm:max-w-lg max-h-[92dvh] sm:max-h-none overflow-y-auto overscroll-contain sm:overflow-visible rounded-t-3xl sm:rounded-xl border border-stone-200/20 dark:border-neutral-700 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl px-5 pt-5 pb-0 sm:p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] animate-in zoom-in-95 duration-200">
           {/* Header with org info */}
-          <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center gap-3 mb-5 sm:mb-6">
             <div className="w-10 h-10 rounded-lg overflow-hidden border border-stone-200/20 shrink-0">
               {settings.logo_url ? (
                 <img src={settings.logo_url} alt="Logo" className="w-full h-full object-cover" />
@@ -301,8 +301,8 @@ export function BusinessOnboardingModal() {
                 </div>
               )}
             </div>
-            <div>
-              <h2 className="text-xl font-['Manrope'] font-extrabold tracking-tight text-stone-900 dark:text-white">{t.onboarding_tm_welcome.replace('{company}', settings.company_name || t.onboarding_tm_welcome_fallback)}</h2>
+            <div className="min-w-0">
+              <h2 className="text-lg sm:text-xl leading-snug font-['Manrope'] font-extrabold tracking-tight text-stone-900 dark:text-white">{t.onboarding_tm_welcome.replace('{company}', settings.company_name || t.onboarding_tm_welcome_fallback)}</h2>
               <p className="text-stone-500 dark:text-neutral-400 text-sm">{t.onboarding_tm_subtitle}</p>
             </div>
           </div>
@@ -383,7 +383,7 @@ export function BusinessOnboardingModal() {
             <button
               onClick={handleTmSubmit}
               disabled={loading || !tmFirstName || !tmLastName}
-              className="flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 py-3.5 font-bold text-white transition-all hover:bg-stone-800 shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-6"
+              className="sticky bottom-[max(1rem,env(safe-area-inset-bottom))] sm:static z-10 flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 py-3.5 font-bold text-white transition-all hover:bg-stone-800 shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-6 !mb-[max(1.25rem,env(safe-area-inset-bottom))] sm:!mb-0"
             >
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (
                 <>
@@ -488,11 +488,11 @@ export function BusinessOnboardingModal() {
   const initials = fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 backdrop-blur-md p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-stone-900/40 backdrop-blur-sm sm:backdrop-blur-md p-0 sm:p-4 overflow-y-auto">
       {/* Crop overlay */}
       {imageSrc && (
-        <div className="fixed inset-0 z-[60] bg-black flex flex-col items-center justify-center p-4">
-          <div className="w-full max-w-lg h-[400px] relative rounded-xl overflow-hidden border border-stone-700/30 bg-stone-900 mb-6">
+        <div className="fixed inset-0 z-[60] bg-black flex flex-col items-center justify-center p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="w-full max-w-lg h-[55dvh] max-h-[400px] sm:h-[400px] relative rounded-xl overflow-hidden border border-stone-700/30 bg-stone-900 mb-6">
             <Cropper
               image={imageSrc}
               crop={crop}
@@ -517,11 +517,11 @@ export function BusinessOnboardingModal() {
               />
               <ZoomIn className="h-5 w-5 text-stone-400" />
             </div>
-            <div className="flex gap-4 justify-center">
+            <div className="flex gap-3 sm:gap-4 justify-center">
               <button
                 onClick={() => { setImageSrc(null); setZoom(1); }}
                 disabled={uploading}
-                className="px-6 py-3 rounded-full border border-stone-700 text-stone-300 font-bold hover:bg-stone-800 transition-colors flex items-center gap-2"
+                className="flex-1 sm:flex-initial justify-center px-4 sm:px-6 py-3 rounded-full border border-stone-700 text-stone-300 font-bold hover:bg-stone-800 transition-colors flex items-center gap-2"
               >
                 <X className="h-4 w-4" />
                 {t.onboarding_owner_cancel_crop}
@@ -529,7 +529,7 @@ export function BusinessOnboardingModal() {
               <button
                 onClick={showCroppedImage}
                 disabled={uploading}
-                className="px-6 py-3 rounded-full bg-stone-900 text-white font-bold hover:bg-stone-800 transition-colors shadow-lg flex items-center gap-2 active:scale-95"
+                className="flex-1 sm:flex-initial justify-center whitespace-nowrap px-4 sm:px-6 py-3 rounded-full bg-stone-900 text-white font-bold hover:bg-stone-800 transition-colors shadow-lg flex items-center gap-2 active:scale-95"
               >
                 {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 {t.onboarding_owner_validate_photo}
@@ -539,17 +539,17 @@ export function BusinessOnboardingModal() {
         </div>
       )}
 
-      <div className="w-full max-w-lg rounded-xl border border-stone-200/20 dark:border-neutral-700 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] animate-in zoom-in-95 duration-200">
+      <div className="w-full sm:max-w-lg max-h-[92dvh] sm:max-h-none overflow-y-auto overscroll-contain sm:overflow-visible rounded-t-3xl sm:rounded-xl border border-stone-200/20 dark:border-neutral-700 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl px-5 pt-5 pb-0 sm:p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] animate-in zoom-in-95 duration-200">
         {/* Progress indicator */}
-        <div className="flex items-center gap-2 mb-8">
+        <div className="flex items-center gap-2 mb-5 sm:mb-8">
           <div className={`h-1.5 flex-1 rounded-full ${step >= 1 ? 'bg-emerald-500' : 'bg-stone-200'}`} />
           <div className={`h-1.5 flex-1 rounded-full ${step >= 2 ? 'bg-emerald-500' : 'bg-stone-200'}`} />
         </div>
 
         {step === 1 && (
           <>
-            <div className="mb-6">
-              <div className="flex items-center gap-3 mb-2">
+            <div className="mb-5 sm:mb-6">
+              <div className="flex items-center gap-3 mb-1.5 sm:mb-2">
                 <div className="p-2 rounded-lg bg-stone-100/50 dark:bg-neutral-800">
                   <Briefcase className="h-5 w-5 text-stone-900 dark:text-white" />
                 </div>
@@ -613,7 +613,7 @@ export function BusinessOnboardingModal() {
                       key={r}
                       type="button"
                       onClick={() => setRole(r)}
-                      className={`rounded-full border py-2.5 px-3 text-sm font-medium transition-all ${
+                      className={`rounded-full border py-2.5 px-2 sm:px-3 text-sm font-medium transition-all ${
                         role === r
                           ? 'border-stone-900 bg-stone-900 text-white'
                           : 'border-stone-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-stone-700 dark:text-neutral-200 hover:bg-stone-50 dark:hover:bg-neutral-700'
@@ -628,7 +628,7 @@ export function BusinessOnboardingModal() {
               <button
                 onClick={handleStep1}
                 disabled={!fullName || !role}
-                className="flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 py-3.5 font-bold text-white transition-all hover:bg-stone-800 shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-6"
+                className="sticky bottom-[max(1rem,env(safe-area-inset-bottom))] sm:static z-10 flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 py-3.5 font-bold text-white transition-all hover:bg-stone-800 shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-6 !mb-[max(1.25rem,env(safe-area-inset-bottom))] sm:!mb-0"
               >
                 {t.onboarding_owner_continue}
                 <ChevronRight className="h-5 w-5" />
@@ -639,8 +639,8 @@ export function BusinessOnboardingModal() {
 
         {step === 2 && (
           <>
-            <div className="mb-6">
-              <div className="flex items-center gap-3 mb-2">
+            <div className="mb-5 sm:mb-6">
+              <div className="flex items-center gap-3 mb-1.5 sm:mb-2">
                 <div className="p-2 rounded-lg bg-stone-100/50 dark:bg-neutral-800">
                   <Building2 className="h-5 w-5 text-stone-900 dark:text-white" />
                 </div>
@@ -690,7 +690,7 @@ export function BusinessOnboardingModal() {
                       key={n}
                       type="button"
                       onClick={() => setNiche(n)}
-                      className={`rounded-full border py-2 px-3 text-sm font-medium transition-all ${
+                      className={`rounded-full border py-2.5 sm:py-2 px-3 text-sm font-medium transition-all ${
                         niche === n
                           ? 'border-stone-900 bg-stone-900 text-white'
                           : 'border-stone-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-stone-700 dark:text-neutral-200 hover:bg-stone-50 dark:hover:bg-neutral-700'
@@ -711,10 +711,10 @@ export function BusinessOnboardingModal() {
                 )}
               </div>
 
-              <div className="flex gap-3 mt-6">
+              <div className="sticky bottom-[max(1rem,env(safe-area-inset-bottom))] sm:static z-10 flex gap-3 mt-6">
                 <button
                   onClick={() => setStep(1)}
-                  className="flex-1 rounded-full border border-stone-300 dark:border-neutral-600 py-3 font-medium text-stone-700 dark:text-neutral-200 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-all"
+                  className="flex-1 rounded-full border border-stone-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 sm:bg-transparent sm:dark:bg-transparent shadow-lg sm:shadow-none py-3 font-medium text-stone-700 dark:text-neutral-200 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-all"
                 >
                   {t.onboarding_owner_back}
                 </button>
@@ -733,7 +733,7 @@ export function BusinessOnboardingModal() {
               </div>
 
               {/* Aide : tout est dans Paramètres → Centre d'aide */}
-              <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-emerald-600/15 bg-emerald-50/50 dark:bg-emerald-900/10 px-3.5 py-3">
+              <div className="mt-4 !mb-[max(1.25rem,env(safe-area-inset-bottom))] sm:!mb-0 flex items-start gap-2.5 rounded-xl border border-emerald-600/15 bg-emerald-50/50 dark:bg-emerald-900/10 px-3.5 py-3">
                 <LifeBuoy className="h-4 w-4 shrink-0 mt-0.5 text-emerald-700 dark:text-emerald-400" strokeWidth={1.75} />
                 <p className="text-xs leading-relaxed text-stone-600 dark:text-neutral-300">{t.onboarding_owner_help_hint}</p>
               </div>

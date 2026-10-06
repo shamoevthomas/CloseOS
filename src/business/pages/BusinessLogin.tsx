@@ -233,34 +233,34 @@ export default function BusinessLogin() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-[#f5f3f0] dark:bg-neutral-900" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
-      {/* Ambient background blobs */}
-      <div className="pointer-events-none absolute inset-0 -z-10">
+    <div className="min-h-screen min-h-dvh flex flex-col items-center justify-center relative overflow-hidden bg-[#f5f3f0] dark:bg-neutral-900 px-4 py-4 sm:py-0" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
+      {/* Ambient background blobs (masqués sur mobile : décor lourd) */}
+      <div className="pointer-events-none absolute inset-0 -z-10 hidden lg:block">
         <div className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full bg-emerald-400/10 blur-[120px]" />
         <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full bg-amber-300/10 blur-[120px]" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-stone-300/10 blur-[120px]" />
       </div>
 
       {/* Back to home */}
-      <a href="/business" className="absolute top-6 left-6 flex items-center gap-2 text-sm font-semibold text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors">
+      <a href="/business" className="self-start mb-4 sm:mb-0 sm:absolute sm:top-6 sm:left-6 flex items-center gap-2 min-h-[40px] sm:min-h-0 text-sm font-semibold text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors">
         <ArrowLeft className="h-4 w-4" />
         Accueil
       </a>
 
       {/* Glass morphism card */}
-      <div className="w-full max-w-md mx-4 bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 dark:border-neutral-800 p-10">
+      <div className="w-full max-w-md bg-white/70 dark:bg-white/5 lg:backdrop-blur-xl rounded-2xl sm:rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 dark:border-neutral-800 p-6 sm:p-10">
         {/* Brand header */}
-        <div className="flex items-center justify-center mb-10">
-          <img src="/closeos-business-logo-ecrit.png" alt="CloseOS Business" className="h-10 w-auto dark:hidden" />
-          <img src="/closeos-business-logo-ecrit-dark.png" alt="CloseOS Business" className="h-10 w-auto hidden dark:block" />
+        <div className="flex items-center justify-center mb-5 sm:mb-10">
+          <img src="/closeos-business-logo-ecrit.png" alt="CloseOS Business" className="h-8 sm:h-10 w-auto dark:hidden" />
+          <img src="/closeos-business-logo-ecrit-dark.png" alt="CloseOS Business" className="h-8 sm:h-10 w-auto hidden dark:block" />
         </div>
 
         {/* Headline */}
-        <div className="text-center mb-9">
-          <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
+        <div className="text-center mb-6 sm:mb-9">
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
             {t.login_title}
           </h1>
-          <p className="text-stone-500 dark:text-neutral-400 mt-3 text-sm">
+          <p className="text-stone-500 dark:text-neutral-400 mt-2 sm:mt-3 text-sm">
             {t.login_subtitle}
           </p>
         </div>
@@ -274,7 +274,7 @@ export default function BusinessLogin() {
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
           {/* Email */}
           <div className="space-y-2">
             <label className="block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400 ml-1" htmlFor="login-email">
@@ -287,7 +287,7 @@ export default function BusinessLogin() {
                 type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-stone-100/50 dark:bg-neutral-800 border-none rounded-full py-4 pl-12 pr-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 transition-all placeholder:text-stone-400 dark:placeholder:text-neutral-500 outline-none"
+                className="w-full bg-stone-100/50 dark:bg-neutral-800 border-none rounded-full py-3.5 sm:py-4 pl-12 pr-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 transition-all placeholder:text-stone-400 dark:placeholder:text-neutral-500 outline-none"
                 placeholder={t.login_email_placeholder}
                 required
               />
@@ -300,7 +300,7 @@ export default function BusinessLogin() {
               <label className="block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400" htmlFor="login-password">
                 {t.login_password}
               </label>
-              <button type="button" onClick={() => setIsCodeModalOpen(true)} className="text-xs font-semibold text-emerald-700 hover:underline transition-colors">
+              <button type="button" onClick={() => setIsCodeModalOpen(true)} className="-my-2 py-2 text-xs font-semibold text-emerald-700 hover:underline transition-colors">
                 {t.login_forgot}
               </button>
             </div>
@@ -311,11 +311,11 @@ export default function BusinessLogin() {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-stone-100/50 dark:bg-neutral-800 border-none rounded-full py-4 pl-12 pr-12 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 transition-all placeholder:text-stone-400 dark:placeholder:text-neutral-500 outline-none"
+                className="w-full bg-stone-100/50 dark:bg-neutral-800 border-none rounded-full py-3.5 sm:py-4 pl-12 pr-12 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 transition-all placeholder:text-stone-400 dark:placeholder:text-neutral-500 outline-none"
                 placeholder="••••••••"
                 required
               />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-neutral-300 transition-colors">
+              <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label="Afficher / masquer" className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 p-2 sm:p-0 text-stone-400 hover:text-stone-600 dark:hover:text-neutral-300 transition-colors">
                 {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
               </button>
             </div>
@@ -325,14 +325,14 @@ export default function BusinessLogin() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-stone-900 dark:bg-white dark:text-black text-white font-bold py-5 rounded-full shadow-lg hover:shadow-xl active:scale-95 transition-all duration-200 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-stone-900 dark:bg-white dark:text-black text-white font-bold py-4 sm:py-5 rounded-full shadow-lg hover:shadow-xl active:scale-[0.98] sm:active:scale-95 transition-all duration-200 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : t.login_submit}
           </button>
         </form>
 
         {/* Divider */}
-        <div className="relative my-8">
+        <div className="relative my-5 sm:my-8">
           <div className="absolute inset-0 flex items-center">
             <span className="w-full border-t border-stone-200/40 dark:border-neutral-700" />
           </div>
@@ -347,7 +347,7 @@ export default function BusinessLogin() {
         <button
           onClick={handleGoogleLogin}
           disabled={googleLoading}
-          className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-white dark:bg-neutral-800 border border-stone-200/20 dark:border-neutral-700 rounded-full hover:bg-stone-50 dark:hover:bg-neutral-700 active:scale-95 transition-all duration-200 disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-3 py-3.5 sm:py-4 px-6 bg-white dark:bg-neutral-800 border border-stone-200/20 dark:border-neutral-700 rounded-full hover:bg-stone-50 dark:hover:bg-neutral-700 active:scale-[0.98] sm:active:scale-95 transition-all duration-200 disabled:opacity-50"
         >
           {googleLoading ? (
             <Loader2 className="h-5 w-5 animate-spin text-stone-500" />
@@ -363,10 +363,10 @@ export default function BusinessLogin() {
         </button>
 
         {/* Bottom link */}
-        <div className="mt-9 pt-7 border-t border-stone-200/20 dark:border-neutral-800 text-center">
+        <div className="mt-5 pt-4 sm:mt-9 sm:pt-7 border-t border-stone-200/20 dark:border-neutral-800 text-center">
           <p className="text-sm text-stone-500 dark:text-neutral-400">
             {t.login_no_account}{' '}
-            <a href="/business#pricing" className="font-bold text-stone-900 dark:text-white ml-1 hover:underline transition-all">
+            <a href="/business#pricing" className="whitespace-nowrap font-bold text-stone-900 dark:text-white ml-1 hover:underline transition-all">
               {t.login_create_account}
             </a>
           </p>
@@ -374,7 +374,7 @@ export default function BusinessLogin() {
       </div>
 
       {/* Bottom footer */}
-      <div className="mt-8 flex flex-col items-center gap-3 pb-8">
+      <div className="mt-5 sm:mt-8 flex flex-col items-center gap-3 text-center pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-8">
         <div className="flex gap-6 text-xs font-medium text-stone-400 dark:text-neutral-500">
           <button onClick={openChatbot} className="hover:text-emerald-700 transition-colors">{t.login_help}</button>
           <a className="hover:text-emerald-700 transition-colors" href="/confidentialite" target="_blank">{t.login_privacy}</a>
@@ -387,20 +387,22 @@ export default function BusinessLogin() {
 
       {/* Login Code Modal */}
       {isCodeModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-stone-900/20 backdrop-blur-md" onClick={resetCodeModal} />
-          <div className="relative w-full max-w-sm bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 dark:border-neutral-800 p-8">
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="absolute inset-0 bg-stone-900/30 sm:bg-stone-900/20 backdrop-blur-sm sm:backdrop-blur-md" onClick={resetCodeModal} />
+          <div className="relative w-full sm:max-w-sm max-h-[92dvh] sm:max-h-none overflow-y-auto overscroll-contain bg-white sm:bg-white/70 dark:bg-neutral-900 sm:dark:bg-white/5 sm:backdrop-blur-xl rounded-t-3xl sm:rounded-xl shadow-[0_-10px_40px_rgba(27,28,27,0.12)] sm:shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 dark:border-neutral-800 px-5 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:p-8">
+            {/* Poignée de la feuille (mobile) */}
+            <div className="sm:hidden mx-auto mb-4 h-1 w-10 rounded-full bg-stone-300 dark:bg-neutral-700" />
             <div className="text-center">
-              <div className="w-16 h-16 bg-stone-100/80 dark:bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Mail className="h-7 w-7 text-stone-900 dark:text-white" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-stone-100/80 dark:bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                <Mail className="h-5 w-5 sm:h-7 sm:w-7 text-stone-900 dark:text-white" />
               </div>
 
               {codeStep === 'email' ? (
                 <>
-                  <h3 className="text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-2" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
+                  <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-1.5 sm:mb-2" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
                     {t.login_code_title}
                   </h3>
-                  <p className="text-sm text-stone-500 dark:text-neutral-400 mb-7">
+                  <p className="text-sm text-stone-500 dark:text-neutral-400 mb-5 sm:mb-7">
                     {t.login_code_subtitle}
                   </p>
 
@@ -433,22 +435,22 @@ export default function BusinessLogin() {
                     <button
                       type="submit"
                       disabled={codeLoading || !codeEmail}
-                      className="w-full bg-stone-900 dark:bg-white dark:text-black text-white font-bold py-5 rounded-full shadow-lg active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full bg-stone-900 dark:bg-white dark:text-black text-white font-bold py-4 sm:py-5 rounded-full shadow-lg active:scale-[0.98] sm:active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {codeLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : t.login_code_send}
                     </button>
-                    <button type="button" onClick={resetCodeModal} className="text-xs font-bold text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors mt-2">
+                    <button type="button" onClick={resetCodeModal} className="min-h-[40px] px-4 sm:min-h-0 sm:px-0 text-xs font-bold text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors mt-1 sm:mt-2">
                       {t.login_code_back}
                     </button>
                   </form>
                 </>
               ) : (
                 <>
-                  <h3 className="text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-2" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
+                  <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-1.5 sm:mb-2" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
                     {t.login_code_enter_title}
                   </h3>
-                  <p className="text-sm text-stone-500 dark:text-neutral-400 mb-7">
-                    {t.login_code_enter_subtitle} <span className="font-semibold text-stone-700 dark:text-neutral-200">{codeEmail}</span>
+                  <p className="text-sm text-stone-500 dark:text-neutral-400 mb-5 sm:mb-7">
+                    {t.login_code_enter_subtitle} <span className="font-semibold text-stone-700 dark:text-neutral-200 break-words">{codeEmail}</span>
                   </p>
 
                   {codeMessage && codeMessage.type === 'error' && (
@@ -482,11 +484,11 @@ export default function BusinessLogin() {
                     <button
                       type="submit"
                       disabled={codeLoading || loginCode.replace(/\s/g, '').length !== 6}
-                      className="w-full bg-stone-900 dark:bg-white dark:text-black text-white font-bold py-5 rounded-full shadow-lg active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full bg-stone-900 dark:bg-white dark:text-black text-white font-bold py-4 sm:py-5 rounded-full shadow-lg active:scale-[0.98] sm:active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {codeLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : t.login_submit}
                     </button>
-                    <div className="flex items-center justify-center gap-4 mt-3">
+                    <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-3 min-h-[40px] sm:min-h-0">
                       <button
                         type="button"
                         disabled={resendCountdown > 0 || codeLoading}

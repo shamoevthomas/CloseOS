@@ -299,7 +299,7 @@ export function BusinessInvitation() {
   // ─── Loading ───
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-stone-50 dark:bg-neutral-900">
+      <div className="flex min-h-screen min-h-dvh items-center justify-center bg-stone-50 dark:bg-neutral-900">
         <Loader2 className="h-8 w-8 animate-spin text-stone-400 dark:text-neutral-500" />
       </div>
     );
@@ -308,8 +308,8 @@ export function BusinessInvitation() {
   // ─── Error (no invitation) ───
   if (error && !invitation) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-stone-50 dark:bg-neutral-900 px-4">
-        <div className="w-full max-w-md rounded-3xl border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-800 p-10 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+      <div className="flex min-h-screen min-h-dvh items-center justify-center bg-stone-50 dark:bg-neutral-900 px-4">
+        <div className="w-full max-w-md rounded-3xl border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-800 p-6 sm:p-10 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-extrabold text-stone-900 dark:text-white mb-2">{t.invitation_invalid_title}</h2>
           <p className="text-stone-500 dark:text-neutral-400 mb-6">{error}</p>
@@ -342,8 +342,8 @@ export function BusinessInvitation() {
 
   if (success) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-stone-50 dark:bg-neutral-900 px-4">
-        <div className="w-full max-w-md rounded-3xl border border-emerald-200 bg-white dark:bg-neutral-800 p-10 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+      <div className="flex min-h-screen min-h-dvh items-center justify-center bg-stone-50 dark:bg-neutral-900 px-4">
+        <div className="w-full max-w-md rounded-3xl border border-emerald-200 bg-white dark:bg-neutral-800 p-6 sm:p-10 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
           <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-4" />
           <h2 className="text-xl font-extrabold text-stone-900 dark:text-white mb-2">{t.invitation_welcome_title}</h2>
           <p className="text-stone-500 dark:text-neutral-400 mb-2">
@@ -357,7 +357,7 @@ export function BusinessInvitation() {
 
   // ─── Main: Two-column layout ───
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen min-h-dvh">
       {/* ─── LEFT PANEL: Company info ─── */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between bg-stone-100 dark:bg-neutral-800 p-12 xl:p-24 relative overflow-hidden">
         {/* Decorative blob */}
@@ -423,38 +423,38 @@ export function BusinessInvitation() {
       </div>
 
       {/* ─── RIGHT PANEL: Registration form ─── */}
-      <div className="flex flex-1 items-center justify-center bg-white dark:bg-neutral-900 px-6 py-12 sm:px-12">
-        <div className="w-full max-w-md space-y-10">
+      <div className="flex flex-1 min-w-0 items-center justify-center bg-white dark:bg-neutral-900 px-4 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-12 sm:py-12">
+        <div className="w-full max-w-md space-y-6 sm:space-y-10">
           {/* Mobile logo */}
           <div className="lg:hidden text-center">
             <Link to="/business" className="inline-block">
-              <img src="/closeos-business-logo-ecrit.png" alt="CloseOS Business" className="h-10 w-auto mx-auto dark:hidden" />
-              <img src="/closeos-business-logo-ecrit-dark.png" alt="CloseOS Business" className="h-10 w-auto mx-auto hidden dark:block" />
+              <img src="/closeos-business-logo-ecrit.png" alt="CloseOS Business" className="h-8 sm:h-10 w-auto mx-auto dark:hidden" />
+              <img src="/closeos-business-logo-ecrit-dark.png" alt="CloseOS Business" className="h-8 sm:h-10 w-auto mx-auto hidden dark:block" />
             </Link>
           </div>
 
           {/* Heading */}
           <div className="space-y-2">
-            <h2 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">
+            <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight text-stone-900 dark:text-white break-words">
               {t.invitation_join_company} {companyName}
             </h2>
-            <p className="text-stone-500 dark:text-neutral-400">
+            <p className="text-sm sm:text-base leading-relaxed text-stone-500 dark:text-neutral-400">
               {t.invitation_invited_by} <span className="text-stone-900 dark:text-white font-semibold underline decoration-amber-300 decoration-4">{inviterFirstName}</span> {t.invitation_as_role}{' '}
-              <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full uppercase tracking-tight">
+              <span className="whitespace-nowrap px-2 py-0.5 text-[11px] sm:px-3 sm:py-1 sm:text-xs bg-emerald-100 text-emerald-700 font-bold rounded-full uppercase tracking-tight">
                 {role}
               </span>
             </p>
           </div>
 
           {/* Mobile company info */}
-          <div className="lg:hidden rounded-2xl bg-stone-50 dark:bg-neutral-800 border border-stone-200/50 dark:border-neutral-700 p-4 flex items-center gap-3">
+          <div className="lg:hidden rounded-2xl bg-stone-50 dark:bg-neutral-800 border border-stone-200/50 dark:border-neutral-700 p-3 sm:p-4 flex items-center gap-3">
             {ownerSettings?.logo_url ? (
-              <div className="h-12 w-12 rounded-xl overflow-hidden shrink-0 border border-white shadow-sm">
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl overflow-hidden shrink-0 border border-white shadow-sm">
                 <img src={ownerSettings.logo_url} alt={companyName} className="h-full w-full object-cover" />
               </div>
             ) : (
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-stone-900 shrink-0">
-                <Building2 className="h-6 w-6 text-white" />
+              <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-stone-900 shrink-0">
+                <Building2 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
             )}
             <div className="min-w-0">
@@ -473,7 +473,7 @@ export function BusinessInvitation() {
           <button
             onClick={handleGoogleSignup}
             disabled={googleLoading || submitLoading}
-            className="flex w-full items-center justify-center gap-3 py-4 px-6 border border-stone-200/30 dark:border-neutral-700 rounded-full font-bold text-stone-900 dark:text-white hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors active:scale-95 duration-200 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-3 py-3.5 sm:py-4 px-6 border border-stone-200/30 dark:border-neutral-700 rounded-full font-bold text-stone-900 dark:text-white hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors active:scale-95 duration-200 disabled:opacity-50"
           >
             {googleLoading ? (
               <Loader2 className="h-5 w-5 animate-spin text-stone-400" />
@@ -489,23 +489,23 @@ export function BusinessInvitation() {
           </button>
 
           {/* Separator */}
-          <div className="relative flex items-center py-2">
+          <div className="relative flex items-center py-0 sm:py-2">
             <div className="flex-grow border-t border-stone-200/20 dark:border-neutral-700" />
             <span className="flex-shrink mx-4 text-[10px] font-bold tracking-widest uppercase text-stone-400 dark:text-neutral-500">{t.invitation_or_email}</span>
             <div className="flex-grow border-t border-stone-200/20 dark:border-neutral-700" />
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             {/* First name / Last name */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <div className="space-y-2">
                 <label className="text-[10px] font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 ml-2">{t.invitation_first_name}</label>
                 <input
                   type="text"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full bg-stone-100 dark:bg-neutral-800 border-none rounded-xl py-4 px-6 text-stone-900 dark:text-white placeholder:text-stone-400/60 dark:placeholder:text-neutral-500 focus:ring-2 focus:ring-stone-900/20 transition-all focus:outline-none"
+                  className="w-full bg-stone-100 dark:bg-neutral-800 border-none rounded-xl py-3.5 sm:py-4 px-4 sm:px-6 text-stone-900 dark:text-white placeholder:text-stone-400/60 dark:placeholder:text-neutral-500 focus:ring-2 focus:ring-stone-900/20 transition-all focus:outline-none"
                   placeholder="Jean"
                   required
                 />
@@ -516,7 +516,7 @@ export function BusinessInvitation() {
                   type="text"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  className="w-full bg-stone-100 dark:bg-neutral-800 border-none rounded-xl py-4 px-6 text-stone-900 dark:text-white placeholder:text-stone-400/60 dark:placeholder:text-neutral-500 focus:ring-2 focus:ring-stone-900/20 transition-all focus:outline-none"
+                  className="w-full bg-stone-100 dark:bg-neutral-800 border-none rounded-xl py-3.5 sm:py-4 px-4 sm:px-6 text-stone-900 dark:text-white placeholder:text-stone-400/60 dark:placeholder:text-neutral-500 focus:ring-2 focus:ring-stone-900/20 transition-all focus:outline-none"
                   placeholder="Dupont"
                   required
                 />
@@ -530,7 +530,7 @@ export function BusinessInvitation() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-stone-100 dark:bg-neutral-800 border-none rounded-xl py-4 px-6 text-stone-900 dark:text-white placeholder:text-stone-400/60 dark:placeholder:text-neutral-500 focus:ring-2 focus:ring-stone-900/20 transition-all focus:outline-none"
+                className="w-full bg-stone-100 dark:bg-neutral-800 border-none rounded-xl py-3.5 sm:py-4 px-4 sm:px-6 text-stone-900 dark:text-white placeholder:text-stone-400/60 dark:placeholder:text-neutral-500 focus:ring-2 focus:ring-stone-900/20 transition-all focus:outline-none"
                 placeholder="jean.dupont@business.com"
                 required
               />
@@ -544,7 +544,7 @@ export function BusinessInvitation() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-stone-100 border-none rounded-xl py-4 px-6 pr-12 text-stone-900 placeholder:text-stone-400/60 focus:ring-2 focus:ring-stone-900/20 transition-all focus:outline-none"
+                  className="w-full bg-stone-100 border-none rounded-xl py-3.5 sm:py-4 pl-4 pr-12 sm:pl-6 text-stone-900 placeholder:text-stone-400/60 focus:ring-2 focus:ring-stone-900/20 transition-all focus:outline-none"
                   placeholder="••••••••••••"
                   required
                   minLength={8}
@@ -563,7 +563,7 @@ export function BusinessInvitation() {
             <button
               type="submit"
               disabled={submitLoading}
-              className="w-full py-5 bg-stone-900 dark:bg-white dark:text-black text-white rounded-full font-extrabold text-lg tracking-tight hover:shadow-xl hover:shadow-stone-900/10 transition-all active:scale-95 duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-4 sm:py-5 bg-stone-900 dark:bg-white dark:text-black text-white rounded-full font-extrabold text-base sm:text-lg tracking-tight hover:shadow-xl hover:shadow-stone-900/10 transition-all active:scale-[0.98] sm:active:scale-95 duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin mx-auto" />

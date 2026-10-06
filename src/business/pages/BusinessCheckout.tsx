@@ -439,28 +439,28 @@ function CheckoutForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-2xl bg-white/70 backdrop-blur-xl p-6 sm:p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+    <form onSubmit={handleSubmit} className="rounded-2xl bg-white/70 lg:backdrop-blur-xl p-5 sm:p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
       {/* Error */}
       {error && (
-        <div className="mb-6 rounded-xl bg-red-50/80 p-4 text-sm text-red-600 border border-red-200/40">
+        <div className="mb-5 sm:mb-6 rounded-xl bg-red-50/80 p-4 text-sm text-red-600 border border-red-200/40 whitespace-pre-line break-words">
           {error}
         </div>
       )}
 
       {/* Collapsible Payment Section */}
-      <div className="mb-6">
+      <div className="mb-5 sm:mb-6">
         <button
           type="button"
           onClick={() => setPaymentOpen(!paymentOpen)}
-          className="w-full flex items-center justify-between py-3"
+          className="w-full flex items-center justify-between gap-3 py-2 sm:py-3"
         >
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             {paymentReady && !paymentOpen ? (
-              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+              <div className="w-8 h-8 shrink-0 rounded-full bg-emerald-100 flex items-center justify-center">
                 <Check className="h-4.5 w-4.5 text-emerald-600" strokeWidth={2.5} />
               </div>
             ) : (
-              <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center">
+              <div className="w-8 h-8 shrink-0 rounded-full bg-stone-100 flex items-center justify-center">
                 <CreditCard className="h-4 w-4 text-stone-600" />
               </div>
             )}
@@ -468,13 +468,13 @@ function CheckoutForm({
               {t.checkout_payment_section}
             </span>
             {paymentReady && !paymentOpen && (
-              <span className="text-xs text-emerald-600 font-medium">{t.checkout_card_saved}</span>
+              <span className="truncate text-xs text-emerald-600 font-medium">{t.checkout_card_saved}</span>
             )}
           </div>
-          <ChevronDown className={`h-4 w-4 text-stone-400 transition-transform duration-300 ${paymentOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`h-4 w-4 shrink-0 text-stone-400 transition-transform duration-300 ${paymentOpen ? 'rotate-180' : ''}`} />
         </button>
         {/* PaymentElement stays mounted (overflow-hidden hides it) */}
-        <div className={`overflow-hidden transition-all duration-300 ${paymentOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div className={`overflow-hidden transition-all duration-300 ${paymentOpen ? 'max-h-[900px] sm:max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
           <div className="pt-2 pb-4">
             <PaymentElement
               onChange={(e) => setPaymentReady(e.complete)}
@@ -485,7 +485,7 @@ function CheckoutForm({
       </div>
 
       {/* Divider */}
-      <div className="border-t border-stone-100 mb-6" />
+      <div className="border-t border-stone-100 mb-5 sm:mb-6" />
 
       {/* Registration Section */}
       <div className="space-y-4">
@@ -590,13 +590,13 @@ function CheckoutForm({
       <button
         type="submit"
         disabled={submitting || !stripe}
-        className="mt-8 flex w-full items-center justify-center gap-2.5 rounded-full bg-stone-900 py-5 font-bold text-white shadow-lg transition-all hover:bg-stone-800 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+        className="mt-6 sm:mt-8 flex w-full items-center justify-center gap-2.5 rounded-full bg-stone-900 py-4 sm:py-5 font-bold text-white shadow-lg transition-all hover:bg-stone-800 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
         style={{ fontFamily: 'Manrope, sans-serif' }}
       >
         {submitting ? (
           <>
             <Loader2 className="h-5 w-5 animate-spin" />
-            <span>{step || t.checkout_loading}</span>
+            <span className="truncate">{step || t.checkout_loading}</span>
           </>
         ) : (
           <>
@@ -787,9 +787,10 @@ export default function BusinessCheckout() {
   };
 
   return (
-    <div className="relative min-h-screen bg-stone-50 overflow-hidden">
-      <div className="absolute top-[-10%] left-[15%] w-[600px] h-[600px] bg-emerald-100/30 blur-[120px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[10%] w-[500px] h-[500px] bg-stone-200/30 blur-[120px] rounded-full pointer-events-none" />
+    <div className="relative min-h-screen min-h-dvh bg-stone-50 overflow-hidden">
+      {/* Halos décoratifs (masqués sur mobile : décor lourd) */}
+      <div className="hidden lg:block absolute top-[-10%] left-[15%] w-[600px] h-[600px] bg-emerald-100/30 blur-[120px] rounded-full pointer-events-none" />
+      <div className="hidden lg:block absolute bottom-[-10%] right-[10%] w-[500px] h-[500px] bg-stone-200/30 blur-[120px] rounded-full pointer-events-none" />
 
       {/* Doodles dans les marges (hors carte) */}
       <div className="pointer-events-none select-none absolute inset-0 hidden lg:block z-0" aria-hidden="true">
@@ -805,38 +806,38 @@ export default function BusinessCheckout() {
         <DoodleCross className="absolute left-[13%] top-[30%] w-4 text-emerald-500" />
       </div>
 
-      <header className="relative z-10 flex items-center justify-between px-6 sm:px-10 py-5">
-        <Link to="/business" className="flex items-center gap-2">
-          <img src="/closeos-business-logo-ecrit.png" alt="CloseOS Business" className="h-8 w-auto" />
+      <header className="relative z-10 flex items-center justify-between gap-3 px-4 sm:px-10 py-3 sm:py-5">
+        <Link to="/business" className="flex items-center gap-2 shrink-0">
+          <img src="/closeos-business-logo-ecrit.png" alt="CloseOS Business" className="h-7 sm:h-8 w-auto" />
         </Link>
-        <Link to="/business" className="flex items-center gap-2 text-sm text-stone-500 hover:text-stone-800 transition-colors font-medium">
+        <Link to="/business" className="flex items-center gap-2 min-h-[40px] sm:min-h-0 text-sm text-stone-500 hover:text-stone-800 transition-colors font-medium">
           <ArrowLeft className="h-4 w-4" />
           {t.checkout_back}
         </Link>
       </header>
 
-      <div className="relative z-10 max-w-2xl mx-auto px-4 sm:px-6 pb-16">
+      <div className="relative z-10 max-w-2xl mx-auto px-4 sm:px-6 pb-[max(2.5rem,env(safe-area-inset-bottom))] sm:pb-16">
         {/* Plan summary card */}
-        <div className="mb-6 rounded-2xl bg-white/70 backdrop-blur-xl p-6 sm:p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+        <div className="mb-4 sm:mb-6 rounded-2xl bg-white/70 lg:backdrop-blur-xl p-5 sm:p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-1">{t.checkout_your_plan}</p>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
                 {planLabel}
               </h1>
-              <p className="text-stone-500 mt-1">
+              <p className="text-sm sm:text-base text-stone-500 mt-1">
                 {billing === 'annual' ? t.checkout_billing_annual_desc : billing === 'quarterly' ? t.checkout_billing_quarterly_desc : t.checkout_billing_monthly_desc}
               </p>
             </div>
-            <div className="text-right">
+            <div className="text-left sm:text-right">
               {/* Billing cycle switch */}
-              <div className="inline-flex items-center rounded-full bg-stone-100/80 p-0.5 mb-2">
+              <div className="grid grid-cols-3 w-full sm:inline-flex sm:w-auto items-center rounded-full bg-stone-100/80 p-0.5 mb-3 sm:mb-2">
                 {BILLING_OPTIONS.map((opt) => (
                   <button
                     key={opt.key}
                     type="button"
                     onClick={() => switchBilling(opt.key)}
-                    className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all ${
+                    className={`px-2 sm:px-3 py-2 sm:py-1 rounded-full text-[12px] sm:text-[11px] font-bold whitespace-nowrap transition-all ${
                       billing === opt.key
                         ? 'bg-white text-stone-900 shadow-sm'
                         : 'text-stone-400 hover:text-stone-600'
@@ -846,7 +847,7 @@ export default function BusinessCheckout() {
                   </button>
                 ))}
               </div>
-              <p className="text-3xl sm:text-4xl font-extrabold text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              <p className="text-2xl sm:text-4xl font-extrabold text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
                 {priceInfo.display}
               </p>
               {priceInfo.total && <p className="text-sm text-stone-400 mt-0.5">{t.checkout_price_total_prefix} {priceInfo.total}</p>}
@@ -863,12 +864,12 @@ export default function BusinessCheckout() {
               <button
                 type="button"
                 onClick={() => setFeaturesOpen(!featuresOpen)}
-                className="flex items-center gap-1.5 text-xs font-semibold text-stone-400 hover:text-stone-600 transition-colors"
+                className="flex items-center gap-1.5 py-2 -my-2 text-xs font-semibold text-stone-400 hover:text-stone-600 transition-colors"
               >
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${featuresOpen ? 'rotate-180' : ''}`} />
                 {featuresOpen ? t.checkout_hide_features : t.checkout_show_features}
               </button>
-              <div className={`overflow-hidden transition-all duration-300 ${featuresOpen ? 'max-h-[600px] opacity-100 mt-3' : 'max-h-0 opacity-0'}`}>
+              <div className={`overflow-hidden transition-all duration-300 ${featuresOpen ? 'max-h-[1200px] sm:max-h-[600px] opacity-100 mt-3' : 'max-h-0 opacity-0'}`}>
                 <ul className="space-y-1.5 text-sm text-stone-600">
                   {PLAN_FEATURES[lang]?.[plan].features.map((f, i) => (
                     <li key={i} className="flex items-start gap-2">
@@ -888,10 +889,10 @@ export default function BusinessCheckout() {
           )}
 
           {/* Promo code */}
-          <div className="mt-6 pt-6 border-t border-stone-100">
-            <label className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-2 block">{t.checkout_promo}</label>
+          <div className="mt-5 pt-5 sm:mt-6 sm:pt-6 border-t border-stone-100">
+            <label className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-stone-400 mb-2 block">{t.checkout_promo}</label>
             <div className="flex gap-2">
-              <div className="relative flex-1">
+              <div className="relative flex-1 min-w-0">
                 <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
                 <input
                   type="text" value={promoCode}
@@ -901,7 +902,7 @@ export default function BusinessCheckout() {
                 />
               </div>
               <button onClick={validatePromo} disabled={promoLoading || !promoCode.trim()}
-                className="rounded-xl bg-stone-900 px-5 py-3 text-sm font-bold text-white hover:bg-stone-800 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed">
+                className="shrink-0 rounded-xl bg-stone-900 px-4 sm:px-5 py-3 text-sm font-bold text-white hover:bg-stone-800 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed">
                 {promoLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t.checkout_apply}
               </button>
             </div>
@@ -920,21 +921,21 @@ export default function BusinessCheckout() {
           </div>
 
           {/* Extras */}
-          <div className="mt-6 pt-6 border-t border-stone-100">
-            <label className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-3 block">{t.checkout_extras_label}</label>
-            <div className="space-y-2.5">
+          <div className="mt-5 pt-5 sm:mt-6 sm:pt-6 border-t border-stone-100">
+            <label className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-stone-400 mb-3 block">{t.checkout_extras_label}</label>
+            <div className="space-y-2 sm:space-y-2.5">
               {EXTRAS.map((extra) => {
                 const isChecked = selectedExtras.has(extra.key);
                 return (
                   <button key={extra.key} type="button" onClick={() => toggleExtra(extra.key)}
-                    className={`w-full flex items-start gap-3.5 rounded-xl p-4 text-left transition-all ${isChecked ? 'bg-emerald-50/80 ring-2 ring-emerald-500/30' : 'bg-stone-50/80 hover:bg-stone-100/80'}`}>
+                    className={`w-full flex items-start gap-3 sm:gap-3.5 rounded-xl p-3.5 sm:p-4 text-left transition-all active:scale-[0.98] sm:active:scale-100 ${isChecked ? 'bg-emerald-50/80 ring-2 ring-emerald-500/30' : 'bg-stone-50/80 hover:bg-stone-100/80'}`}>
                     <div className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${isChecked ? 'bg-emerald-600 border-emerald-600' : 'border-stone-300'}`}>
                       {isChecked && <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                         <span className="font-bold text-sm text-stone-900">{t[`checkout_extra_${extra.key}_name` as keyof typeof t]}</span>
-                        {extra.isSaving && <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full">-20€</span>}
+                        {extra.isSaving && <span className="whitespace-nowrap text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full">-20€</span>}
                       </div>
                       <p className="text-xs text-stone-500 mt-0.5 leading-relaxed">{t[`checkout_extra_${extra.key}_desc` as keyof typeof t]}</p>
                     </div>
@@ -949,30 +950,30 @@ export default function BusinessCheckout() {
 
         {/* Skip-payment: direct registration form */}
         {skipPayment ? (
-          <div className="rounded-2xl bg-white/70 backdrop-blur-xl p-6 sm:p-10 shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-50 mb-4">
-                <Sparkles className="h-7 w-7 text-emerald-600" />
+          <div className="rounded-2xl bg-white/70 lg:backdrop-blur-xl p-5 sm:p-10 shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+            <div className="text-center mb-6 sm:mb-8">
+              <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-emerald-50 mb-3 sm:mb-4">
+                <Sparkles className="h-6 w-6 sm:h-7 sm:w-7 text-emerald-600" />
               </div>
-              <h2 className="text-2xl font-extrabold text-stone-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-stone-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
                 {promoResult?.type === 'lifetime_free' ? t.checkout_lifetime_free_title : `${promoResult?.trial_days || 31} ${t.checkout_days_offered}`}
               </h2>
-              <p className="text-stone-500 mt-1">{t.checkout_create_start}</p>
+              <p className="text-sm sm:text-base text-stone-500 mt-1">{t.checkout_create_start}</p>
             </div>
-            {regError && <div className="mb-6 rounded-xl bg-red-50/80 p-4 text-sm text-red-600 border border-red-200/40">{regError}</div>}
-            <form onSubmit={handleDirectRegister} className="space-y-5 max-w-md mx-auto">
+            {regError && <div className="mb-5 sm:mb-6 rounded-xl bg-red-50/80 p-4 text-sm text-red-600 border border-red-200/40">{regError}</div>}
+            <form onSubmit={handleDirectRegister} className="space-y-4 sm:space-y-5 max-w-md mx-auto">
               <div>
                 <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">{t.checkout_name}</label>
                 <div className="relative">
                   <User className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
-                  <input type="text" value={regName} onChange={(e) => setRegName(e.target.value)} className="w-full rounded-xl bg-stone-100/50 border-none py-4 pl-12 pr-5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" placeholder="John Doe" required />
+                  <input type="text" value={regName} onChange={(e) => setRegName(e.target.value)} className="w-full rounded-xl bg-stone-100/50 border-none py-3.5 sm:py-4 pl-12 pr-5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" placeholder="John Doe" required />
                 </div>
               </div>
               <div>
                 <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">{t.checkout_email}</label>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
-                  <input type="email" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} className="w-full rounded-xl bg-stone-100/50 border-none py-4 pl-12 pr-5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" placeholder="votre@email.com" required />
+                  <input type="email" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} className="w-full rounded-xl bg-stone-100/50 border-none py-3.5 sm:py-4 pl-12 pr-5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" placeholder="votre@email.com" required />
                 </div>
               </div>
               <div>
@@ -987,7 +988,7 @@ export default function BusinessCheckout() {
                 <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">{t.checkout_password}</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
-                  <input type={showPassword ? 'text' : 'password'} value={regPassword} onChange={(e) => setRegPassword(e.target.value)} className="w-full rounded-xl bg-stone-100/50 border-none py-4 pl-12 pr-12 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" placeholder={t.return_password_placeholder} required minLength={8} />
+                  <input type={showPassword ? 'text' : 'password'} value={regPassword} onChange={(e) => setRegPassword(e.target.value)} className="w-full rounded-xl bg-stone-100/50 border-none py-3.5 sm:py-4 pl-12 pr-12 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" placeholder={t.return_password_placeholder} required minLength={8} />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 transition-colors">
                     {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
                   </button>
@@ -998,7 +999,7 @@ export default function BusinessCheckout() {
                 <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">{t.checkout_confirm_password}</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
-                  <input type={showConfirmPassword ? 'text' : 'password'} value={regConfirmPassword} onChange={(e) => setRegConfirmPassword(e.target.value)} className={`w-full rounded-xl bg-stone-100/50 border-none py-4 pl-12 pr-12 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 transition-all ${regConfirmPassword && regConfirmPassword !== regPassword ? 'focus:ring-red-400/30 ring-2 ring-red-400/30' : 'focus:ring-emerald-600/20'}`} placeholder={t.return_password_placeholder} required minLength={8} />
+                  <input type={showConfirmPassword ? 'text' : 'password'} value={regConfirmPassword} onChange={(e) => setRegConfirmPassword(e.target.value)} className={`w-full rounded-xl bg-stone-100/50 border-none py-3.5 sm:py-4 pl-12 pr-12 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 transition-all ${regConfirmPassword && regConfirmPassword !== regPassword ? 'focus:ring-red-400/30 ring-2 ring-red-400/30' : 'focus:ring-emerald-600/20'}`} placeholder={t.return_password_placeholder} required minLength={8} />
                   <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 transition-colors">
                     {showConfirmPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
                   </button>
@@ -1007,11 +1008,11 @@ export default function BusinessCheckout() {
                   <p className="mt-1.5 text-xs text-red-500 font-medium">{t.checkout_passwords_mismatch}</p>
                 )}
               </div>
-              <button type="submit" disabled={regLoading} className="flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 py-5 font-bold text-white shadow-lg transition-all hover:bg-stone-800 active:scale-95 disabled:opacity-50" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              <button type="submit" disabled={regLoading} className="flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 py-4 sm:py-5 font-bold text-white shadow-lg transition-all hover:bg-stone-800 active:scale-[0.98] sm:active:scale-95 disabled:opacity-50" style={{ fontFamily: 'Manrope, sans-serif' }}>
                 {regLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Rocket className="h-5 w-5" /> {t.checkout_launch}</>}
               </button>
             </form>
-            <p className="mt-6 text-center text-xs text-stone-400">
+            <p className="mt-5 sm:mt-6 text-center text-xs text-stone-400">
               {t.checkout_terms_text}{' '}<Link to="/cgu" className="text-stone-600 hover:underline">{t.checkout_terms_cgu}</Link>{' '}{t.checkout_terms_and}{' '}<Link to="/confidentialite" className="text-stone-600 hover:underline">{t.checkout_terms_privacy}</Link>.
             </p>
           </div>
@@ -1032,7 +1033,7 @@ export default function BusinessCheckout() {
           </div>
         )}
 
-        <div className="mt-8 text-center">
+        <div className="mt-6 sm:mt-8 text-center">
           <p className="text-sm text-stone-400">
             {t.checkout_already_account}{' '}
             <Link to="/business/login" className="font-semibold text-stone-700 hover:text-stone-900 transition-colors">{t.checkout_login}</Link>
