@@ -313,8 +313,8 @@ export function AppointmentManage() {
   }
 
   if (rescheduled) {
-    const newDate = selectedDate!
-    const newDateFr = newDate.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+    // Au retour d'un paiement Stripe la page est rechargée : la date choisie n'est plus en mémoire.
+    const newDateFr = selectedDate ? selectedDate.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : null
     return (
       <div className="min-h-screen bg-[#fbf9f8] flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6 sm:p-8">
@@ -326,10 +326,12 @@ export function AppointmentManage() {
           <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1b1c1b] mb-3" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {lang === 'fr' ? 'Rendez-vous reprogrammé' : 'Appointment rescheduled'}
           </h1>
+          {newDateFr && (
           <div className="rounded-2xl bg-[#f5f3f2] p-5 mb-4">
             <p className="text-sm font-bold text-[#1b1c1b]">{newDateFr}</p>
             <p className="text-sm text-[#444748] mt-1">{selectedTime}</p>
           </div>
+          )}
           <p className="text-sm text-[#444748]/60">{lang === 'fr' ? 'Un email de confirmation vous a été envoyé.' : 'A confirmation email has been sent to you.'}</p>
         </div>
       </div>

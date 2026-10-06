@@ -868,7 +868,8 @@ export function PublicBooking() {
                 <span className="text-sm text-[#444748]">{getTimezoneLabel(prospectTimezone)}</span>
               </div>
             </div>
-          ) : (
+          ) : selectedTime && (
+          // Au retour du 3D Secure la page est rechargée : sans créneau en mémoire, pas de récapitulatif.
           <div className="rounded-2xl bg-white p-4 sm:p-6 space-y-3 sm:space-y-4 text-left" style={{ boxShadow: 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.04)' }}>
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-[#f5f3f2] flex items-center justify-center shrink-0">
@@ -881,7 +882,7 @@ export function PublicBooking() {
                 <Clock className="h-4 w-4 text-[#444748]" />
               </div>
               <span className="text-sm font-bold text-[#1b1c1b]">
-                {selectedTime} - {endTime(selectedTime!, info.duration)} ({info.duration} min)
+                {selectedTime} - {endTime(selectedTime, info.duration)} ({info.duration} min)
               </span>
             </div>
             <div className="flex items-center gap-3">
