@@ -46,6 +46,20 @@ const INACTIVE_STAGES = STAGES.filter(s => INACTIVE_STAGE_IDS.includes(s.id))
 
 const LABEL_STYLE = 'text-[10px] uppercase tracking-widest text-stone-400 font-bold'
 
+// Kanban tactile : sur téléphone la rangée de colonnes déborde à fleur d'écran et se balaye au doigt,
+// colonnes aimantées (écran tactile uniquement). Au bureau : rendu d'origine.
+const HSCROLL_ROW = 'flex overflow-x-auto gap-3 sm:gap-4 pb-2 max-sm:-mx-4 max-sm:px-4 max-sm:scroll-px-4 max-sm:no-scrollbar [@media(pointer:coarse)]:overscroll-x-contain'
+const SNAP_ROW = '[@media(pointer:coarse)]:snap-x [@media(pointer:coarse)]:snap-mandatory'
+const KANBAN_COL = 'min-w-[min(82vw,320px)] sm:min-w-[280px] shrink-0 flex-1 snap-start flex flex-col gap-3 sm:gap-4'
+// Bouton d'action rond de la barre d'outils (icône seule sur téléphone)
+const TOOLBAR_ICON_MOBILE = 'max-sm:h-10 max-sm:w-10 max-sm:p-0 max-sm:justify-center'
+// Action visible au survol à la souris, toujours visible au doigt
+const HOVER_REVEAL = '[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100'
+// Écran tactile : pas de portail pendant le drag. Le portail démonte l'élément touché, le navigateur cesse
+// alors d'envoyer touchmove/touchend et le glisser-déposer reste bloqué. (Les couloirs n'ont pas de
+// backdrop-blur au doigt, la carte en position fixe reste donc bien placée sans portail.)
+const isCoarsePointer = () => typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches
+
 // PERIOD_OPTIONS moved inside component for i18n access
 
 interface TeamMember {
@@ -484,9 +498,12 @@ export function BusinessPipeline() {
   const animFrameRef = useRef<number>(0)
   const lastMouseY = useRef(0)
   const lastMouseX = useRef(0)
+  // Aimantation (scroll-snap) des colonnes coupée pendant un drag : sinon elle annule l'auto-défilement horizontal
+  const [isDragging, setIsDragging] = useState(false)
 
   const onDragStart = useCallback(() => {
     isDraggingRef.current = true
+    setIsDragging(true)
     const tick = () => {
       if (!isDraggingRef.current) return
       const y = lastMouseY.current
@@ -528,6 +545,7 @@ export function BusinessPipeline() {
 
   const onDragEnd = (result: DropResult) => {
     isDraggingRef.current = false
+    setIsDragging(false)
     cancelAnimationFrame(animFrameRef.current)
     const { destination, source, draggableId } = result
     if (!destination) return
@@ -566,15 +584,16 @@ export function BusinessPipeline() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="mb-4 flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px]">
+      <div className="mb-4 flex items-center gap-2 sm:gap-3 flex-wrap">
+        {/* Recherche : seule sur sa ligne au téléphone, actions en dessous */}
+        <div className="relative flex-1 basis-full sm:basis-0 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t.pipeline_search}
-            className="w-full rounded-full border-none bg-stone-100 dark:bg-neutral-800 py-2.5 pl-10 pr-10 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+            className="w-full rounded-full border-none bg-white sm:bg-stone-100 ring-1 ring-stone-200/70 sm:ring-0 dark:bg-neutral-800 dark:ring-neutral-700 sm:dark:ring-0 py-2.5 pl-10 pr-10 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
           />
           {searchQuery && (
             <button
@@ -592,19 +611,20 @@ export function BusinessPipeline() {
         {canManageDuplicates && duplicateGroupsCount > 0 && (
           <button
             onClick={() => setIsDuplicatesOpen(true)}
-            className="flex items-center gap-2 rounded-full border border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-4 py-2.5 text-sm font-bold text-amber-700 dark:text-amber-400 hover:border-amber-400 transition-all shrink-0"
+            className="flex items-center gap-1.5 sm:gap-2 rounded-full border border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-3 sm:px-4 h-10 sm:h-auto sm:py-2.5 text-sm font-bold text-amber-700 dark:text-amber-400 hover:border-amber-400 transition-all shrink-0"
             title={lang === 'en' ? 'Manage duplicates' : 'Gérer les doublons'}
           >
             <Users className="h-4 w-4" />
-            {duplicateGroupsCount} {lang === 'en' ? (duplicateGroupsCount > 1 ? 'duplicates' : 'duplicate') : (duplicateGroupsCount > 1 ? 'doublons' : 'doublon')}
+            {duplicateGroupsCount}<span className="hidden sm:inline">{lang === 'en' ? (duplicateGroupsCount > 1 ? 'duplicates' : 'duplicate') : (duplicateGroupsCount > 1 ? 'doublons' : 'doublon')}</span>
           </button>
         )}
 
         {/* À relancer & à suivre */}
         <button
           onClick={() => setShowWorklist(true)}
-          className="relative flex items-center gap-2 rounded-full border border-sky-200 dark:border-sky-500/30 bg-sky-50 dark:bg-sky-500/10 px-4 py-2.5 text-sm font-bold text-sky-700 dark:text-sky-300 hover:border-sky-300 transition-all shrink-0"
+          className="relative flex items-center gap-2 rounded-full border border-sky-200 dark:border-sky-500/30 bg-sky-50 dark:bg-sky-500/10 px-3 sm:px-4 h-10 sm:h-auto sm:py-2.5 text-sm font-bold text-sky-700 dark:text-sky-300 hover:border-sky-300 transition-all shrink-0"
           title={lang === 'en' ? 'To follow up & track' : 'À relancer & à suivre'}
+          aria-label={lang === 'en' ? 'Follow-ups' : 'Relances'}
         >
           <Bell className="h-4 w-4" />
           <span className="hidden sm:inline">{lang === 'en' ? 'Follow-ups' : 'Relances'}</span>
@@ -614,15 +634,17 @@ export function BusinessPipeline() {
         </button>
 
         {/* View toggle */}
-        <div className="flex rounded-full bg-stone-100 dark:bg-neutral-800 p-1">
+        <div className="flex shrink-0 rounded-full bg-stone-100 dark:bg-neutral-800 p-1">
           <button
             onClick={() => setViewMode('kanban')}
+            aria-label="Kanban"
             className={cn('p-2 rounded-full transition-all', viewMode === 'kanban' ? 'bg-white dark:bg-neutral-700 text-stone-900 dark:text-white shadow-sm' : 'text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white')}
           >
             <LayoutGrid className="h-4 w-4" />
           </button>
           <button
             onClick={() => setViewMode('table')}
+            aria-label={lang === 'en' ? 'List' : 'Liste'}
             className={cn('p-2 rounded-full transition-all', viewMode === 'table' ? 'bg-white dark:bg-neutral-700 text-stone-900 dark:text-white shadow-sm' : 'text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white')}
           >
             <List className="h-4 w-4" />
@@ -632,17 +654,19 @@ export function BusinessPipeline() {
         {/* Filter toggle */}
         <button
           onClick={() => setShowFilters(!showFilters)}
+          aria-label={t.pipeline_filters}
           className={cn(
-            'flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium transition-all border',
+            'relative flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium transition-all border shrink-0',
+            TOOLBAR_ICON_MOBILE,
             hasActiveFilters
               ? 'bg-stone-100 dark:bg-neutral-800 border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200'
               : 'bg-white dark:bg-neutral-900 border-stone-200 dark:border-neutral-700 text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800'
           )}
         >
           <Filter className="h-4 w-4" />
-          {t.pipeline_filters}
+          <span className="hidden sm:inline">{t.pipeline_filters}</span>
           {hasActiveFilters && (
-            <span className="ml-1 bg-stone-900 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+            <span className="ml-1 max-sm:ml-0 max-sm:absolute max-sm:-top-1 max-sm:-right-1 bg-stone-900 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
               {(selectedPeriod > 0 ? 1 : 0) + (selectedMembers.length > 0 ? 1 : 0) + (selectedStages.length > 0 ? 1 : 0) + (selectedOffers.length > 0 ? 1 : 0) + (selectedTags.length > 0 ? 1 : 0)}
             </span>
           )}
@@ -653,14 +677,17 @@ export function BusinessPipeline() {
           <>
             <button
               onClick={() => setShowCreateStage(true)}
-              className="flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold bg-stone-900 text-white hover:opacity-90 transition-all"
+              aria-label={t.pipeline_new_status}
+              title={t.pipeline_new_status}
+              className="flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold bg-stone-900 text-white hover:opacity-90 transition-all shrink-0 max-sm:ml-auto max-lg:h-10 max-lg:w-10 max-lg:p-0 max-lg:justify-center dark:max-lg:bg-white dark:max-lg:text-stone-900"
             >
               <Plus className="h-4 w-4" strokeWidth={2} />
-              {t.pipeline_new_status}
+              <span className="hidden lg:inline">{t.pipeline_new_status}</span>
             </button>
             <button
               onClick={() => setShowResetConfig(true)}
-              className="relative p-2.5 rounded-full bg-white dark:bg-neutral-900 border border-stone-200 dark:border-neutral-700 text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-all"
+              aria-label={t.pipeline_config_pipeline}
+              className="relative shrink-0 p-2.5 max-lg:h-10 max-lg:w-10 max-lg:flex max-lg:items-center max-lg:justify-center rounded-full bg-white dark:bg-neutral-900 border border-stone-200 dark:border-neutral-700 text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-all"
               title={t.pipeline_config_pipeline}
             >
               <Settings className="h-4 w-4" />
@@ -844,7 +871,7 @@ export function BusinessPipeline() {
       )}
 
       {/* Stats bar */}
-      <div className="mb-3 flex items-center gap-4 text-xs text-stone-500 dark:text-neutral-400 flex-wrap">
+      <div className="mb-3 flex items-center gap-4 text-xs text-stone-500 dark:text-neutral-400 max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:no-scrollbar max-sm:-mx-4 max-sm:px-4 max-sm:gap-3 max-sm:[&>*]:shrink-0 max-sm:[&>*]:whitespace-nowrap flex-wrap">
         <span className="font-medium text-stone-700">{filtered.length} {filtered.length !== 1 ? t.pipeline_prospect_count_plural : t.pipeline_prospect_count}</span>
         {STAGES.map(s => {
           const count = filtered.filter(p => p.stage === s.id).length
@@ -871,20 +898,20 @@ export function BusinessPipeline() {
       {/* Kanban View */}
       {viewMode === 'kanban' && (
         <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
-          <div className="flex-1 overflow-y-auto space-y-12 pr-2 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto space-y-8 sm:space-y-12 pr-2 max-sm:-mx-4 max-sm:px-4 custom-scrollbar">
             {/* FLUX ACTIF */}
             <section>
-              <div className="flex items-baseline space-x-3 mb-6">
-                <h2 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">{t.pipeline_active_flow}</h2>
+              <div className="flex items-baseline space-x-3 mb-3 sm:mb-6">
+                <h2 className="font-business-display text-lg sm:text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white whitespace-nowrap">{t.pipeline_active_flow}</h2>
                 <div className="h-1 w-1 rounded-full bg-stone-300" />
-                <span className={LABEL_STYLE}>{t.pipeline_priority_ops}</span>
+                <span className={cn(LABEL_STYLE, 'truncate')}>{t.pipeline_priority_ops}</span>
               </div>
-              <div data-pipeline-hscroll className="flex overflow-x-auto gap-4 pb-2" style={{ minHeight: '400px' }}>
+              <div data-pipeline-hscroll className={cn(HSCROLL_ROW, 'sm:min-h-[400px]', !isDragging && SNAP_ROW)}>
                 {ACTIVE_STAGES.map((stage) => {
                   const stageDeals = filtered.filter(d => d.stage === stage.id)
 
                   return (
-                    <div key={stage.id} className="min-w-[260px] sm:min-w-[280px] shrink-0 flex-1 flex flex-col gap-4">
+                    <div key={stage.id} className={KANBAN_COL}>
                       <div className="flex items-center justify-between px-2">
                         <div className="flex items-center gap-2">
                           <div className={cn("h-3 w-3 rounded-full", stage.color)} />
@@ -912,7 +939,7 @@ export function BusinessPipeline() {
                             ref={provided.innerRef}
                             {...provided.droppableProps}
                             className={cn(
-                              "flex-1 bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700 rounded-[2rem] p-4 flex flex-col gap-3 shadow-sm overflow-y-auto max-h-[295px]",
+                              "flex-1 bg-white/70 dark:bg-white/5 backdrop-blur-md [@media(pointer:coarse)]:backdrop-blur-none ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700 rounded-3xl sm:rounded-[2rem] p-2.5 sm:p-4 flex flex-col gap-2.5 sm:gap-3 shadow-sm overflow-y-auto overscroll-contain min-h-[120px] sm:min-h-0 max-h-[62dvh] sm:max-h-[295px]",
                               snapshot.isDraggingOver && "bg-stone-50/50"
                             )}
                           >
@@ -926,7 +953,7 @@ export function BusinessPipeline() {
                                       {...provided.dragHandleProps}
                                       onClick={() => setSelectedProspect(deal)}
                                       className={cn(
-                                        "group bg-white dark:bg-neutral-800 p-5 rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] hover:shadow-xl border border-transparent hover:border-stone-200/20 dark:hover:border-neutral-600/20 transition-all cursor-pointer",
+                                        "group bg-white dark:bg-neutral-800 p-4 sm:p-5 rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] hover:shadow-xl border border-transparent hover:border-stone-200/20 dark:hover:border-neutral-600/20 transition-all cursor-pointer [@media(pointer:coarse)]:active:scale-[0.98]",
                                         snapshot.isDragging && "shadow-2xl ring-2 ring-stone-300 rotate-1 scale-105 z-[9999]"
                                       )}
                                     >
@@ -945,7 +972,7 @@ export function BusinessPipeline() {
                                         </div>
                                         <button
                                           onClick={(e) => { e.stopPropagation(); deleteProspect(deal.id) }}
-                                          className="p-1 text-stone-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-colors"
+                                          className={cn('p-1 text-stone-300 hover:text-red-500 transition-colors shrink-0', HOVER_REVEAL)}
                                         >
                                           <Trash2 className="h-3.5 w-3.5" />
                                         </button>
@@ -1007,7 +1034,7 @@ export function BusinessPipeline() {
                                       )}
                                     </div>
                                   )
-                                  return snapshot.isDragging ? createPortal(child, document.body) : child
+                                  return snapshot.isDragging && !isCoarsePointer() ? createPortal(child, document.body) : child
                                 }}
                               </Draggable>
                             ))}
@@ -1022,18 +1049,18 @@ export function BusinessPipeline() {
             </section>
 
             {/* FLUX INACTIF */}
-            <section className="opacity-60 hover:opacity-100 transition-opacity">
-              <div className="flex items-baseline space-x-3 mb-6">
-                <h2 className="font-business-display text-xl font-extrabold tracking-tight text-stone-600 dark:text-neutral-300">{t.pipeline_inactive_flow}</h2>
+            <section className="[@media(hover:hover)]:opacity-60 hover:opacity-100 transition-opacity">
+              <div className="flex items-baseline space-x-3 mb-3 sm:mb-6">
+                <h2 className="font-business-display text-base sm:text-xl font-extrabold tracking-tight text-stone-600 dark:text-neutral-300 whitespace-nowrap">{t.pipeline_inactive_flow}</h2>
                 <div className="h-1 w-1 rounded-full bg-stone-300" />
-                <span className={LABEL_STYLE}>{t.pipeline_archives}</span>
+                <span className={cn(LABEL_STYLE, 'truncate')}>{t.pipeline_archives}</span>
               </div>
-              <div data-pipeline-hscroll className="flex overflow-x-auto gap-4 pb-2" style={{ minHeight: '150px' }}>
+              <div data-pipeline-hscroll className={cn(HSCROLL_ROW, 'sm:min-h-[150px]', !isDragging && SNAP_ROW)}>
                 {INACTIVE_STAGES.map((stage) => {
                   const stageDeals = filtered.filter(d => d.stage === stage.id)
 
                   return (
-                    <div key={stage.id} className="min-w-[260px] sm:min-w-[280px] shrink-0 flex-1 flex flex-col gap-4">
+                    <div key={stage.id} className={KANBAN_COL}>
                       <div className="flex items-center justify-between px-2">
                         <div className="flex items-center gap-2">
                           <div className={cn("h-2.5 w-2.5 rounded-full", stage.id === 'lost' ? 'bg-[#ba1a1a]/40' : 'bg-stone-300')} />
@@ -1061,7 +1088,7 @@ export function BusinessPipeline() {
                             ref={provided.innerRef}
                             {...provided.droppableProps}
                             className={cn(
-                              "flex-1 rounded-xl border border-stone-200/50 dark:border-neutral-700/50 bg-stone-50/50 dark:bg-neutral-800/50 p-3 flex flex-col gap-2 overflow-y-auto max-h-[295px]",
+                              "flex-1 rounded-2xl sm:rounded-xl border border-stone-200/50 dark:border-neutral-700/50 bg-stone-50/50 dark:bg-neutral-800/50 p-2.5 sm:p-3 flex flex-col gap-2 overflow-y-auto overscroll-contain max-h-[62dvh] sm:max-h-[295px]",
                               snapshot.isDraggingOver && "bg-stone-100/50"
                             )}
                           >
@@ -1086,7 +1113,7 @@ export function BusinessPipeline() {
                                         </div>
                                         <button
                                           onClick={(e) => { e.stopPropagation(); deleteProspect(deal.id) }}
-                                          className="p-1 text-stone-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-colors"
+                                          className={cn('p-1 text-stone-300 hover:text-red-500 transition-colors shrink-0', HOVER_REVEAL)}
                                         >
                                           <Trash2 className="h-3 w-3" />
                                         </button>
@@ -1096,7 +1123,7 @@ export function BusinessPipeline() {
                                       )}
                                     </div>
                                   )
-                                  return snapshot.isDragging ? createPortal(child, document.body) : child
+                                  return snapshot.isDragging && !isCoarsePointer() ? createPortal(child, document.body) : child
                                 }}
                               </Draggable>
                             ))}
@@ -1118,18 +1145,18 @@ export function BusinessPipeline() {
             {/* CUSTOM STAGES */}
             {customStages.length > 0 && (
               <section>
-                <div className="flex items-baseline space-x-3 mb-6">
-                  <h2 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">{t.pipeline_custom_stages}</h2>
+                <div className="flex items-baseline space-x-3 mb-3 sm:mb-6">
+                  <h2 className="font-business-display text-lg sm:text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white whitespace-nowrap">{t.pipeline_custom_stages}</h2>
                   <div className="h-1 w-1 rounded-full bg-stone-300" />
-                  <span className={LABEL_STYLE}>{t.pipeline_created_by_team}</span>
+                  <span className={cn(LABEL_STYLE, 'truncate')}>{t.pipeline_created_by_team}</span>
                 </div>
-                <div data-pipeline-hscroll className="flex overflow-x-auto gap-4 pb-2" style={{ minHeight: '250px' }}>
+                <div data-pipeline-hscroll className={cn(HSCROLL_ROW, 'sm:min-h-[250px]', !isDragging && SNAP_ROW)}>
                   {customStages.map((cs) => {
                     const stageId = `custom_${cs.id}`
                     const stageDeals = filtered.filter(d => d.stage === stageId)
 
                     return (
-                      <div key={stageId} className="min-w-[260px] sm:min-w-[280px] shrink-0 flex-1 flex flex-col gap-4">
+                      <div key={stageId} className={KANBAN_COL}>
                         <div className="flex items-center justify-between px-2">
                           <div className="flex items-center gap-2">
                             <div className="h-3 w-3 rounded-full" style={{ backgroundColor: cs.color }} />
@@ -1156,7 +1183,7 @@ export function BusinessPipeline() {
                               ref={provided.innerRef}
                               {...provided.droppableProps}
                               className={cn(
-                                "flex-1 bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700 rounded-[2rem] p-4 flex flex-col gap-3 shadow-sm overflow-y-auto",
+                                "flex-1 bg-white/70 dark:bg-white/5 backdrop-blur-md [@media(pointer:coarse)]:backdrop-blur-none ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700 rounded-3xl sm:rounded-[2rem] p-2.5 sm:p-4 flex flex-col gap-2.5 sm:gap-3 shadow-sm overflow-y-auto overscroll-contain min-h-[120px] sm:min-h-0 max-sm:max-h-[62dvh]",
                                 snapshot.isDraggingOver && "bg-stone-50/50"
                               )}
                               style={{ borderTop: `3px solid ${cs.color}` }}
@@ -1171,7 +1198,7 @@ export function BusinessPipeline() {
                                         {...provided.dragHandleProps}
                                         onClick={() => setSelectedProspect(deal)}
                                         className={cn(
-                                          "group bg-white dark:bg-neutral-800 p-5 rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] hover:shadow-xl border border-transparent hover:border-stone-200/20 dark:hover:border-neutral-600/20 transition-all cursor-pointer",
+                                          "group bg-white dark:bg-neutral-800 p-4 sm:p-5 rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] hover:shadow-xl border border-transparent hover:border-stone-200/20 dark:hover:border-neutral-600/20 transition-all cursor-pointer [@media(pointer:coarse)]:active:scale-[0.98]",
                                           snapshot.isDragging && "shadow-2xl ring-2 ring-stone-300 rotate-1 scale-105 z-[9999]"
                                         )}
                                       >
@@ -1190,7 +1217,7 @@ export function BusinessPipeline() {
                                           </div>
                                           <button
                                             onClick={(e) => { e.stopPropagation(); deleteProspect(deal.id) }}
-                                            className="p-1 text-stone-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-colors"
+                                            className={cn('p-1 text-stone-300 hover:text-red-500 transition-colors shrink-0', HOVER_REVEAL)}
                                           >
                                             <Trash2 className="h-3.5 w-3.5" />
                                           </button>
@@ -1216,7 +1243,7 @@ export function BusinessPipeline() {
                                         )}
                                       </div>
                                     )
-                                    return snapshot.isDragging ? createPortal(child, document.body) : child
+                                    return snapshot.isDragging && !isCoarsePointer() ? createPortal(child, document.body) : child
                                   }}
                                 </Draggable>
                               ))}
@@ -1241,7 +1268,60 @@ export function BusinessPipeline() {
 
       {/* Table View */}
       {viewMode === 'table' && (
-        <div className="flex-1 overflow-auto rounded-2xl bg-white dark:bg-neutral-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
+        <>
+        {/* Téléphone / tablette : liste compacte, mêmes clics et actions que le tableau */}
+        <div className="lg:hidden rounded-2xl bg-white dark:bg-neutral-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] ring-1 ring-stone-100 dark:ring-neutral-800 divide-y divide-stone-100 dark:divide-neutral-800 overflow-hidden">
+          {filtered.length === 0 ? (
+            <p className="py-8 text-center text-sm text-stone-400">{t.pipeline_no_prospect_found}</p>
+          ) : (
+            filtered.map((deal) => {
+              const stage = STAGES.find(s => s.id === deal.stage)
+              const cs = stage ? null : customStages.find(c => `custom_${c.id}` === deal.stage)
+              const assignedMember = teamMembers.find(m => m.id === deal.assigned_to)
+              const meta = [deal.company, assignedMember ? `${assignedMember.first_name} ${assignedMember.last_name}`.trim() : null].filter(Boolean).join(' · ')
+              return (
+                <div
+                  key={deal.id}
+                  onClick={() => setSelectedProspect(deal)}
+                  className="flex items-center gap-3 px-4 py-3 cursor-pointer active:bg-stone-50 dark:active:bg-neutral-800 transition-colors"
+                >
+                  <div className="h-9 w-9 rounded-full bg-stone-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
+                    <User className="h-4 w-4 text-stone-500" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <p className="text-sm font-bold text-stone-900 dark:text-white truncate">{getDisplayName(deal)}</p>
+                      <DMRBadge prospect={deal} />
+                    </div>
+                    <p className="text-xs text-stone-500 dark:text-neutral-400 truncate">
+                      {deal.value ? <span className="font-extrabold text-emerald-600">{deal.value.toLocaleString()} €{meta ? ' · ' : ''}</span> : null}
+                      {meta || (deal.value ? '' : (deal.email || '—'))}
+                    </p>
+                  </div>
+                  {stage ? (
+                    <span className={cn('inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap shrink-0', stage.bgLight, stage.textColor)}>
+                      <span className={cn('h-1.5 w-1.5 rounded-full', stage.color)} />
+                      {stageNames[stage.id] || stage.name}
+                    </span>
+                  ) : cs ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap shrink-0 bg-stone-50 text-stone-700 max-w-[110px]">
+                      <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: cs.color }} />
+                      <span className="truncate">{cs.name}</span>
+                    </span>
+                  ) : null}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); deleteProspect(deal.id) }}
+                    aria-label={lang === 'en' ? 'Delete' : 'Supprimer'}
+                    className="-mr-2 h-9 w-9 flex items-center justify-center rounded-full text-stone-300 hover:text-red-500 active:bg-stone-100 dark:active:bg-neutral-800 transition-colors shrink-0"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )
+            })
+          )}
+        </div>
+        <div className="hidden lg:block flex-1 overflow-auto rounded-2xl bg-white dark:bg-neutral-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
           <table className="w-full min-w-[900px]">
             <thead className="sticky top-0 z-10 bg-stone-50/50 dark:bg-neutral-800/50 border-b border-stone-100 dark:border-neutral-700">
               <tr>
@@ -1358,6 +1438,7 @@ export function BusinessPipeline() {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {/* Prospect View */}
@@ -1425,34 +1506,35 @@ export function BusinessPipeline() {
 
       {/* Pipeline Auto-Reset Config Modal */}
       {showResetConfig && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowResetConfig(false)}>
-          <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl w-full max-w-lg mx-4" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowResetConfig(false)}>
+          <div className="bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:max-w-lg sm:mx-4 max-h-[92dvh] sm:max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="sm:hidden mx-auto mt-2 h-1 w-10 rounded-full bg-stone-300 dark:bg-neutral-700 shrink-0" />
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-stone-200/60 dark:border-neutral-700">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-stone-100 dark:bg-white/5 flex items-center justify-center">
+            <div className="flex items-center justify-between gap-3 px-5 sm:px-6 py-4 sm:py-5 border-b border-stone-200/60 dark:border-neutral-700 shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-2xl bg-stone-100 dark:bg-white/5 flex items-center justify-center shrink-0">
                   <RefreshCw className="h-5 w-5 text-stone-600 dark:text-neutral-300" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-black text-stone-900 dark:text-white" style={{ fontFamily: "'Manrope', sans-serif" }}>{t.pipeline_auto_reset}</h3>
+                <div className="min-w-0">
+                  <h3 className="text-base sm:text-lg font-black text-stone-900 dark:text-white" style={{ fontFamily: "'Manrope', sans-serif" }}>{t.pipeline_auto_reset}</h3>
                   <p className="text-xs text-stone-400 dark:text-neutral-500">{t.pipeline_auto_reset_desc}</p>
                 </div>
               </div>
-              <button onClick={() => setShowResetConfig(false)} className="p-1.5 rounded-full hover:bg-stone-100 dark:hover:bg-white/5 transition-colors">
+              <button onClick={() => setShowResetConfig(false)} aria-label={lang === 'en' ? 'Close' : 'Fermer'} className="p-1.5 max-sm:p-2.5 max-sm:-mr-1.5 rounded-full hover:bg-stone-100 dark:hover:bg-white/5 transition-colors shrink-0">
                 <X className="w-4 h-4 text-stone-400" />
               </button>
             </div>
 
-            <div className="px-6 py-5 space-y-5">
+            <div className="px-5 sm:px-6 py-5 space-y-5 overflow-y-auto overscroll-contain flex-1 min-h-0">
               {/* Toggle */}
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
                   <p className="text-sm font-bold text-stone-900 dark:text-white">{t.pipeline_enable_reset}</p>
                   <p className="text-xs text-stone-400 dark:text-neutral-500 mt-0.5">{t.pipeline_enable_reset_desc}</p>
                 </div>
                 <button
                   onClick={() => setResetConfig(prev => ({ ...prev, is_active: !prev.is_active }))}
-                  className="text-stone-900 dark:text-white"
+                  className="text-stone-900 dark:text-white shrink-0"
                 >
                   {resetConfig.is_active
                     ? <ToggleRight className="h-8 w-8 text-emerald-500" />
@@ -1488,7 +1570,7 @@ export function BusinessPipeline() {
                   <div>
                     <label className="text-[10px] uppercase tracking-widest text-stone-400 font-bold mb-2 block">{t.pipeline_columns_to_clear}</label>
                     <p className="text-xs text-stone-400 dark:text-neutral-500 mb-3">{t.pipeline_columns_desc}</p>
-                    <div className="space-y-1.5 max-h-[250px] overflow-y-auto">
+                    <div className="space-y-1.5 max-h-[250px] max-sm:max-h-none overflow-y-auto">
                       {ALL_STAGES_WITH_CUSTOM.map(stage => {
                         const isSelected = resetConfig.stages_to_clear.includes(stage.id)
                         const isWon = stage.id === 'won'
@@ -1546,17 +1628,17 @@ export function BusinessPipeline() {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-stone-200/60 dark:border-neutral-700">
+            <div className="flex items-center justify-end gap-3 px-5 sm:px-6 pt-3 sm:pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-4 border-t border-stone-200/60 dark:border-neutral-700 shrink-0">
               <button
                 onClick={() => setShowResetConfig(false)}
-                className="px-5 py-2.5 rounded-full text-sm font-bold text-stone-600 dark:text-neutral-300 hover:bg-stone-100 dark:hover:bg-white/5 transition-all"
+                className="max-sm:flex-1 max-sm:h-11 px-5 py-2.5 rounded-full text-sm font-bold text-stone-600 dark:text-neutral-300 hover:bg-stone-100 dark:hover:bg-white/5 transition-all"
               >
                 {t.common_cancel}
               </button>
               <button
                 onClick={handleSaveResetConfig}
                 disabled={savingResetConfig || (resetConfig.is_active && resetConfig.stages_to_clear.length === 0)}
-                className="px-6 py-2.5 rounded-full text-sm font-bold bg-stone-900 text-white hover:opacity-90 disabled:opacity-50 transition-all"
+                className="max-sm:flex-1 max-sm:h-11 px-6 py-2.5 rounded-full text-sm font-bold bg-stone-900 text-white hover:opacity-90 disabled:opacity-50 transition-all"
               >
                 {savingResetConfig ? t.pipeline_saving : t.common_save}
               </button>
@@ -1567,11 +1649,12 @@ export function BusinessPipeline() {
 
       {/* Create Custom Stage Modal */}
       {showCreateStage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowCreateStage(false)}>
-          <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowCreateStage(false)}>
+          <div className="bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:max-w-md sm:mx-4 max-h-[92dvh] sm:max-h-[90vh] overflow-y-auto overscroll-contain p-5 sm:p-6 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:pb-6" onClick={e => e.stopPropagation()}>
+            <div className="sm:hidden mx-auto mb-3 h-1 w-10 rounded-full bg-stone-300 dark:bg-neutral-700" />
+            <div className="flex items-center justify-between mb-5 sm:mb-6">
               <h3 className="font-business-display text-lg font-extrabold text-stone-900 dark:text-white">{t.pipeline_new_stage_title}</h3>
-              <button onClick={() => setShowCreateStage(false)} className="p-1 text-stone-400 hover:text-stone-600">
+              <button onClick={() => setShowCreateStage(false)} aria-label={lang === 'en' ? 'Close' : 'Fermer'} className="p-1 max-sm:p-2 max-sm:-mr-2 text-stone-400 hover:text-stone-600">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -1628,7 +1711,7 @@ export function BusinessPipeline() {
 
               <div>
                 <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-1.5">{t.pipeline_stage_roles}</label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {ROLE_OPTIONS.map(r => (
                     <button
                       key={r.value}
@@ -1654,14 +1737,14 @@ export function BusinessPipeline() {
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setShowCreateStage(false)}
-                className="px-4 py-2 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:text-stone-900 dark:hover:text-white transition-colors"
+                className="max-sm:flex-1 max-sm:h-11 max-sm:rounded-full max-sm:bg-stone-100 max-sm:dark:bg-neutral-800 px-4 py-2 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:text-stone-900 dark:hover:text-white transition-colors"
               >
                 Annuler
               </button>
               <button
                 onClick={handleCreateStage}
                 disabled={!newStageName.trim() || newStageRoles.length === 0 || creatingStage}
-                className="px-5 py-2 text-sm font-bold bg-stone-900 text-white rounded-full hover:opacity-90 disabled:opacity-50 transition-all"
+                className="max-sm:flex-1 max-sm:h-11 px-5 py-2 text-sm font-bold bg-stone-900 text-white rounded-full hover:opacity-90 disabled:opacity-50 transition-all"
               >
                 {creatingStage ? 'Création...' : 'Créer le statut'}
               </button>

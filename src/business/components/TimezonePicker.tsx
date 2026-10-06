@@ -34,25 +34,25 @@ export function TimezonePicker({ value, onChange, className, placeholder = 'Fuse
     return (
       <div className={cn('rounded-xl border border-[#c4c7c7]/30 dark:border-neutral-700 bg-white dark:bg-neutral-800 overflow-hidden', className)}>
         <div className="flex items-center gap-2 px-3 py-2 border-b border-[#c4c7c7]/20 dark:border-neutral-700">
-          <Search className="h-4 w-4 text-stone-400" strokeWidth={1.5} />
+          <Search className="h-4 w-4 text-stone-400 shrink-0" strokeWidth={1.5} />
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Rechercher un fuseau (ex: Tbilisi, Auckland…)"
-            className="flex-1 bg-transparent text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:outline-none"
+            className="flex-1 min-w-0 bg-transparent text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:outline-none"
           />
           <button
             type="button"
             onClick={() => { setSearchOpen(false); setQuery('') }}
-            className="rounded-full p-1 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200"
+            className="shrink-0 rounded-full p-1 max-sm:p-2 max-sm:-mr-1 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200"
             aria-label="Fermer la recherche"
           >
             <X className="h-3.5 w-3.5" strokeWidth={1.5} />
           </button>
         </div>
-        <div className="max-h-56 overflow-y-auto">
+        <div className="max-h-56 overflow-y-auto overscroll-contain">
           {filtered.length === 0 && (
             <p className="px-3 py-3 text-xs text-stone-500 dark:text-neutral-400">Aucun fuseau trouvé.</p>
           )}
@@ -62,7 +62,7 @@ export function TimezonePicker({ value, onChange, className, placeholder = 'Fuse
               type="button"
               onClick={() => { onChange(tz); setSearchOpen(false); setQuery('') }}
               className={cn(
-                'w-full text-left px-3 py-2 text-sm hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors',
+                'w-full text-left px-3 py-2 max-sm:py-2.5 text-sm break-words hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors',
                 tz === value ? 'bg-[#f5f3f2] dark:bg-neutral-700/70 text-stone-900 dark:text-white font-semibold' : 'text-stone-700 dark:text-neutral-200'
               )}
             >
@@ -86,7 +86,7 @@ export function TimezonePicker({ value, onChange, className, placeholder = 'Fuse
           }
           onChange(v)
         }}
-        className="w-full appearance-none rounded-xl border border-[#c4c7c7]/30 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-2.5 pr-10 text-sm text-stone-900 dark:text-white focus:outline-none focus:border-stone-900 dark:focus:border-white"
+        className="w-full min-w-0 truncate appearance-none rounded-xl border border-[#c4c7c7]/30 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-2.5 pr-10 text-sm text-stone-900 dark:text-white focus:outline-none focus:border-stone-900 dark:focus:border-white"
       >
         <option value="">{placeholder}</option>
         {!valueInCommon && value && (
