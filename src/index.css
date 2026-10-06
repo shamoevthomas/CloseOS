@@ -130,6 +130,14 @@ select option:disabled {
   }
 }
 
+/* CloseOS Business : fond du body assorti (rebond de défilement iOS, pages plus courtes que l'écran). */
+body:has(.business-app) {
+  background-color: #f4f2f1;
+}
+html.dark body:has(.business-app) {
+  background-color: #141211;
+}
+
 /* CloseOS Business : pas de flash gris au toucher (les éléments ont leurs propres états actifs). */
 .business-app,
 .business-app * {
