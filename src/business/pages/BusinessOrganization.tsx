@@ -171,7 +171,7 @@ function SectionEditor({
       </div>
 
       {sections.map(section => (
-        <div key={section.id} className="rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+        <div key={section.id} className="rounded-xl overflow-hidden bg-white/70 dark:bg-neutral-900/60 backdrop-blur-md border-[0.5px] border-[rgba(196,199,199,0.2)] dark:border-neutral-700/50">
           <div className="flex items-center gap-2 px-3 md:px-5 py-3 sm:py-4 bg-[#f5f3f2]/60 dark:bg-neutral-800/60 min-h-[44px]">
             <GripVertical className="h-4 w-4 text-[#c4c7c7] shrink-0" />
             <input
@@ -193,7 +193,7 @@ function SectionEditor({
               {section.blocks.map(block => {
                 const colors = blockColors[block.type]
                 return (
-                  <div key={block.id} className={`rounded-xl p-3 sm:p-5 flex items-start gap-2 sm:gap-5 border-l-4 ${colors.border}`} style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '0.5px solid rgba(196,199,199,0.2)', borderLeftWidth: '4px' }}>
+                  <div key={block.id} className={`rounded-xl p-3 sm:p-5 flex items-start gap-2 sm:gap-5 bg-white/70 dark:bg-neutral-800/60 backdrop-blur-md border-[0.5px] border-[rgba(196,199,199,0.2)] dark:border-neutral-700/50 border-l-4 ${colors.border}`}>
                     <div className={`hidden sm:flex w-10 h-10 rounded-lg ${colors.bg} items-center justify-center ${colors.text} shrink-0`}>
                       {block.type === 'text' && <Type className="h-4 w-4" />}
                       {block.type === 'video' && <Video className="h-4 w-4" />}
@@ -316,7 +316,7 @@ function SectionViewer({ sections }: { sections: ContentSection[] }) {
   return (
     <div className="space-y-3 sm:space-y-5">
       {sections.map(section => (
-        <div key={section.id} className="rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+        <div key={section.id} className="rounded-xl overflow-hidden bg-white/70 dark:bg-neutral-900/60 backdrop-blur-md border-[0.5px] border-[rgba(196,199,199,0.2)] dark:border-neutral-700/50">
           <div className="px-4 sm:px-5 py-3 sm:py-4 bg-[#f5f3f2]/60 dark:bg-neutral-800/60">
             <h4 className="font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white text-sm">{section.title}</h4>
           </div>
@@ -324,7 +324,7 @@ function SectionViewer({ sections }: { sections: ContentSection[] }) {
             {section.blocks.map(block => {
               const colors = blockColors[block.type]
               return (
-                <div key={block.id} className={`rounded-xl p-3 sm:p-5 flex items-start gap-5 border-l-4 ${colors.border}`} style={{ background: 'rgba(255,255,255,0.5)', border: '0.5px solid rgba(196,199,199,0.15)', borderLeftWidth: '4px' }}>
+                <div key={block.id} className={`rounded-xl p-3 sm:p-5 flex items-start gap-5 bg-white/50 dark:bg-neutral-800/50 border-[0.5px] border-[rgba(196,199,199,0.15)] dark:border-neutral-700/50 border-l-4 ${colors.border}`}>
                   <div className={`hidden sm:flex w-10 h-10 rounded-lg ${colors.bg} items-center justify-center ${colors.text} shrink-0`}>
                     {block.type === 'text' && <Type className="h-4 w-4" />}
                     {block.type === 'video' && <Video className="h-4 w-4" />}
@@ -333,7 +333,7 @@ function SectionViewer({ sections }: { sections: ContentSection[] }) {
                   </div>
                   <div className="flex-1 min-w-0">
                     {block.type === 'text' && (
-                      <p className="text-sm text-[#444748] whitespace-pre-wrap leading-relaxed">{block.content}</p>
+                      <p className="text-sm text-[#444748] dark:text-neutral-300 whitespace-pre-wrap leading-relaxed">{block.content}</p>
                     )}
                     {block.type === 'video' && block.content && (
                       <div className="rounded-xl overflow-hidden bg-black aspect-video">
