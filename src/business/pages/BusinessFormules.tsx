@@ -374,24 +374,24 @@ export function BusinessFormules() {
   }
 
   return (
-    <div className="space-y-10">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="space-y-1">
-          <span className="text-xs uppercase tracking-[0.2em] text-stone-400 dark:text-neutral-500 font-bold">{t.formulas_management}</span>
+    <div className="space-y-4 sm:space-y-10">
+      {/* Header — mobile : titre et bouton principal sur une ligne */}
+      <div className="flex flex-row items-end justify-between gap-3 md:gap-6">
+        <div className="space-y-1 min-w-0">
+          <span className="text-[10px] sm:text-xs uppercase tracking-wider sm:tracking-[0.2em] text-stone-400 dark:text-neutral-500 font-bold">{t.formulas_management}</span>
           <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">{t.formulas_title}</h1>
         </div>
         {!isTeamMember && (
-          <button onClick={openCreate} className="flex items-center gap-2 bg-stone-900 dark:bg-white dark:text-stone-900 text-white px-7 py-3.5 rounded-full font-semibold hover:opacity-90 active:scale-95 transition-all shadow-xl text-sm">
-            <Plus className="h-4 w-4" /> {t.formulas_new_formula}
+          <button onClick={openCreate} aria-label={t.formulas_new_formula} className="shrink-0 flex items-center justify-center gap-2 bg-stone-900 dark:bg-white dark:text-stone-900 text-white h-10 w-10 sm:h-auto sm:w-auto sm:px-7 sm:py-3.5 rounded-full font-semibold hover:opacity-90 active:scale-95 transition-all shadow-xl text-sm">
+            <Plus className="h-5 w-5 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">{t.formulas_new_formula}</span>
           </button>
         )}
       </div>
 
       {/* Empty state */}
       {formulas.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-stone-200 dark:border-neutral-800 bg-stone-50 dark:bg-neutral-800 py-16">
-          <Package className="h-12 w-12 text-stone-300 dark:text-neutral-600 mb-4" />
+        <div className="flex flex-col items-center justify-center text-center px-4 rounded-2xl border-2 border-dashed border-stone-200 dark:border-neutral-800 bg-stone-50 dark:bg-neutral-800 py-8 sm:py-16">
+          <Package className="h-8 w-8 sm:h-12 sm:w-12 text-stone-300 dark:text-neutral-600 mb-2 sm:mb-4" />
           <h3 className="text-lg font-semibold text-stone-700 dark:text-neutral-200 mb-1">{t.formulas_no_formulas}</h3>
           <p className="text-sm text-stone-500 dark:text-neutral-400 mb-4">{t.formulas_create_first_desc}</p>
           {!isTeamMember && (
@@ -403,14 +403,14 @@ export function BusinessFormules() {
       )}
 
       {/* Formula cards */}
-      <div className="grid gap-8 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-3 sm:gap-8 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
         {formulas.map((formula) => {
           const resourceCount = (formula.resources || []).length
           const commissionRoles = activeRoles.filter(r => (roleRates[r] ?? 0) > 0).length
           return (
-            <div key={formula.id} onClick={() => openEdit(formula)} className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] hover:shadow-xl transition-all border border-stone-100/50 dark:border-neutral-700/30 cursor-pointer">
+            <div key={formula.id} onClick={() => openEdit(formula)} className="min-w-0 bg-white dark:bg-neutral-800 rounded-2xl p-4 sm:p-6 lg:p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] hover:shadow-xl transition-all border border-stone-100/50 dark:border-neutral-700/30 cursor-pointer active:scale-[0.99]">
               {/* Top: badge + actions */}
-              <div className="flex justify-between items-start mb-6">
+              <div className="flex justify-between items-center sm:items-start mb-2 sm:mb-6 -mt-1 sm:mt-0">
                 <span className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full ${
                   formula.is_active
                     ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
@@ -418,7 +418,7 @@ export function BusinessFormules() {
                 }`}>
                   {formula.is_active ? t.formulas_active : t.formulas_inactive}
                 </span>
-                <div className="flex gap-1">
+                <div className="flex gap-1 -mr-2 sm:mr-0">
                   {isTeamMember ? (
                     <button onClick={(e) => { e.stopPropagation(); openEdit(formula) }} className="p-2 hover:bg-stone-50 dark:hover:bg-neutral-800 rounded-full text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white transition-colors">
                       <Eye className="h-4 w-4" />
@@ -437,25 +437,25 @@ export function BusinessFormules() {
               </div>
 
               {/* Name + description */}
-              <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-2">{formula.name}</h3>
+              <h3 className="text-lg sm:text-xl font-extrabold text-stone-900 dark:text-white mb-1 sm:mb-2 break-words">{formula.name}</h3>
               {formula.description && (
-                <p className="text-stone-500 dark:text-neutral-400 text-sm mb-8 leading-relaxed line-clamp-2">{formula.description}</p>
+                <p className="text-stone-500 dark:text-neutral-400 text-sm mb-4 sm:mb-8 leading-relaxed line-clamp-2">{formula.description}</p>
               )}
-              {!formula.description && <div className="mb-8" />}
+              {!formula.description && <div className="mb-3 sm:mb-8" />}
 
               {/* Price */}
-              <div className="mb-8">
+              <div className="mb-3 sm:mb-8">
                 {formula.billing_type === 'quote' ? (
-                  <span className="text-2xl font-extrabold text-stone-900 dark:text-white">{t.formulas_on_quote}</span>
+                  <span className="text-xl sm:text-2xl font-extrabold text-stone-900 dark:text-white">{t.formulas_on_quote}</span>
                 ) : (
                   <>
-                    <span className="text-4xl font-extrabold text-stone-900 dark:text-white">
+                    <span className="text-2xl sm:text-4xl font-extrabold text-stone-900 dark:text-white">
                       {formula.price?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                     </span>
                     <span className="text-stone-400 dark:text-neutral-500 text-sm ml-1">/ {formula.billing_type === 'subscription' ? t.formulas_per_month : t.formulas_one_time}</span>
                     {formula.billing_type === 'subscription' && formula.quarterly_price != null && (
                       <div className="mt-1">
-                        <span className="text-lg font-bold text-stone-600 dark:text-neutral-300">
+                        <span className="text-base sm:text-lg font-bold text-stone-600 dark:text-neutral-300">
                           {formula.quarterly_price.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                         </span>
                         <span className="text-stone-400 dark:text-neutral-500 text-xs ml-1">/ {t.formulas_per_quarter}</span>
@@ -463,7 +463,7 @@ export function BusinessFormules() {
                     )}
                     {formula.billing_type === 'subscription' && formula.yearly_price != null && (
                       <div className="mt-1">
-                        <span className="text-lg font-bold text-stone-600 dark:text-neutral-300">
+                        <span className="text-base sm:text-lg font-bold text-stone-600 dark:text-neutral-300">
                           {formula.yearly_price.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                         </span>
                         <span className="text-stone-400 dark:text-neutral-500 text-xs ml-1">/ {t.formulas_per_year}</span>
@@ -474,12 +474,12 @@ export function BusinessFormules() {
               </div>
 
               {/* Footer stats */}
-              <div className="flex items-center gap-4 py-4 border-t border-stone-100 dark:border-neutral-800">
+              <div className="flex items-center gap-4 pt-3 -mb-1 sm:mb-0 sm:py-4 border-t border-stone-100 dark:border-neutral-800">
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-neutral-300">
                   <File className="h-3.5 w-3.5" /> {t.formulas_resources_count.replace('{n}', String(resourceCount)).replace('{s}', resourceCount !== 1 ? 's' : '')}
                 </div>
                 {!isTeamMember && (
-                  <button onClick={(e) => { e.stopPropagation(); toggleActive(formula) }} className="ml-auto">
+                  <button onClick={(e) => { e.stopPropagation(); toggleActive(formula) }} className="ml-auto p-1 -my-1 -mr-1 sm:p-0 sm:my-0 sm:mr-0">
                     {formula.is_active ? <ToggleRight className="h-5 w-5 text-emerald-600" /> : <ToggleLeft className="h-5 w-5 text-stone-300 dark:text-neutral-600" />}
                   </button>
                 )}
@@ -491,20 +491,22 @@ export function BusinessFormules() {
 
       {/* Modal Create/Edit */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl md:rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4">
+          {/* Mobile : feuille du bas ; dès sm : modale centrée */}
+          <div className="w-full max-w-2xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col rounded-t-3xl sm:rounded-2xl md:rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl">
+            <div className="sm:hidden mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-stone-300 dark:bg-neutral-700" />
             {/* Modal header */}
-            <div className="flex items-center justify-between border-b border-stone-100 dark:border-neutral-800 px-4 md:px-8 py-4 md:py-5 flex-shrink-0">
-              <h3 className="text-xl font-extrabold text-stone-900 dark:text-white">
+            <div className="flex items-center justify-between gap-3 border-b border-stone-100 dark:border-neutral-800 px-5 md:px-8 py-3 sm:py-4 md:py-5 flex-shrink-0">
+              <h3 className="text-lg sm:text-xl font-extrabold text-stone-900 dark:text-white min-w-0 truncate">
                 {isTeamMember ? t.formulas_detail_title : editingFormula ? t.formulas_edit_formula : t.formulas_new_formula}
               </h3>
-              <button onClick={() => { setIsModalOpen(false); resetForm() }} className="p-2 hover:bg-stone-100 dark:hover:bg-neutral-800 rounded-full text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white transition-colors">
+              <button onClick={() => { setIsModalOpen(false); resetForm() }} aria-label={t.formulas_close_btn} className="shrink-0 -mr-2 md:mr-0 p-2 hover:bg-stone-100 dark:hover:bg-neutral-800 rounded-full text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Tabs */}
-            <div className="flex items-center gap-1 border-b border-stone-100 dark:border-neutral-800 px-4 md:px-8 flex-shrink-0">
+            <div className="flex items-center gap-1 border-b border-stone-100 dark:border-neutral-800 px-3 sm:px-4 md:px-8 flex-shrink-0">
               {([
                 { id: 'details', label: t.formulas_tab_details },
                 { id: 'pitch', label: t.formulas_tab_pitch },
@@ -525,9 +527,9 @@ export function BusinessFormules() {
             </div>
 
             {/* Content - scrollable */}
-            <div className="flex-1 overflow-y-auto px-4 md:px-8 py-4 md:py-6">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 md:px-8 py-4 md:py-6">
               {/* DETAILS TAB */}
-              <div className={`space-y-6 ${modalTab !== 'details' ? 'hidden' : ''}`}>
+              <div className={`space-y-5 sm:space-y-6 ${modalTab !== 'details' ? 'hidden' : ''}`}>
               {/* Name */}
               <div>
                 <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">{t.formulas_formula_name_label}</label>
@@ -631,7 +633,7 @@ export function BusinessFormules() {
                 <div>
                   <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">{t.formulas_team_assigned}</label>
                   <div className="relative">
-                    <select value={formTeamId || ''} onChange={(e) => setFormTeamId(e.target.value || null)} className={selectCls}>
+                    <select value={formTeamId || ''} onChange={(e) => setFormTeamId(e.target.value || null)} className={`${selectCls} max-sm:w-full max-sm:appearance-none max-sm:pr-9 max-sm:py-2.5`}>
                       <option value="">{t.formulas_all_team}</option>
                       {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                     </select>
@@ -656,7 +658,7 @@ export function BusinessFormules() {
                 )}
                 <div className="space-y-2">
                   {formResources.map((resource, idx) => (
-                    <div key={idx} className="flex items-center gap-2 rounded-xl border border-stone-200 dark:border-neutral-800 p-3 bg-stone-50/50 dark:bg-neutral-800/50">
+                    <div key={idx} className="flex flex-wrap sm:flex-nowrap items-center gap-2 rounded-xl border border-stone-200 dark:border-neutral-800 p-3 bg-stone-50/50 dark:bg-neutral-800/50">
                       <select
                         value={resource.type}
                         onChange={(e) => updateResource(idx, { type: e.target.value as Resource['type'] })}
@@ -671,11 +673,11 @@ export function BusinessFormules() {
                         onChange={(e) => updateResource(idx, { name: e.target.value })}
                         placeholder="Nom"
                         disabled={isTeamMember}
-                        className={`flex-1 ${smallInputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`}
+                        className={`flex-1 min-w-0 ${smallInputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`}
                       />
                       {resource.type === 'PDF' ? (
                         resource.url ? (
-                          <div className="flex-[2] flex items-center gap-2">
+                          <div className="order-last basis-full sm:order-none sm:basis-0 flex-[2] min-w-0 flex items-center gap-2">
                             <a href={resource.url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#006c49] font-medium truncate hover:underline flex items-center gap-1">
                               <FileText className="h-3.5 w-3.5 flex-shrink-0" />
                               {t.formulas_pdf_uploaded_link}
@@ -688,7 +690,7 @@ export function BusinessFormules() {
                             )}
                           </div>
                         ) : (
-                          <label className={`flex-[2] flex items-center justify-center gap-2 rounded-xl border border-dashed border-stone-300 dark:border-neutral-600 px-3 py-2 cursor-pointer hover:border-stone-400 dark:hover:border-neutral-500 transition-colors ${isTeamMember ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                          <label className={`order-last basis-full sm:order-none sm:basis-0 flex-[2] flex items-center justify-center gap-2 rounded-xl border border-dashed border-stone-300 dark:border-neutral-600 px-3 py-2 cursor-pointer hover:border-stone-400 dark:hover:border-neutral-500 transition-colors ${isTeamMember ? 'opacity-50 cursor-not-allowed' : ''}`}>
                             {uploadingResourceIdx === idx ? (
                               <><Loader2 className="h-3.5 w-3.5 animate-spin text-stone-400" /><span className="text-xs text-stone-400">{t.formulas_uploading}</span></>
                             ) : (
@@ -704,7 +706,7 @@ export function BusinessFormules() {
                           onChange={(e) => updateResource(idx, { url: e.target.value })}
                           placeholder="URL"
                           disabled={isTeamMember}
-                          className={`flex-[2] ${smallInputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`}
+                          className={`order-last basis-full sm:order-none sm:basis-0 flex-[2] min-w-0 ${smallInputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`}
                         />
                       )}
                       {resource.url && (
@@ -742,21 +744,21 @@ export function BusinessFormules() {
                       const setterCloserFullRate = roleRates['Setter-Closer:full'] ?? 0
                       const roleMembers = commissionMembers.filter(m => m.role === role)
                       const isExpanded = expandedRoles[role] || false
-                      const rateInputCls = `w-20 rounded-xl border border-stone-200 dark:border-neutral-800 px-3 py-1.5 text-sm text-right font-medium text-stone-900 dark:text-white bg-white dark:bg-neutral-900 focus:border-stone-900 focus:outline-none ${isHoSOrAdmin ? '!bg-stone-50 dark:!bg-neutral-800 !text-stone-500 dark:!text-neutral-400 cursor-not-allowed' : ''}`
+                      const rateInputCls = `w-16 sm:w-20 rounded-xl border border-stone-200 dark:border-neutral-800 px-3 py-1.5 text-sm text-right font-medium text-stone-900 dark:text-white bg-white dark:bg-neutral-900 focus:border-stone-900 focus:outline-none ${isHoSOrAdmin ? '!bg-stone-50 dark:!bg-neutral-800 !text-stone-500 dark:!text-neutral-400 cursor-not-allowed' : ''}`
 
                       return (
                         <div key={role} className="rounded-2xl border border-stone-200 dark:border-neutral-800 overflow-hidden">
                           {/* Role row */}
-                          <div className={`flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-neutral-800 ${isSetterCloser ? 'flex-wrap' : ''}`}>
+                          <div className={`flex flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-2 px-3 sm:px-4 py-3 bg-stone-50 dark:bg-neutral-800 ${isSetterCloser ? '!flex-wrap' : ''}`}>
                             <div className="flex items-center gap-2 flex-1 min-w-0">
                               <Users className="h-3.5 w-3.5 text-stone-400 dark:text-neutral-500 shrink-0" />
-                              <span className="text-sm font-semibold text-stone-800 dark:text-neutral-100">{role}</span>
-                              <span className="text-xs text-stone-400 dark:text-neutral-500">({roleMembers.length})</span>
+                              <span className="text-sm font-semibold text-stone-800 dark:text-neutral-100 truncate">{role}</span>
+                              <span className="text-xs text-stone-400 dark:text-neutral-500 shrink-0">({roleMembers.length})</span>
                             </div>
                             {isSetterCloser ? (
-                              <div className="flex items-center gap-2">
-                                <div className="flex items-center gap-1">
-                                  <span className="text-[10px] font-bold uppercase tracking-wide text-stone-500 dark:text-neutral-400">{t.formulas_closing_label}</span>
+                              <div className="w-full sm:w-auto grid grid-cols-3 gap-2 sm:flex sm:items-center">
+                                <div className="min-w-0 flex flex-wrap sm:flex-nowrap items-center gap-x-1 gap-y-0.5">
+                                  <span className="basis-full sm:basis-auto max-sm:truncate text-[10px] font-bold uppercase tracking-wide text-stone-500 dark:text-neutral-400">{t.formulas_closing_label}</span>
                                   <input
                                     type="number" min="0" max="100" step="0.5"
                                     value={roleRate}
@@ -765,12 +767,12 @@ export function BusinessFormules() {
                                       setRoleRates(prev => ({ ...prev, [role]: v }))
                                     }}
                                     disabled={isHoSOrAdmin}
-                                    className={rateInputCls}
+                                    className={`${rateInputCls} max-sm:flex-1 max-sm:min-w-0`}
                                   />
                                   <span className="text-sm text-stone-500 dark:text-neutral-400">%</span>
                                 </div>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-[10px] font-bold uppercase tracking-wide text-stone-500 dark:text-neutral-400">{t.formulas_setting_label}</span>
+                                <div className="min-w-0 flex flex-wrap sm:flex-nowrap items-center gap-x-1 gap-y-0.5">
+                                  <span className="basis-full sm:basis-auto max-sm:truncate text-[10px] font-bold uppercase tracking-wide text-stone-500 dark:text-neutral-400">{t.formulas_setting_label}</span>
                                   <input
                                     type="number" min="0" max="100" step="0.5"
                                     value={setterCloserSetterRate}
@@ -779,12 +781,12 @@ export function BusinessFormules() {
                                       setRoleRates(prev => ({ ...prev, 'Setter-Closer:setter': v }))
                                     }}
                                     disabled={isHoSOrAdmin}
-                                    className={rateInputCls}
+                                    className={`${rateInputCls} max-sm:flex-1 max-sm:min-w-0`}
                                   />
                                   <span className="text-sm text-stone-500 dark:text-neutral-400">%</span>
                                 </div>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-[10px] font-bold uppercase tracking-wide text-stone-500 dark:text-neutral-400">{t.formulas_fullcycle_label}</span>
+                                <div className="min-w-0 flex flex-wrap sm:flex-nowrap items-center gap-x-1 gap-y-0.5">
+                                  <span className="basis-full sm:basis-auto max-sm:truncate text-[10px] font-bold uppercase tracking-wide text-stone-500 dark:text-neutral-400">{t.formulas_fullcycle_label}</span>
                                   <input
                                     type="number" min="0" max="100" step="0.5"
                                     value={setterCloserFullRate}
@@ -793,14 +795,14 @@ export function BusinessFormules() {
                                       setRoleRates(prev => ({ ...prev, 'Setter-Closer:full': v }))
                                     }}
                                     disabled={isHoSOrAdmin}
-                                    className={rateInputCls}
+                                    className={`${rateInputCls} max-sm:flex-1 max-sm:min-w-0`}
                                   />
                                   <span className="text-sm text-stone-500 dark:text-neutral-400">%</span>
                                 </div>
                                 {!isHoSOrAdmin && (
                                   <button
                                     onClick={() => setExpandedRoles(prev => ({ ...prev, [role]: !prev[role] }))}
-                                    className="flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 transition-colors"
+                                    className="col-span-3 justify-self-end flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 transition-colors"
                                   >
                                     {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                                     {t.formulas_advanced}
@@ -808,7 +810,7 @@ export function BusinessFormules() {
                                 )}
                               </div>
                             ) : (
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1 sm:gap-2 ml-auto sm:ml-0">
                                 <div className="flex items-center gap-1">
                                   <input
                                     type="number" min="0" max="100" step="0.5"
@@ -861,14 +863,14 @@ export function BusinessFormules() {
                                   const hasAnyOverride = isOverridden || isSetterOverridden || isFullOverridden
 
                                   return (
-                                    <div key={member.id} className="flex items-center gap-3 px-4 py-2.5 pl-10 flex-wrap">
+                                    <div key={member.id} className="flex items-center gap-x-3 gap-y-2 px-3 sm:px-4 py-2.5 pl-4 sm:pl-10 flex-wrap">
                                       <div className="flex-1 min-w-0">
                                         <span className="text-sm text-stone-700 dark:text-neutral-200">{member.first_name} {member.last_name}</span>
                                         {hasAnyOverride && (
                                           <span className="ml-2 text-[10px] font-bold text-stone-900 dark:text-white bg-stone-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded-full">{t.formulas_customized}</span>
                                         )}
                                       </div>
-                                      <div className="flex items-center gap-3">
+                                      <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3">
                                         <div className="flex items-center gap-1">
                                           <span className="text-[10px] font-bold uppercase tracking-wide text-stone-400 dark:text-neutral-500">Clo.</span>
                                           <input
@@ -878,7 +880,7 @@ export function BusinessFormules() {
                                               const v = parseFloat(e.target.value) || 0
                                               setMemberRates(prev => ({ ...prev, [member.id]: v }))
                                             }}
-                                            className={`w-20 rounded-xl border px-3 py-1.5 text-sm text-right font-medium focus:border-stone-900 focus:outline-none ${
+                                            className={`w-16 sm:w-20 rounded-xl border px-2 sm:px-3 py-1.5 text-sm text-right font-medium focus:border-stone-900 focus:outline-none ${
                                               isOverridden ? 'border-stone-400 dark:border-neutral-600 text-stone-900 dark:text-white bg-stone-50 dark:bg-neutral-800' : 'border-stone-200 dark:border-neutral-800 text-stone-600 dark:text-neutral-300'
                                             }`}
                                           />
@@ -893,7 +895,7 @@ export function BusinessFormules() {
                                               const v = parseFloat(e.target.value) || 0
                                               setMemberRates(prev => ({ ...prev, [member.id + ':setter']: v }))
                                             }}
-                                            className={`w-20 rounded-xl border px-3 py-1.5 text-sm text-right font-medium focus:border-stone-900 focus:outline-none ${
+                                            className={`w-16 sm:w-20 rounded-xl border px-2 sm:px-3 py-1.5 text-sm text-right font-medium focus:border-stone-900 focus:outline-none ${
                                               isSetterOverridden ? 'border-stone-400 dark:border-neutral-600 text-stone-900 dark:text-white bg-stone-50 dark:bg-neutral-800' : 'border-stone-200 dark:border-neutral-800 text-stone-600 dark:text-neutral-300'
                                             }`}
                                           />
@@ -908,7 +910,7 @@ export function BusinessFormules() {
                                               const v = parseFloat(e.target.value) || 0
                                               setMemberRates(prev => ({ ...prev, [member.id + ':full']: v }))
                                             }}
-                                            className={`w-20 rounded-xl border px-3 py-1.5 text-sm text-right font-medium focus:border-stone-900 focus:outline-none ${
+                                            className={`w-16 sm:w-20 rounded-xl border px-2 sm:px-3 py-1.5 text-sm text-right font-medium focus:border-stone-900 focus:outline-none ${
                                               isFullOverridden ? 'border-stone-400 dark:border-neutral-600 text-stone-900 dark:text-white bg-stone-50 dark:bg-neutral-800' : 'border-stone-200 dark:border-neutral-800 text-stone-600 dark:text-neutral-300'
                                             }`}
                                           />
@@ -929,8 +931,8 @@ export function BusinessFormules() {
                                 }
 
                                 return (
-                                  <div key={member.id} className="flex items-center gap-3 px-4 py-2.5 pl-10">
-                                    <div className="flex-1 min-w-0">
+                                  <div key={member.id} className="flex items-center gap-3 px-3 sm:px-4 py-2.5 pl-4 sm:pl-10">
+                                    <div className="flex-1 min-w-0 max-sm:truncate">
                                       <span className="text-sm text-stone-700 dark:text-neutral-200">{member.first_name} {member.last_name}</span>
                                       {isOverridden && (
                                         <span className="ml-2 text-[10px] font-bold text-stone-900 dark:text-white bg-stone-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded-full">Personnalisé</span>
@@ -944,7 +946,7 @@ export function BusinessFormules() {
                                           const v = parseFloat(e.target.value) || 0
                                           setMemberRates(prev => ({ ...prev, [member.id]: v }))
                                         }}
-                                        className={`w-20 rounded-xl border px-3 py-1.5 text-sm text-right font-medium focus:border-stone-900 focus:outline-none ${
+                                        className={`w-16 sm:w-20 rounded-xl border px-2 sm:px-3 py-1.5 text-sm text-right font-medium focus:border-stone-900 focus:outline-none ${
                                           isOverridden ? 'border-stone-400 dark:border-neutral-600 text-stone-900 dark:text-white bg-stone-50 dark:bg-neutral-800' : 'border-stone-200 dark:border-neutral-800 text-stone-600 dark:text-neutral-300'
                                         }`}
                                       />
@@ -988,12 +990,12 @@ export function BusinessFormules() {
             </div>
 
             {/* Footer */}
-            <div className="flex flex-wrap justify-end gap-3 border-t border-stone-100 dark:border-neutral-800 px-4 md:px-8 py-4 md:py-5 flex-shrink-0">
-              <button onClick={() => { setIsModalOpen(false); resetForm() }} className="rounded-full border border-stone-200 dark:border-neutral-800 px-6 py-2.5 text-sm font-semibold text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors">
+            <div className="flex justify-end gap-2 sm:gap-3 border-t border-stone-100 dark:border-neutral-800 px-5 md:px-8 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:py-4 md:py-5 flex-shrink-0">
+              <button onClick={() => { setIsModalOpen(false); resetForm() }} className="flex-1 sm:flex-none rounded-full border border-stone-200 dark:border-neutral-800 px-6 py-2.5 text-sm font-semibold text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors">
                 {isTeamMember ? t.formulas_close_btn : t.formulas_cancel_btn}
               </button>
               {canEdit && (
-                <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 rounded-full bg-stone-900 dark:bg-white dark:text-stone-900 px-6 py-2.5 text-sm font-semibold text-white hover:opacity-90 active:scale-95 disabled:opacity-50 transition-all shadow-lg">
+                <button onClick={handleSave} disabled={saving} className="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-full bg-stone-900 dark:bg-white dark:text-stone-900 px-6 py-2.5 text-sm font-semibold text-white hover:opacity-90 active:scale-95 disabled:opacity-50 transition-all shadow-lg">
                   {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                   {editingFormula ? t.formulas_save_btn : t.formulas_create_btn}
                 </button>

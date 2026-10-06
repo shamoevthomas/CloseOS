@@ -195,33 +195,36 @@ export function BusinessPaymentMethodsModal({ isOpen, onClose }: BusinessPayment
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm"
       onClick={onClose}
     >
+      {/* Mobile : feuille du bas ; dès sm : modale centrée */}
       <div
-        className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700 w-full max-w-3xl max-h-[85vh] flex flex-col"
+        className="bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-2xl shadow-2xl ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700 w-full max-w-3xl max-h-[92dvh] sm:max-h-[85vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="sm:hidden mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-stone-300 dark:bg-neutral-700" />
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#c4c7c7]/10 dark:border-neutral-800 p-6 flex-shrink-0">
-          <h2 className="text-2xl font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">
+        <div className="flex items-center justify-between gap-3 border-b border-[#c4c7c7]/10 dark:border-neutral-800 px-5 py-3 sm:p-6 flex-shrink-0">
+          <h2 className="text-xl sm:text-2xl font-extrabold font-business-display text-[#1b1c1b] dark:text-white">
             {t.payment_methods_title}
           </h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-2 text-[#444748] hover:bg-[#eae8e7] dark:hover:bg-neutral-800 dark:text-neutral-400 transition-colors"
+            aria-label={t.common_close}
+            className="shrink-0 -mr-2 sm:mr-0 rounded-lg p-2 text-[#444748] hover:bg-[#eae8e7] dark:hover:bg-neutral-800 dark:text-neutral-400 transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto overscroll-contain p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6">
           {/* Add button */}
           {!isAdding && (
             <button
               onClick={() => setIsAdding(true)}
-              className="mb-6 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#c4c7c7]/30 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-neutral-800/50 px-4 py-4 text-sm font-semibold text-[#444748] dark:text-neutral-400 hover:border-[#006c49] hover:text-[#006c49] transition-colors"
+              className="mb-4 sm:mb-6 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#c4c7c7]/30 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-neutral-800/50 px-4 py-3 sm:py-4 text-sm font-semibold text-[#444748] dark:text-neutral-400 hover:border-[#006c49] hover:text-[#006c49] transition-colors"
             >
               <Plus className="h-4 w-4" /> {t.payment_methods_add}
             </button>
@@ -229,8 +232,8 @@ export function BusinessPaymentMethodsModal({ isOpen, onClose }: BusinessPayment
 
           {/* Add/Edit Form */}
           {isAdding && (
-            <div className="mb-6 rounded-xl border border-[#c4c7c7]/10 dark:border-neutral-800 bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-6">
-              <h3 className="mb-4 text-lg font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">
+            <div className="mb-4 sm:mb-6 rounded-xl border border-[#c4c7c7]/10 dark:border-neutral-800 bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-4 sm:p-6">
+              <h3 className="mb-3 sm:mb-4 text-base sm:text-lg font-extrabold font-business-display text-[#1b1c1b] dark:text-white">
                 {editingId ? t.payment_methods_form_title_edit : t.payment_methods_form_title_new}
               </h3>
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -271,7 +274,7 @@ export function BusinessPaymentMethodsModal({ isOpen, onClose }: BusinessPayment
 
                 {/* Type-specific fields */}
                 {formType === 'VIREMENT' && (
-                  <div className="space-y-3 rounded-xl border border-[#c4c7c7]/10 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4">
+                  <div className="space-y-3 rounded-xl border border-[#c4c7c7]/10 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 max-sm:p-0 max-sm:border-0 max-sm:bg-transparent max-sm:dark:bg-transparent">
                     <div>
                       <label className="mb-1 block text-sm font-medium text-[#444748] dark:text-neutral-400">{t.payment_methods_bank_label}</label>
                       <input
@@ -371,8 +374,8 @@ export function BusinessPaymentMethodsModal({ isOpen, onClose }: BusinessPayment
 
           {/* Empty state */}
           {methods.length === 0 && !isAdding && (
-            <div className="rounded-xl border border-[#c4c7c7]/10 dark:border-neutral-800 bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-12 text-center">
-              <CreditCard className="mx-auto mb-4 h-12 w-12 text-[#c4c7c7]" />
+            <div className="rounded-xl border border-[#c4c7c7]/10 dark:border-neutral-800 bg-[#f5f3f2]/50 dark:bg-neutral-800/50 py-8 px-4 sm:p-12 text-center">
+              <CreditCard className="mx-auto mb-2 sm:mb-4 h-8 w-8 sm:h-12 sm:w-12 text-[#c4c7c7]" />
               <p className="text-[#444748] dark:text-neutral-400 font-medium">{t.payment_methods_no_methods}</p>
               <p className="mt-1 text-sm text-[#444748]/60 dark:text-neutral-500">
                 {t.payment_methods_no_methods_desc}
@@ -386,22 +389,22 @@ export function BusinessPaymentMethodsModal({ isOpen, onClose }: BusinessPayment
               {methods.map((method) => (
                 <div
                   key={method.id}
-                  className="group rounded-xl border border-[#c4c7c7]/10 dark:border-neutral-800 bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-4 transition-all hover:border-[#c4c7c7]/30 dark:hover:border-neutral-700"
+                  className="group rounded-xl border border-[#c4c7c7]/10 dark:border-neutral-800 bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-3 sm:p-4 transition-all hover:border-[#c4c7c7]/30 dark:hover:border-neutral-700"
                 >
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#006c49]/10 text-[#006c49]">
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <div className="flex h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#006c49]/10 text-[#006c49]">
                       {getIcon(method.type)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-semibold text-[#1b1c1b] dark:text-white">{method.name}</h4>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <h4 className="font-semibold text-[#1b1c1b] dark:text-white max-sm:truncate">{method.name}</h4>
                         {method.isDefault && (
-                          <span className="bg-[#006c49]/10 text-[#006c49] px-2 py-0.5 rounded-full text-xs font-bold inline-flex items-center gap-1">
+                          <span className="shrink-0 whitespace-nowrap bg-[#006c49]/10 text-[#006c49] px-2 py-0.5 rounded-full text-xs font-bold inline-flex items-center gap-1">
                             <Check className="h-3 w-3" /> {t.payment_methods_default}
                           </span>
                         )}
                       </div>
-                      <p className="mt-1 text-sm text-[#444748] dark:text-neutral-400">
+                      <p className="mt-0.5 sm:mt-1 text-sm text-[#444748] dark:text-neutral-400 max-sm:truncate">
                         {method.type}
                         {method.type === 'VIREMENT' && method.details.iban && (
                           <span className="ml-2 text-[#444748]/60 dark:text-neutral-500">
@@ -415,7 +418,8 @@ export function BusinessPaymentMethodsModal({ isOpen, onClose }: BusinessPayment
                         )}
                       </p>
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Actions : visibles au doigt (tactile), au survol avec une souris */}
+                    <div className="flex items-center gap-0 sm:gap-1 shrink-0 -mr-1 sm:mr-0 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity">
                       {!method.isDefault && (
                         <button
                           onClick={() => setDefault(method.id)}

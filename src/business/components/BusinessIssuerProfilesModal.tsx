@@ -205,27 +205,29 @@ export function BusinessIssuerProfilesModal({ isOpen, onClose }: BusinessIssuerP
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative w-full max-w-4xl max-h-[85vh] flex flex-col bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700">
+      {/* Mobile : feuille du bas ; dès sm : modale centrée */}
+      <div className="relative w-full max-w-4xl max-h-[92dvh] sm:max-h-[85vh] flex flex-col bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-2xl shadow-2xl ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700">
+        <div className="sm:hidden mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-stone-300 dark:bg-neutral-700" />
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#c4c7c7]/10 dark:border-neutral-800 p-6 flex-shrink-0">
-          <div>
-            <h2 className="text-2xl font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">{t.issuer_title}</h2>
-            <p className="mt-1 text-sm text-[#444748] dark:text-neutral-400">{t.issuer_subtitle}</p>
+        <div className="flex items-center justify-between gap-3 border-b border-[#c4c7c7]/10 dark:border-neutral-800 px-5 py-3 sm:p-6 flex-shrink-0">
+          <div className="min-w-0">
+            <h2 className="text-xl sm:text-2xl font-extrabold font-business-display text-[#1b1c1b] dark:text-white">{t.issuer_title}</h2>
+            <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-[#444748] dark:text-neutral-400">{t.issuer_subtitle}</p>
           </div>
-          <button onClick={onClose} className="rounded-lg p-2 text-[#444748] hover:bg-[#eae8e7] dark:hover:bg-neutral-800 dark:text-neutral-400">
+          <button onClick={onClose} aria-label={t.common_close} className="shrink-0 -mr-2 sm:mr-0 rounded-lg p-2 text-[#444748] hover:bg-[#eae8e7] dark:hover:bg-neutral-800 dark:text-neutral-400">
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+        <div className="flex-1 overflow-y-auto overscroll-contain custom-scrollbar p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6">
           {/* Add button */}
           {!isAdding && (
             <button
               onClick={() => setIsAdding(true)}
-              className="mb-6 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#c4c7c7]/30 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-neutral-800/50 px-4 py-4 text-sm font-semibold text-[#444748] dark:text-neutral-400 transition-all hover:bg-[#eae8e7] dark:hover:bg-neutral-800"
+              className="mb-4 sm:mb-6 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#c4c7c7]/30 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-neutral-800/50 px-4 py-3 sm:py-4 text-sm font-semibold text-[#444748] dark:text-neutral-400 transition-all hover:bg-[#eae8e7] dark:hover:bg-neutral-800"
             >
               <Plus className="h-4 w-4" /> {t.issuer_add_profile}
             </button>
@@ -233,8 +235,8 @@ export function BusinessIssuerProfilesModal({ isOpen, onClose }: BusinessIssuerP
 
           {/* Form */}
           {isAdding && (
-            <div className="mb-6 rounded-xl border border-[#c4c7c7]/10 dark:border-neutral-800 bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-6 animate-in fade-in slide-in-from-bottom-2">
-              <h3 className="mb-4 text-lg font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">{editingId ? t.issuer_form_title_edit : t.issuer_form_title_new}</h3>
+            <div className="mb-4 sm:mb-6 rounded-xl border border-[#c4c7c7]/10 dark:border-neutral-800 bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-2">
+              <h3 className="mb-3 sm:mb-4 text-base sm:text-lg font-extrabold font-business-display text-[#1b1c1b] dark:text-white">{editingId ? t.issuer_form_title_edit : t.issuer_form_title_new}</h3>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">{t.issuer_profile_name_label}</label>
@@ -248,8 +250,8 @@ export function BusinessIssuerProfilesModal({ isOpen, onClose }: BusinessIssuerP
                   <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">{t.issuer_address_label}</label>
                   <input type="text" value={formAddress} onChange={(e) => setFormAddress(e.target.value)} className="w-full rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:ring-1 focus:ring-[#006c49] outline-none" />
                 </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="col-span-2 sm:col-span-1">
                     <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">{t.issuer_city_label}</label>
                     <input type="text" value={formCity} onChange={(e) => setFormCity(e.target.value)} className="w-full rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:ring-1 focus:ring-[#006c49] outline-none" />
                   </div>
@@ -266,7 +268,7 @@ export function BusinessIssuerProfilesModal({ isOpen, onClose }: BusinessIssuerP
                   <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">{t.issuer_siret_label}</label>
                   <input type="text" value={formSiret} onChange={(e) => setFormSiret(e.target.value)} className="w-full rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:ring-1 focus:ring-[#006c49] outline-none" />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">{t.issuer_email_label}</label>
                     <input type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} className="w-full rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:ring-1 focus:ring-[#006c49] outline-none" />
@@ -290,33 +292,33 @@ export function BusinessIssuerProfilesModal({ isOpen, onClose }: BusinessIssuerP
 
           {/* Empty state */}
           {profiles.length === 0 && !isAdding ? (
-            <div className="bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl p-12 text-center">
-              <Building2 className="mx-auto mb-4 h-12 w-12 text-[#c4c7c7] dark:text-neutral-600" />
+            <div className="bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl py-8 px-4 sm:p-12 text-center">
+              <Building2 className="mx-auto mb-2 sm:mb-4 h-8 w-8 sm:h-12 sm:w-12 text-[#c4c7c7] dark:text-neutral-600" />
               <p className="text-[#444748] dark:text-neutral-400">{t.issuer_no_profiles}</p>
             </div>
           ) : (
             <div className="space-y-3">
               {profiles.map((profile) => (
-                <div key={profile.id} className="group relative rounded-xl border border-[#c4c7c7]/10 dark:border-neutral-800 bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-4 transition-all hover:bg-[#eae8e7]/50 dark:hover:bg-neutral-800">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#006c49]/10 text-[#006c49]">
+                <div key={profile.id} className="group relative rounded-xl border border-[#c4c7c7]/10 dark:border-neutral-800 bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-3 sm:p-4 transition-all hover:bg-[#eae8e7]/50 dark:hover:bg-neutral-800">
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <div className="flex h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#006c49]/10 text-[#006c49]">
                       <Building2 className="h-5 w-5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-semibold text-[#1b1c1b] dark:text-white">{profile.name}</h4>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <h4 className="font-semibold text-[#1b1c1b] dark:text-white max-sm:truncate">{profile.name}</h4>
                         {profile.isDefault && (
-                          <span className="inline-flex items-center gap-1 bg-[#006c49]/10 text-[#006c49] px-2 py-0.5 rounded-full text-xs font-bold">
+                          <span className="shrink-0 whitespace-nowrap inline-flex items-center gap-1 bg-[#006c49]/10 text-[#006c49] px-2 py-0.5 rounded-full text-xs font-bold">
                             <Check className="h-3 w-3" /> {t.issuer_default}
                           </span>
                         )}
                       </div>
-                      <p className="mt-1 text-sm text-[#444748] dark:text-neutral-300">{profile.companyName}</p>
-                      <div className="mt-2 text-xs text-[#444748]/60 dark:text-neutral-500">
+                      <p className="mt-0.5 sm:mt-1 text-sm text-[#444748] dark:text-neutral-300 max-sm:truncate">{profile.companyName}</p>
+                      <div className="mt-1 sm:mt-2 text-xs text-[#444748]/60 dark:text-neutral-500 max-sm:truncate">
                         {profile.siret && <span>SIRET: {profile.siret}</span>}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-0 sm:gap-2 shrink-0 -mr-1 sm:mr-0">
                       {!profile.isDefault && (
                         <button onClick={() => setDefault(profile.id)} className="p-2 text-[#444748] dark:text-neutral-400 hover:text-yellow-500 dark:hover:text-yellow-400">
                           <Star className="h-4 w-4" />

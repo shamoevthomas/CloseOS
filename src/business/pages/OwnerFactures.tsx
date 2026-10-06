@@ -182,66 +182,70 @@ export function OwnerFactures() {
   }
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-4 sm:space-y-10">
       {/* Header */}
       <div>
-        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+        <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
           {t.owner_factures_title}
         </h1>
-        <p className="text-[#444748] dark:text-neutral-400 mt-2">{t.owner_factures_subtitle}</p>
+        <p className="text-sm sm:text-base text-[#444748] dark:text-neutral-400 mt-1 sm:mt-2">{t.owner_factures_subtitle}</p>
       </div>
 
       {/* KPI Cards — Bento */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Mobile : 2 colonnes, la tuile impaire finale prend toute la largeur */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6 [&>*:last-child:nth-child(odd)]:col-span-2 md:[&>*:last-child:nth-child(odd)]:col-span-1">
         {/* Total facturé */}
-        <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-[#c4c7c7]/5 dark:border-neutral-800 hover:bg-[#efedec]/30 dark:hover:bg-neutral-700/30 transition-colors duration-300">
-          <div className="flex justify-between items-start mb-4">
-            <span className="p-3 rounded-2xl bg-[#efedec] dark:bg-neutral-700 text-[#444748] dark:text-neutral-300">
-              <Receipt className="h-5 w-5" />
+        <div className="min-w-0 bg-white dark:bg-neutral-800 rounded-2xl p-4 sm:p-6 md:p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-[#c4c7c7]/5 dark:border-neutral-800 hover:bg-[#efedec]/30 dark:hover:bg-neutral-700/30 transition-colors duration-300">
+          <div className="flex justify-between items-center sm:items-start gap-2 mb-1.5 sm:mb-4">
+            <span className="shrink-0 p-1.5 sm:p-3 rounded-lg sm:rounded-2xl bg-[#efedec] dark:bg-neutral-700 text-[#444748] dark:text-neutral-300">
+              <Receipt className="h-4 w-4 sm:h-5 sm:w-5" />
             </span>
-            <span className="text-[10px] font-bold text-[#444748]/40 dark:text-neutral-500 tracking-widest uppercase">{t.owner_factures_global}</span>
+            <span className="sm:hidden flex-1 min-w-0 truncate text-xs font-medium text-[#444748] dark:text-neutral-400">{t.owner_factures_total_billed}</span>
+            <span className="hidden sm:inline text-[10px] font-bold text-[#444748]/40 dark:text-neutral-500 tracking-widest uppercase">{t.owner_factures_global}</span>
           </div>
-          <p className="text-[#444748] dark:text-neutral-400 text-sm font-medium">{t.owner_factures_total_billed}</p>
-          <p className="text-4xl font-extrabold mt-1 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {totalAmount.toLocaleString('fr-FR')} <span className="text-xl">€</span>
+          <p className="hidden sm:block text-[#444748] dark:text-neutral-400 text-sm font-medium">{t.owner_factures_total_billed}</p>
+          <p className="text-xl sm:text-3xl md:text-4xl font-extrabold sm:mt-1 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {totalAmount.toLocaleString('fr-FR')} <span className="text-sm sm:text-xl">€</span>
           </p>
         </div>
 
         {/* Payé */}
-        <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-[#c4c7c7]/5 dark:border-neutral-800 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#006c49]/5 rounded-full -mr-16 -mt-16 blur-3xl" />
-          <div className="flex justify-between items-start mb-4">
-            <span className="p-3 rounded-2xl bg-[#006c49]/10 text-[#006c49]">
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+        <div className="min-w-0 bg-white dark:bg-neutral-800 rounded-2xl p-4 sm:p-6 md:p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-[#c4c7c7]/5 dark:border-neutral-800 relative overflow-hidden">
+          <div className="hidden xl:block absolute top-0 right-0 w-32 h-32 bg-[#006c49]/5 rounded-full -mr-16 -mt-16 blur-3xl" />
+          <div className="flex justify-between items-center sm:items-start gap-2 mb-1.5 sm:mb-4">
+            <span className="shrink-0 p-1.5 sm:p-3 rounded-lg sm:rounded-2xl bg-[#006c49]/10 text-[#006c49]">
+              <svg className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
             </span>
+            <span className="sm:hidden flex-1 min-w-0 truncate text-xs font-medium text-[#444748] dark:text-neutral-400">{t.owner_factures_paid}</span>
           </div>
-          <p className="text-[#444748] dark:text-neutral-400 text-sm font-medium">{t.owner_factures_paid}</p>
-          <p className="text-4xl font-extrabold mt-1 text-[#006c49]" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {paidAmount.toLocaleString('fr-FR')} <span className="text-xl">€</span>
+          <p className="hidden sm:block text-[#444748] dark:text-neutral-400 text-sm font-medium">{t.owner_factures_paid}</p>
+          <p className="text-xl sm:text-3xl md:text-4xl font-extrabold sm:mt-1 text-[#006c49]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {paidAmount.toLocaleString('fr-FR')} <span className="text-sm sm:text-xl">€</span>
           </p>
         </div>
 
         {/* En attente */}
-        <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-[#c4c7c7]/5 dark:border-neutral-800 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#ffb95f]/10 rounded-full -mr-16 -mt-16 blur-3xl" />
-          <div className="flex justify-between items-start mb-4">
-            <span className="p-3 rounded-2xl bg-[#ffb95f]/20 text-[#b87500]">
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+        <div className="min-w-0 bg-white dark:bg-neutral-800 rounded-2xl p-4 sm:p-6 md:p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-[#c4c7c7]/5 dark:border-neutral-800 relative overflow-hidden">
+          <div className="hidden xl:block absolute top-0 right-0 w-32 h-32 bg-[#ffb95f]/10 rounded-full -mr-16 -mt-16 blur-3xl" />
+          <div className="flex justify-between items-center sm:items-start gap-2 mb-1.5 sm:mb-4">
+            <span className="shrink-0 p-1.5 sm:p-3 rounded-lg sm:rounded-2xl bg-[#ffb95f]/20 text-[#b87500]">
+              <svg className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
             </span>
-            <span className="text-[10px] font-bold text-[#b87500] tracking-widest uppercase">{pendingCount} {pendingCount !== 1 ? t.owner_factures_invoices_plural : t.owner_factures_invoice_singular}</span>
+            <span className="sm:hidden flex-1 min-w-0 truncate text-xs font-medium text-[#444748] dark:text-neutral-400">{t.owner_factures_pending}</span>
+            <span className="shrink-0 whitespace-nowrap text-[10px] font-bold text-[#b87500] tracking-widest uppercase">{pendingCount} {pendingCount !== 1 ? t.owner_factures_invoices_plural : t.owner_factures_invoice_singular}</span>
           </div>
-          <p className="text-[#444748] dark:text-neutral-400 text-sm font-medium">{t.owner_factures_pending}</p>
-          <p className="text-4xl font-extrabold mt-1 text-[#b87500]" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {pendingAmount.toLocaleString('fr-FR')} <span className="text-xl">€</span>
+          <p className="hidden sm:block text-[#444748] dark:text-neutral-400 text-sm font-medium">{t.owner_factures_pending}</p>
+          <p className="text-xl sm:text-3xl md:text-4xl font-extrabold sm:mt-1 text-[#b87500]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {pendingAmount.toLocaleString('fr-FR')} <span className="text-sm sm:text-xl">€</span>
           </p>
         </div>
       </div>
 
-      {/* Filter Bar — Glass pill */}
-      <div className="bg-white/70 dark:bg-white/5 backdrop-blur-2xl rounded-2xl md:rounded-full p-3 px-4 md:px-6 flex flex-col md:flex-row flex-wrap items-stretch md:items-center gap-3 md:gap-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] ring-1 ring-[#c4c7c7]/10 dark:ring-neutral-700">
-        <div className="flex items-center gap-3 md:border-r border-[#c4c7c7]/20 dark:border-neutral-700 md:pr-6">
-          <span className="text-xs font-bold text-[#444748]/60 dark:text-neutral-400 uppercase tracking-tighter shrink-0">{t.owner_factures_period}</span>
-          <div className="flex items-center gap-2 min-w-0">
+      {/* Filter Bar — Glass pill (bureau) ; liste groupée à séparateurs sur mobile/tablette */}
+      <div className="flex flex-col divide-y divide-[#c4c7c7]/20 dark:divide-neutral-700 rounded-2xl bg-white dark:bg-neutral-800 ring-1 ring-[#c4c7c7]/10 dark:ring-neutral-700 xl:divide-y-0 xl:flex-row xl:flex-wrap xl:items-center xl:gap-6 xl:p-3 xl:px-6 xl:rounded-full xl:bg-white/70 xl:dark:bg-white/5 xl:backdrop-blur-2xl xl:shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+        <div className="min-w-0 flex items-center gap-3 px-4 py-3 xl:p-0 xl:border-r border-[#c4c7c7]/20 dark:border-neutral-700 xl:pr-6">
+          <span className="w-14 xl:w-auto text-[10px] sm:text-xs font-bold text-[#444748]/60 dark:text-neutral-400 uppercase tracking-wider sm:tracking-tighter shrink-0">{t.owner_factures_period}</span>
+          <div className="flex items-center gap-1.5 xl:gap-2 min-w-0 flex-1 sm:flex-none">
             <input
               type="date"
               value={startDate}
@@ -259,9 +263,9 @@ export function OwnerFactures() {
                 }
                 setStartDate(newStart)
               }}
-              className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 w-28 text-[#1b1c1b] dark:text-white"
+              className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 min-w-0 w-full flex-1 sm:flex-none sm:w-32 xl:w-28 text-[#1b1c1b] dark:text-white"
             />
-            <span className="text-[#444748]/40">→</span>
+            <span className="text-[#444748]/40 shrink-0">→</span>
             <input
               type="date"
               value={endDate}
@@ -279,18 +283,18 @@ export function OwnerFactures() {
                 }
                 setEndDate(newEnd)
               }}
-              className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 w-28 text-[#1b1c1b] dark:text-white"
+              className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 min-w-0 w-full flex-1 sm:flex-none sm:w-32 xl:w-28 text-[#1b1c1b] dark:text-white"
             />
           </div>
         </div>
 
         {teamMembers.length > 0 && (
-          <div className="flex items-center gap-3 md:border-r border-[#c4c7c7]/20 dark:border-neutral-700 md:pr-6">
-            <span className="text-xs font-bold text-[#444748]/60 dark:text-neutral-400 uppercase tracking-tighter shrink-0">{t.owner_factures_member}</span>
+          <div className="min-w-0 flex items-center gap-3 px-4 py-2.5 xl:p-0 xl:border-r border-[#c4c7c7]/20 dark:border-neutral-700 xl:pr-6">
+            <span className="w-14 xl:w-auto text-[10px] sm:text-xs font-bold text-[#444748]/60 dark:text-neutral-400 uppercase tracking-wider sm:tracking-tighter shrink-0">{t.owner_factures_member}</span>
             <select
               value={filterMember}
               onChange={e => setFilterMember(e.target.value)}
-              className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 pr-8 cursor-pointer text-[#1b1c1b] dark:text-white min-w-0"
+              className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 pr-8 cursor-pointer text-[#1b1c1b] dark:text-white min-w-0 flex-1 xl:flex-none"
             >
               <option value="all">{t.owner_factures_all_members}</option>
               {teamMembers.map(m => (
@@ -300,12 +304,12 @@ export function OwnerFactures() {
           </div>
         )}
 
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-bold text-[#444748]/60 dark:text-neutral-400 uppercase tracking-tighter shrink-0">{t.owner_factures_status}</span>
+        <div className="min-w-0 flex items-center gap-3 px-4 py-2.5 xl:p-0">
+          <span className="w-14 xl:w-auto text-[10px] sm:text-xs font-bold text-[#444748]/60 dark:text-neutral-400 uppercase tracking-wider sm:tracking-tighter shrink-0">{t.owner_factures_status}</span>
           <select
             value={filterStatus}
             onChange={e => setFilterStatus(e.target.value)}
-            className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 pr-8 cursor-pointer text-[#1b1c1b] dark:text-white min-w-0"
+            className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 pr-8 cursor-pointer text-[#1b1c1b] dark:text-white min-w-0 flex-1 xl:flex-none"
           >
             <option value="all">{t.owner_factures_all_statuses}</option>
             {STATUS_OPTIONS.map(s => (
@@ -314,7 +318,8 @@ export function OwnerFactures() {
           </select>
         </div>
 
-        <div className="md:ml-auto flex items-center gap-2 justify-end">
+        {/* Boutons décoratifs (sans action) : affichés uniquement au bureau */}
+        <div className="hidden xl:flex xl:ml-auto items-center gap-2 justify-end">
           <button className="p-2 rounded-full hover:bg-[#eae8e7] dark:hover:bg-neutral-700 transition-colors text-[#444748] dark:text-neutral-400">
             <Filter className="h-5 w-5" />
           </button>
@@ -326,7 +331,108 @@ export function OwnerFactures() {
 
       {/* Invoice Table */}
       <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-[#c4c7c7]/5 dark:border-neutral-800 overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Vue liste (mobile + tablette) : une ligne par facture, mêmes actions que le tableau */}
+        <div className="xl:hidden divide-y divide-[#c4c7c7]/15 dark:divide-neutral-700">
+          {paginatedInvoices.map(inv => {
+            const config = getStatusConfig(inv.status)
+            const memberName = getMemberName(inv.team_member_id)
+            const memberInitials = getMemberInitials(inv.team_member_id)
+            const isLate = !!inv.due_date && new Date(inv.due_date) < new Date() && inv.status !== 'payé'
+            return (
+              <div key={inv.id} className="px-4 sm:px-6 py-3.5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-sm text-[#1b1c1b] dark:text-white truncate" style={{ fontFamily: 'Manrope, sans-serif' }}>{inv.client_name}</p>
+                    {inv.offer_name && <p className="text-xs text-[#444748] dark:text-neutral-400 truncate">{inv.offer_name}</p>}
+                    <p className="mt-0.5 text-[11px] text-[#444748]/70 dark:text-neutral-500 truncate">
+                      <span className="font-mono font-bold text-[#444748] dark:text-neutral-300">{inv.invoice_number}</span>
+                      <span className="mx-1">·</span>{formatDate(inv.created_at)}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-sm font-extrabold text-[#1b1c1b] dark:text-white whitespace-nowrap">{formatCurrency(inv.amount_ttc || 0, lang)}</p>
+                    {inv.due_date && (
+                      <p className={cn('text-[11px] font-semibold whitespace-nowrap', isLate ? 'text-[#ba1a1a]' : 'text-[#444748]/70 dark:text-neutral-400')}>
+                        {t.owner_factures_th_due_date} {new Date(inv.due_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })}
+                        {isLate && <span className="ml-1 text-[9px] uppercase font-black">{t.owner_factures_late}</span>}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-2.5 flex items-center gap-2">
+                  <select
+                    value={inv.status || ''}
+                    onChange={e => handleStatusChange(inv.id, e.target.value)}
+                    className={cn(
+                      'shrink-0 rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-widest border cursor-pointer appearance-none focus:outline-none focus:ring-2 focus:ring-[#006c49]/20',
+                      config.bg, config.text, config.border
+                    )}
+                  >
+                    {STATUS_OPTIONS.map(s => (
+                      <option key={s.value} value={s.value}>{statusLabel(s.value)}</option>
+                    ))}
+                    {!STATUS_OPTIONS.find(s => s.value === inv.status) && inv.status && (
+                      <option value={inv.status}>{statusLabel(inv.status)}</option>
+                    )}
+                  </select>
+                  {memberName && (
+                    <span className="flex items-center gap-1.5 min-w-0" title={memberName}>
+                      <span className="w-5 h-5 shrink-0 rounded-full bg-[#eae8e7] dark:bg-neutral-700 flex items-center justify-center text-[7px] font-bold text-[#1b1c1b] dark:text-white">{memberInitials}</span>
+                      <span className="hidden sm:inline text-[11px] font-semibold text-[#444748] dark:text-neutral-300 truncate">{memberName}</span>
+                    </span>
+                  )}
+                  <div className="ml-auto flex items-center gap-1 shrink-0">
+                    {inv.stripe_payment_link && (
+                      <button
+                        onClick={() => { navigator.clipboard.writeText(inv.stripe_payment_link!); toast.success(t.owner_factures_link_copied) }}
+                        className="h-8 w-8 rounded-full bg-[#1b1c1b] dark:bg-white/10 text-white inline-flex items-center justify-center active:scale-95 transition-transform"
+                        title={t.owner_factures_copy_payment_link}
+                        aria-label={t.owner_factures_copy_payment_link}
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    {inv.stripe_payment_link && (
+                      <a
+                        href={inv.stripe_payment_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="h-8 bg-[#635BFF] text-white px-3 rounded-full text-[10px] font-black uppercase tracking-widest inline-flex items-center gap-1 active:scale-95 transition-transform"
+                      >
+                        {t.owner_factures_pay}
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                    {inv.pdf_url && (
+                      <>
+                        <a href={inv.pdf_url} target="_blank" rel="noreferrer" className="h-8 w-8 inline-flex items-center justify-center rounded-full bg-[#f5f3f2] dark:bg-neutral-700 text-[#444748] dark:text-neutral-300" title={t.owner_factures_view} aria-label={t.owner_factures_view}>
+                          <Eye className="h-4 w-4" />
+                        </a>
+                        <a href={inv.pdf_url} download className="h-8 w-8 inline-flex items-center justify-center rounded-full bg-[#f5f3f2] dark:bg-neutral-700 text-[#444748] dark:text-neutral-300" title={t.owner_factures_download} aria-label={t.owner_factures_download}>
+                          <Download className="h-4 w-4" />
+                        </a>
+                      </>
+                    )}
+                    {!inv.stripe_payment_link && !inv.pdf_url && (
+                      <button className="text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-400 px-1">
+                        {t.owner_factures_details}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+          {filtered.length === 0 && (
+            <div className="px-4 py-8 text-center">
+              <FileText className="h-6 w-6 mx-auto mb-2 text-[#c4c7c7]" />
+              <p className="text-sm font-semibold text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.owner_factures_empty_title}</p>
+              <p className="text-xs text-[#444748] dark:text-neutral-400">{t.owner_factures_empty_desc}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="hidden xl:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[#f5f3f2]/50 dark:bg-neutral-900/50">
@@ -465,7 +571,7 @@ export function OwnerFactures() {
 
         {/* Pagination */}
         {filtered.length > 0 && (
-          <div className="px-4 md:px-8 py-4 md:py-6 bg-[#f5f3f2]/30 dark:bg-neutral-900/30 flex flex-col sm:flex-row justify-between items-center gap-3">
+          <div className="px-4 md:px-8 py-3 md:py-6 bg-[#f5f3f2]/30 dark:bg-neutral-900/30 flex flex-row flex-wrap justify-between items-center gap-3 border-t border-[#c4c7c7]/10 dark:border-neutral-700 xl:border-t-0">
             <p className="text-[10px] font-bold text-[#444748] dark:text-neutral-400 uppercase tracking-widest">
               {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} {t.owner_factures_of} {filtered.length}
             </p>

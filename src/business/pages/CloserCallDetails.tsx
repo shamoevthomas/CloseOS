@@ -852,11 +852,11 @@ export function CloserCallDetails() {
 
   const renderOutcomeCards = (outcomes: typeof closerOutcomes, label: string, required?: boolean, extraCustomStages?: typeof closerCustomStages) => (
     <section>
-      <h3 className="font-['Manrope'] text-lg font-bold mb-5 flex items-center gap-2 text-stone-900 dark:text-white">
+      <h3 className="font-business-display text-base sm:text-lg font-bold mb-3 sm:mb-5 flex items-center gap-2 text-stone-900 dark:text-white">
         <span className="w-2 h-2 rounded-full bg-emerald-600" />
         {label} {required && <span className="text-red-500">*</span>}
       </h3>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
         {outcomes.map(outcome => {
           const Icon = outcome.icon
           const isSelected = selectedOutcome === outcome.id
@@ -878,17 +878,17 @@ export function CloserCallDetails() {
                 }
               }}
               className={cn(
-                'p-5 rounded-xl border-2 text-left transition-all cursor-pointer',
+                'flex items-center gap-2.5 sm:block p-3.5 sm:p-5 rounded-xl border-2 text-left transition-all cursor-pointer active:scale-[0.98]',
                 isSelected
                   ? 'bg-white dark:bg-white/5 border-emerald-600 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
                   : 'bg-stone-50/50 dark:bg-white/5 border-stone-200/40 dark:border-white/10 hover:bg-white dark:hover:bg-white/10 hover:border-stone-300 dark:hover:border-white/20'
               )}
             >
-              <div className="mb-3">
+              <div className="shrink-0 sm:mb-3">
                 <Icon className={cn('h-5 w-5', isSelected ? 'text-emerald-600' : outcome.iconClass)} />
               </div>
               <p className={cn(
-                "font-['Manrope'] font-bold text-sm",
+                "font-business-display font-bold text-sm leading-tight",
                 isSelected ? 'text-stone-900 dark:text-white' : 'text-stone-500 dark:text-neutral-400'
               )}>
                 {outcome.label}
@@ -912,17 +912,17 @@ export function CloserCallDetails() {
                 setAvailableSlots([])
               }}
               className={cn(
-                'p-5 rounded-xl border-2 text-left transition-all cursor-pointer',
+                'flex items-center gap-2.5 sm:block p-3.5 sm:p-5 rounded-xl border-2 text-left transition-all cursor-pointer active:scale-[0.98]',
                 isSelected
                   ? 'bg-white dark:bg-white/5 border-emerald-600 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
                   : 'bg-stone-50/50 dark:bg-white/5 border-stone-200/40 dark:border-white/10 hover:bg-white dark:hover:bg-white/10 hover:border-stone-300 dark:hover:border-white/20'
               )}
             >
-              <div className="mb-3">
+              <div className="shrink-0 sm:mb-3">
                 <span className="inline-block h-5 w-5 rounded-full" style={{ backgroundColor: cs.color }} />
               </div>
               <p className={cn(
-                "font-['Manrope'] font-bold text-sm",
+                "font-business-display font-bold text-sm leading-tight",
                 isSelected ? 'text-stone-900 dark:text-white' : 'text-stone-500 dark:text-neutral-400'
               )}>
                 {cs.name}
@@ -943,23 +943,23 @@ export function CloserCallDetails() {
   return (
     <div className="pb-28">
       {/* Header */}
-      <div className="mb-10">
+      <div className="mb-5 sm:mb-10">
         <button
           onClick={() => navigate('/business/appels')}
-          className="mb-6 flex items-center gap-2 text-stone-400 dark:text-neutral-500 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors font-['Manrope'] font-semibold"
+          className="mb-3 sm:mb-6 flex items-center gap-2 text-sm sm:text-base text-stone-400 dark:text-neutral-500 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors font-business-display font-semibold"
         >
           <ArrowLeft className="h-5 w-5" /> {t.closer_calldetails_back}
         </button>
 
         {/* Readonly banner */}
         {isReadonly && (
-          <div className="rounded-xl border border-blue-200 bg-blue-50/70 backdrop-blur-md px-5 py-3 flex items-center gap-3 mb-6">
+          <div className="rounded-xl border border-blue-200 bg-blue-50/70 backdrop-blur-md px-4 sm:px-5 py-3 flex items-center gap-3 mb-4 sm:mb-6">
             <AlertCircle className="h-5 w-5 text-blue-600 shrink-0" />
             <p className="text-sm font-medium text-blue-700">{t.closer_calldetails_readonly_banner}</p>
           </div>
         )}
 
-        <h1 className="font-['Manrope'] text-2xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-2">
+        <h1 className="font-business-display text-xl sm:text-2xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-1 sm:mb-2">
           {isReadonly ? t.closer_calldetails_title_readonly : isSetterCloser ? t.closer_calldetails_title_settercloser : t.closer_calldetails_title_closer} {call.contact_name}
         </h1>
         <div className="flex items-center gap-2 text-stone-500 dark:text-neutral-400">
@@ -972,29 +972,29 @@ export function CloserCallDetails() {
           </span>
         </div>
         {prospect && prospectFormula && (
-          <div className="mt-4 inline-flex items-center gap-3 rounded-xl bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-sm px-5 py-3">
-            <Award className="h-4 w-4 text-emerald-600" />
-            <div>
+          <div className="mt-3 sm:mt-4 inline-flex max-w-full items-center gap-3 rounded-xl bg-white/70 dark:bg-white/5 sm:backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-sm px-4 sm:px-5 py-2.5 sm:py-3">
+            <Award className="h-4 w-4 text-emerald-600 shrink-0" />
+            <div className="min-w-0">
               <p className="text-xs text-stone-400 dark:text-neutral-500">{t.closer_calldetails_linked_offer}</p>
-              <p className="text-sm font-bold text-stone-900 dark:text-white font-['Manrope']">{prospectFormula.name} - {prospectFormula.price}€</p>
+              <p className="text-sm font-bold text-stone-900 dark:text-white font-business-display line-clamp-2">{prospectFormula.name} - {prospectFormula.price}€</p>
             </div>
           </div>
         )}
         {prospect && !prospectFormula && (
-          <div className="mt-4 inline-flex items-center gap-2 rounded-xl bg-stone-50/50 dark:bg-white/5 border border-stone-200/40 dark:border-white/10 px-5 py-3">
+          <div className="mt-3 sm:mt-4 inline-flex max-w-full items-center gap-2 rounded-xl bg-stone-50/50 dark:bg-white/5 border border-stone-200/40 dark:border-white/10 px-4 sm:px-5 py-2.5 sm:py-3">
             <p className="text-sm text-stone-500 dark:text-neutral-400">{t.closer_calldetails_no_linked_offer}</p>
           </div>
         )}
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-4 md:gap-8 mb-10 border-b border-stone-200/60 dark:border-white/10 overflow-x-auto">
+      <div className="flex gap-5 md:gap-8 mb-5 sm:mb-10 border-b border-stone-200/60 dark:border-white/10 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              "pb-4 font-['Manrope'] font-semibold transition-colors",
+              "pb-3 sm:pb-4 shrink-0 whitespace-nowrap max-sm:text-sm font-business-display font-semibold transition-colors",
               activeTab === tab.id
                 ? "text-stone-900 dark:text-white border-b-2 border-stone-900 dark:border-white font-bold"
                 : "text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300"
@@ -1011,14 +1011,14 @@ export function CloserCallDetails() {
         <div className="relative">
           {/* No prospect linked — blur overlay + create prospect */}
           {!prospect && !isReadonly && (
-            <div className="absolute inset-0 z-30 flex items-start justify-center pt-16">
-              <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-stone-200 dark:border-white/10 shadow-2xl p-8 max-w-md w-full mx-4 space-y-5">
+            <div className="absolute inset-0 z-30 flex items-start justify-center pt-2 sm:pt-16">
+              <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-stone-200 dark:border-white/10 shadow-2xl p-5 sm:p-8 max-w-md w-full sm:mx-4 space-y-4 sm:space-y-5">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="p-3 rounded-full bg-stone-100 dark:bg-white/10">
                     <Lock className="h-5 w-5 text-stone-500 dark:text-neutral-400" />
                   </div>
                   <div>
-                    <h3 className="font-['Manrope'] text-lg font-extrabold text-stone-900 dark:text-white">{t.closer_calldetails_no_prospect}</h3>
+                    <h3 className="font-business-display text-lg font-extrabold text-stone-900 dark:text-white">{t.closer_calldetails_no_prospect}</h3>
                     <p className="text-sm text-stone-500 dark:text-neutral-400">{t.closer_calldetails_create_prospect_desc}</p>
                   </div>
                 </div>
@@ -1068,7 +1068,7 @@ export function CloserCallDetails() {
                 <button
                   onClick={handleCreateProspect}
                   disabled={creatingProspect}
-                  className="w-full flex items-center justify-center gap-2 rounded-full bg-stone-900 dark:bg-white dark:text-stone-900 text-white px-6 py-3.5 font-['Manrope'] font-bold text-sm transition-all hover:bg-stone-800 dark:hover:bg-neutral-100 shadow-lg active:scale-95 disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 rounded-full bg-stone-900 dark:bg-white dark:text-stone-900 text-white px-6 py-3.5 font-business-display font-bold text-sm transition-all hover:bg-stone-800 dark:hover:bg-neutral-100 shadow-lg active:scale-95 disabled:opacity-50"
                 >
                   {creatingProspect ? (
                     <><Loader2 className="h-4 w-4 animate-spin" /> {t.closer_calldetails_creating}</>
@@ -1080,16 +1080,16 @@ export function CloserCallDetails() {
             </div>
           )}
 
-        <div className={cn("grid grid-cols-1 lg:grid-cols-12 gap-10", !prospect && !isReadonly && "blur-sm pointer-events-none select-none")}>
+        <div className={cn("grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-10", !prospect && !isReadonly && "blur-sm pointer-events-none select-none")}>
           {/* Left Column */}
-          <div className="lg:col-span-7 space-y-10">
+          <div className="lg:col-span-7 space-y-6 sm:space-y-10">
             {/* Closer Outcomes */}
             {renderOutcomeCards(closerOutcomes, t.closer_calldetails_outcome_label_closer, true, closerCustomStages)}
 
             {/* Won: Payment Terms & Commission */}
             {selectedOutcome === 'won' && (
-              <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-7 space-y-5">
-                <h3 className="font-['Manrope'] text-lg font-bold flex items-center gap-2 text-stone-900 dark:text-white">
+              <section className="bg-white/70 dark:bg-white/5 sm:backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-4 sm:p-7 space-y-5">
+                <h3 className="font-business-display text-base sm:text-lg font-bold flex items-center gap-2 text-stone-900 dark:text-white">
                   <DollarSign className="h-5 w-5 text-emerald-600" /> {t.closer_calldetails_sale_details}
                 </h3>
                 <div>
@@ -1113,12 +1113,12 @@ export function CloserCallDetails() {
                   <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">{t.closer_calldetails_payment_mode}</label>
                   <div className="flex gap-3">
                     <button onClick={() => setPaymentType('comptant')}
-                      className={cn('flex-1 rounded-full border-2 px-4 py-2.5 text-sm font-bold transition-all font-[\"Manrope\"]',
+                      className={cn('flex-1 rounded-full border-2 px-4 py-2.5 text-sm font-bold transition-all font-business-display',
                         paymentType === 'comptant' ? 'border-emerald-600 bg-white text-emerald-700' : 'border-stone-200/40 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 text-stone-500 dark:text-neutral-400 hover:border-stone-300 dark:hover:border-white/20')}>
                       {t.closer_calldetails_payment_cash}
                     </button>
                     <button onClick={() => setPaymentType('installments')}
-                      className={cn('flex-1 rounded-full border-2 px-4 py-2.5 text-sm font-bold transition-all font-[\"Manrope\"]',
+                      className={cn('flex-1 rounded-full border-2 px-4 py-2.5 text-sm font-bold transition-all font-business-display',
                         paymentType === 'installments' ? 'border-emerald-600 bg-white text-emerald-700' : 'border-stone-200/40 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 text-stone-500 dark:text-neutral-400 hover:border-stone-300 dark:hover:border-white/20')}>
                       {t.closer_calldetails_payment_installments}
                     </button>
@@ -1171,11 +1171,11 @@ export function CloserCallDetails() {
                   </div>
                 )}
                 {effectiveAmount > 0 && (
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-5">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 sm:p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2 whitespace-nowrap">
                         <Award className="h-4 w-4 text-emerald-600" />
-                        <h4 className="text-sm font-bold text-emerald-700 font-['Manrope']">{t.closer_calldetails_your_commission}</h4>
+                        <h4 className="text-sm font-bold text-emerald-700 font-business-display">{t.closer_calldetails_your_commission}</h4>
                       </div>
                       <button
                         type="button"
@@ -1189,7 +1189,7 @@ export function CloserCallDetails() {
                           }
                         }}
                         className={cn(
-                          'flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all',
+                          'flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all whitespace-nowrap',
                           customCommissionEnabled
                             ? 'border-amber-500/60 bg-amber-50 text-amber-700 hover:bg-amber-100'
                             : 'border-stone-300 bg-white text-stone-600 hover:border-amber-500 hover:text-amber-700'
@@ -1218,7 +1218,7 @@ export function CloserCallDetails() {
                       </div>
                     )}
 
-                    <p className="text-2xl font-extrabold text-emerald-600 font-['Manrope']">{totalCommission.toFixed(2)} €</p>
+                    <p className="text-2xl font-extrabold text-emerald-600 font-business-display">{totalCommission.toFixed(2)} €</p>
                     {paymentType === 'installments' && scheduleMode === 'equal' && (
                       <p className="mt-1 text-sm text-stone-600 dark:text-neutral-300">
                         {t.closer_calldetails_you_will_receive} <span className="font-semibold text-emerald-600">{monthlyCommission.toFixed(2)}€/{t.closer_calldetails_stripe_month}</span>
@@ -1244,12 +1244,12 @@ export function CloserCallDetails() {
 
             {/* Won: Stripe already linked */}
             {selectedOutcome === 'won' && prospectFormula?.billing_type === 'subscription' && prospect?.stripe_subscription_id && (
-              <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-emerald-500/20 shadow-sm p-7">
+              <section className="bg-white/70 dark:bg-white/5 sm:backdrop-blur-xl rounded-xl border border-emerald-500/20 shadow-sm p-4 sm:p-7">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="p-2 bg-emerald-500/10 rounded-xl">
                     <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                   </div>
-                  <h3 className="font-['Manrope'] text-lg font-bold text-emerald-600">{t.closer_calldetails_stripe_linked}</h3>
+                  <h3 className="font-business-display text-lg font-bold text-emerald-600">{t.closer_calldetails_stripe_linked}</h3>
                 </div>
                 <div className="rounded-xl bg-emerald-50 dark:bg-emerald-500/5 border border-emerald-200 dark:border-emerald-500/20 p-4 space-y-2">
                   <div className="flex justify-between">
@@ -1272,8 +1272,8 @@ export function CloserCallDetails() {
 
             {/* Won: Stripe Linking — 3 methods (only for subscription formulas) */}
             {selectedOutcome === 'won' && prospectFormula?.billing_type === 'subscription' && stripeConnected && prospect && !prospect.stripe_subscription_id && stripeAutoResult.status !== 'matched' && (
-              <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-[#635BFF]/20 shadow-sm p-7 space-y-5">
-                <h3 className="font-['Manrope'] text-lg font-bold flex items-center gap-2 text-[#635BFF]">
+              <section className="bg-white/70 dark:bg-white/5 sm:backdrop-blur-xl rounded-xl border border-[#635BFF]/20 shadow-sm p-4 sm:p-7 space-y-5">
+                <h3 className="font-business-display text-base sm:text-lg font-bold flex items-center gap-2 text-[#635BFF]">
                   <CreditCard className="h-5 w-5" /> {t.closer_calldetails_stripe_link}
                 </h3>
 
@@ -1370,7 +1370,7 @@ export function CloserCallDetails() {
                                   </div>
                                   <p className="text-[10px] text-stone-500 font-mono mt-0.5">{sub.id}</p>
                                 </div>
-                                {stripeMatching ? <Loader2 className="h-4 w-4 animate-spin text-[#635BFF]" /> : <CheckCircle2 className="h-5 w-5 text-[#635BFF] opacity-0 group-hover:opacity-100 transition-opacity" />}
+                                {stripeMatching ? <Loader2 className="h-4 w-4 animate-spin text-[#635BFF]" /> : <CheckCircle2 className="h-5 w-5 text-[#635BFF] [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity" />}
                               </button>
                             ))}
                           </div>
@@ -1417,12 +1417,12 @@ export function CloserCallDetails() {
 
             {/* Won: Stripe linked success */}
             {selectedOutcome === 'won' && prospectFormula?.billing_type === 'subscription' && stripeAutoResult.status === 'matched' && stripeAutoResult.data && (
-              <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-emerald-500/20 shadow-sm p-7">
+              <section className="bg-white/70 dark:bg-white/5 sm:backdrop-blur-xl rounded-xl border border-emerald-500/20 shadow-sm p-4 sm:p-7">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="p-2 bg-emerald-500/10 rounded-xl">
                     <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                   </div>
-                  <h3 className="font-['Manrope'] text-lg font-bold text-emerald-600">{t.closer_calldetails_stripe_linked}</h3>
+                  <h3 className="font-business-display text-lg font-bold text-emerald-600">{t.closer_calldetails_stripe_linked}</h3>
                 </div>
                 <div className="rounded-xl bg-emerald-50 dark:bg-emerald-500/5 border border-emerald-200 dark:border-emerald-500/20 p-4 space-y-2">
                   <div className="flex justify-between">
@@ -1439,8 +1439,8 @@ export function CloserCallDetails() {
 
             {/* Follow up (closer outcome) */}
             {selectedOutcome === 'followup' && (
-              <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-7 space-y-5">
-                <h3 className="font-['Manrope'] text-lg font-bold flex items-center gap-2 text-stone-900 dark:text-white">
+              <section className="bg-white/70 dark:bg-white/5 sm:backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-4 sm:p-7 space-y-5">
+                <h3 className="font-business-display text-base sm:text-lg font-bold flex items-center gap-2 text-stone-900 dark:text-white">
                   <Clock className="h-5 w-5 text-stone-500" /> {t.closer_calldetails_followup_title}
                 </h3>
                 <div>
@@ -1471,8 +1471,8 @@ export function CloserCallDetails() {
 
             {/* Lost (closer outcome) */}
             {selectedOutcome === 'lost' && (
-              <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-7 space-y-5">
-                <h3 className="font-['Manrope'] text-lg font-bold flex items-center gap-2 text-stone-900 dark:text-white">
+              <section className="bg-white/70 dark:bg-white/5 sm:backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-4 sm:p-7 space-y-5">
+                <h3 className="font-business-display text-base sm:text-lg font-bold flex items-center gap-2 text-stone-900 dark:text-white">
                   <XCircle className="h-5 w-5 text-stone-500" /> {t.closer_calldetails_lost_title}
                 </h3>
                 <div>
@@ -1496,8 +1496,8 @@ export function CloserCallDetails() {
 
             {/* Qualified: auto-assign for setter-closer self */}
             {selectedOutcome === 'qualified' && isSetterCloserSelf && (
-              <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-5">
-                <p className="text-sm text-stone-700 dark:text-neutral-200 text-center font-['Manrope'] font-medium">
+              <div className="bg-white/70 dark:bg-white/5 sm:backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-5">
+                <p className="text-sm text-stone-700 dark:text-neutral-200 text-center font-business-display font-medium">
                   {t.closer_calldetails_auto_assign_self}
                 </p>
               </div>
@@ -1506,8 +1506,8 @@ export function CloserCallDetails() {
             {/* Qualified: Closer assignment (setter outcome for owner) */}
             {selectedOutcome === 'qualified' && showSetterOutcomes && !isSetterCloserSelf && (
               <section>
-                <h3 className="font-['Manrope'] text-lg font-bold mb-5 text-stone-900 dark:text-white">{t.closer_calldetails_step1_assign}</h3>
-                <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl p-7 rounded-xl border border-white/40 dark:border-white/10 shadow-sm">
+                <h3 className="font-business-display text-base sm:text-lg font-bold mb-3 sm:mb-5 text-stone-900 dark:text-white">{t.closer_calldetails_step1_assign}</h3>
+                <div className="bg-white/70 dark:bg-white/5 sm:backdrop-blur-xl p-4 sm:p-7 rounded-xl border border-white/40 dark:border-white/10 shadow-sm">
                   {closerMembers.length === 0 ? (
                     <div className="flex items-center gap-2 text-sm text-stone-500 dark:text-neutral-400 bg-stone-50 dark:bg-white/5 rounded-lg p-4 border border-stone-200 dark:border-white/10">
                       <AlertCircle className="h-4 w-4 text-stone-400" />
@@ -1530,11 +1530,11 @@ export function CloserCallDetails() {
                         </select>
                       </div>
 
-                      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4 sm:mb-6">
                         <button
                           onClick={() => handleAssign('suivant')}
                           className={cn(
-                            'flex-1 py-3 px-6 rounded-full font-["Manrope"] font-bold text-sm transition-all',
+                            'flex-1 py-2.5 sm:py-3 px-6 rounded-full font-business-display font-bold text-sm transition-all',
                             assignmentMode === 'suivant'
                               ? 'bg-stone-900 text-white'
                               : 'border border-stone-300 dark:border-white/10 text-stone-700 dark:text-neutral-200 hover:bg-stone-100 dark:hover:bg-white/5'
@@ -1545,7 +1545,7 @@ export function CloserCallDetails() {
                         <button
                           onClick={() => handleAssign('hasard')}
                           className={cn(
-                            'flex-1 py-3 px-6 rounded-full font-["Manrope"] font-bold text-sm transition-all',
+                            'flex-1 py-2.5 sm:py-3 px-6 rounded-full font-business-display font-bold text-sm transition-all',
                             assignmentMode === 'hasard'
                               ? 'bg-stone-900 text-white'
                               : 'border border-stone-300 dark:border-white/10 text-stone-700 dark:text-neutral-200 hover:bg-stone-100 dark:hover:bg-white/5'
@@ -1556,12 +1556,12 @@ export function CloserCallDetails() {
                       </div>
 
                       {selectedCloser && (
-                        <div className="flex items-center gap-4 p-4 rounded-xl bg-white/50 dark:bg-white/5 border border-stone-200/30 dark:border-white/10">
-                          <div className="w-14 h-14 rounded-full bg-stone-200 dark:bg-white/10 flex items-center justify-center text-stone-700 dark:text-neutral-200 font-bold text-lg shrink-0">
+                        <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl bg-white/50 dark:bg-white/5 border border-stone-200/30 dark:border-white/10">
+                          <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-stone-200 dark:bg-white/10 flex items-center justify-center text-stone-700 dark:text-neutral-200 font-bold text-base sm:text-lg shrink-0">
                             {selectedCloser.first_name?.[0]}{selectedCloser.last_name?.[0]}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-['Manrope'] font-extrabold text-stone-900 dark:text-white">
+                            <h4 className="font-business-display font-extrabold text-stone-900 dark:text-white">
                               {selectedCloser.first_name} {selectedCloser.last_name}
                             </h4>
                             <p className="text-emerald-700 font-bold text-xs uppercase tracking-widest">
@@ -1585,8 +1585,8 @@ export function CloserCallDetails() {
           {selectedOutcome === 'qualified' && selectedCloser && showSetterOutcomes && !isSetterCloserSelf && (
             <div className="lg:col-span-5">
               <section>
-                <h3 className="font-['Manrope'] text-lg font-bold mb-5 text-stone-900 dark:text-white">{t.closer_calldetails_step2_schedule}</h3>
-                <div className="bg-white dark:bg-white/5 p-7 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+                <h3 className="font-business-display text-base sm:text-lg font-bold mb-3 sm:mb-5 text-stone-900 dark:text-white">{t.closer_calldetails_step2_schedule}</h3>
+                <div className="bg-white dark:bg-white/5 p-4 sm:p-7 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
                   {loadingSlots ? (
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="h-6 w-6 animate-spin text-stone-400" />
@@ -1601,7 +1601,7 @@ export function CloserCallDetails() {
                     <>
                       {/* Date navigation */}
                       <div className="flex justify-between items-center mb-5">
-                        <h4 className="font-['Manrope'] font-bold text-stone-900 dark:text-white capitalize">
+                        <h4 className="font-business-display font-bold text-stone-900 dark:text-white capitalize">
                           {currentDateSlots[0]?.dateLabel || ''}
                         </h4>
                         <div className="flex gap-2">
@@ -1648,7 +1648,7 @@ export function CloserCallDetails() {
                         <div className="mt-6 flex items-center justify-center">
                           <button
                             onClick={() => setShowAllSlots(true)}
-                            className="text-emerald-700 font-['Manrope'] font-bold text-sm hover:underline"
+                            className="text-emerald-700 font-business-display font-bold text-sm hover:underline"
                           >
                             {t.closer_calldetails_see_all_slots}
                           </button>
@@ -1681,8 +1681,8 @@ export function CloserCallDetails() {
 
       {/* NOTES TAB */}
       {activeTab === 'notes' && (
-        <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-7 h-[500px] flex flex-col">
-          <label className="mb-4 flex items-center gap-2 text-sm font-bold text-stone-900 dark:text-white font-['Manrope']">
+        <div className="bg-white/70 dark:bg-white/5 sm:backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-4 sm:p-7 h-[420px] sm:h-[500px] flex flex-col">
+          <label className="mb-4 flex items-center gap-2 text-sm font-bold text-stone-900 dark:text-white font-business-display">
             <FileText className="h-4 w-4 text-stone-500" /> {t.closer_calldetails_notes_label}
           </label>
           <textarea
@@ -1704,10 +1704,10 @@ export function CloserCallDetails() {
 
       {/* REMINDER TAB */}
       {activeTab === 'reminder' && (
-        <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-7 space-y-5">
+        <div className="bg-white/70 dark:bg-white/5 sm:backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-4 sm:p-7 space-y-5">
           <div className="flex items-center gap-2 mb-2">
             <Bell className="h-5 w-5 text-stone-500" />
-            <h3 className="text-lg font-bold text-stone-900 dark:text-white font-['Manrope']">{t.closer_calldetails_reminder_title}</h3>
+            <h3 className="text-lg font-bold text-stone-900 dark:text-white font-business-display">{t.closer_calldetails_reminder_title}</h3>
           </div>
 
           <div>
@@ -1724,7 +1724,7 @@ export function CloserCallDetails() {
               className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10 resize-none" />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
             <div>
               <label className="mb-2 flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-neutral-200">
                 <Calendar className="h-4 w-4" /> {t.closer_calldetails_reminder_label_date} <span className="text-red-500">*</span>
@@ -1743,7 +1743,7 @@ export function CloserCallDetails() {
 
           <button onClick={handleSaveReminder}
             disabled={!reminderTitle || !reminderDate || !reminderTime || isSavingReminder}
-            className={cn('w-full rounded-full px-6 py-3 text-sm font-bold text-white transition-all mt-2 font-["Manrope"]',
+            className={cn('w-full rounded-full px-6 py-3 text-sm font-bold text-white transition-all mt-2 font-business-display',
               reminderTitle && reminderDate && reminderTime && !isSavingReminder
                 ? 'bg-stone-900 hover:bg-stone-800 shadow-sm'
                 : 'bg-stone-300 !text-stone-500 cursor-not-allowed'
@@ -1757,14 +1757,14 @@ export function CloserCallDetails() {
 
       {/* Footer Actions */}
       {!isReadonly && (
-        <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-4 md:px-8 py-4 md:py-5 flex items-center justify-end gap-3 md:gap-5 z-40 border-t border-stone-200/40 dark:border-white/10">
+        <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-4 md:px-8 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:py-4 md:py-5 flex items-center justify-end gap-3 md:gap-5 z-40 border-t border-stone-200/40 dark:border-white/10">
           <button onClick={() => navigate('/business/appels')}
-            className="px-8 py-3 rounded-full border border-stone-300 dark:border-white/10 text-stone-700 dark:text-neutral-200 font-['Manrope'] font-bold text-sm hover:bg-stone-50 dark:hover:bg-white/5 transition-all">
+            className="flex-1 sm:flex-none px-4 sm:px-8 py-3 rounded-full border border-stone-300 dark:border-white/10 text-stone-700 dark:text-neutral-200 font-business-display font-bold text-sm hover:bg-stone-50 dark:hover:bg-white/5 transition-all">
             {t.closer_calldetails_cancel}
           </button>
           <button onClick={handleSave} disabled={!isFormValid() || saving}
             className={cn(
-              "px-10 py-3 rounded-full font-['Manrope'] font-bold text-sm text-white transition-all shadow-xl active:scale-95",
+              "flex-1 sm:flex-none px-4 sm:px-10 py-3 rounded-full font-business-display font-bold text-sm text-white transition-all shadow-xl active:scale-95",
               isFormValid() && !saving
                 ? 'bg-stone-900 hover:bg-stone-800'
                 : 'bg-stone-300 !text-stone-500 cursor-not-allowed'
@@ -1774,9 +1774,9 @@ export function CloserCallDetails() {
         </div>
       )}
       {isReadonly && (
-        <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-4 md:px-8 py-4 md:py-5 flex items-center justify-center z-40 border-t border-stone-200/40 dark:border-white/10">
+        <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-4 md:px-8 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:py-4 md:py-5 flex items-center justify-center z-40 border-t border-stone-200/40 dark:border-white/10">
           <button onClick={() => navigate('/business/appels')}
-            className="px-10 py-3 rounded-full bg-stone-900 text-white font-['Manrope'] font-bold text-sm hover:bg-stone-800 transition-all shadow-xl active:scale-95">
+            className="w-full sm:w-auto px-10 py-3 rounded-full bg-stone-900 text-white font-business-display font-bold text-sm hover:bg-stone-800 transition-all shadow-xl active:scale-95">
             {t.closer_calldetails_back_to_calls}
           </button>
         </div>

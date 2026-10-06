@@ -107,29 +107,32 @@ export function BusinessStripeConnectModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700 w-full max-w-md relative overflow-hidden">
+    <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm">
+      {/* Mobile : feuille du bas ; dès sm : modale centrée */}
+      <div className="bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-2xl shadow-2xl ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700 w-full max-w-md relative max-h-[92dvh] overflow-y-auto overscroll-contain sm:max-h-none sm:overflow-hidden">
+        <div className="sm:hidden mx-auto mt-2 h-1 w-10 rounded-full bg-stone-300 dark:bg-neutral-700" />
 
         {/* Header */}
-        <div className="p-6 border-b border-[#c4c7c7]/10 dark:border-neutral-800 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="px-5 py-3 sm:p-6 border-b border-[#c4c7c7]/10 dark:border-neutral-800 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="p-2 bg-[#635BFF]/10 rounded-xl">
               <CreditCard className="h-6 w-6 text-[#635BFF]" />
             </div>
-            <h2 className="text-lg font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">
+            <h2 className="text-lg font-extrabold font-business-display text-[#1b1c1b] dark:text-white">
               {t.stripe_connect_title}
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white transition-colors"
+            aria-label={t.stripe_connect_close}
+            className="shrink-0 p-2 -mr-2 sm:p-0 sm:mr-0 text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:p-6">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-[#006c49] mb-2" />
@@ -143,7 +146,7 @@ export function BusinessStripeConnectModal({
               <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-[#006c49]/10 border border-[#006c49]/20 mb-4">
                 <CheckCircle2 className="h-8 w-8 text-[#006c49]" />
               </div>
-              <h3 className="text-lg font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white mb-2">
+              <h3 className="text-lg font-extrabold font-business-display text-[#1b1c1b] dark:text-white mb-2">
                 {t.stripe_connect_active}
               </h3>
               <p className="text-sm text-[#444748] dark:text-neutral-400 mb-6 px-4">
@@ -176,8 +179,8 @@ export function BusinessStripeConnectModal({
             </div>
           ) : (
             /* Disconnected state */
-            <div className="space-y-6">
-              <div className="space-y-3">
+            <div className="space-y-4 sm:space-y-6">
+              <div className="space-y-2 sm:space-y-3">
                 {benefits.map((text, i) => (
                   <div key={i} className="flex items-start gap-3 bg-[#006c49]/5 border border-[#006c49]/10 rounded-xl p-3">
                     <CheckCircle2 className="h-5 w-5 text-[#006c49] shrink-0 mt-0.5" />
