@@ -524,7 +524,7 @@ export function InvoicesPage() {
           </div>
         )}
 
-        {selectedOffer && stats.dealsCount > 0 && (
+        {selectedOffer && (
           <div className="flex justify-center mb-12">
             <button
               onClick={() => setIsGeneratorOpen(true)}

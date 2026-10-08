@@ -279,7 +279,7 @@ function parisToIso(date, time) {
 const PROSPECT_FIELDS = 'id,contact,firstName,lastName,email,phone,stage,value,source,notes,campaign_id,formula_id,assigned_to,assigned_setter,created_at,last_contact,contacted_at,noshow_at,loss_reason,relance_step,last_relance_at,responded_at'
 const PROSPECT_WRITABLE = new Set(['contact', 'firstName', 'lastName', 'email', 'phone', 'stage', 'value', 'source', 'notes', 'campaign_id', 'formula_id', 'assigned_to', 'assigned_setter', 'loss_reason', 'loss_details', 'probability', 'payment_type', 'installments', 'timezone', 'company'])
 const BOOKING_LINK_WRITABLE = new Set(['label', 'duration', 'description', 'redirect_url', 'team_member_id', 'email_enabled', 'email_required', 'phone_enabled', 'phone_required', 'google_meet_enabled', 'multi_booking_enabled', 'multi_booking_max', 'multi_booking_period', 'multi_booking_max_per_period', 'multi_booking_gap_days'])
-const CAMPAIGN_WRITABLE = new Set(['name', 'description', 'source', 'utm_source', 'utm_medium', 'utm_campaign', 'custom_fields', 'redirect_url', 'landing_title', 'landing_subtitle', 'landing_text', 'landing_video_url', 'email_required', 'phone_required', 'formula_id', 'capture_type', 'popup_delay', 'booking_duration', 'booking_title', 'booking_description', 'booking_with', 'booking_assign_mode', 'booking_assigned_members', 'booking_distribution', 'booking_via_setter', 'setter_assign_mode', 'setter_assigned_members', 'setter_distribution', 'team_id', 'is_active'])
+const CAMPAIGN_WRITABLE = new Set(['name', 'description', 'source', 'utm_source', 'utm_medium', 'utm_campaign', 'custom_fields', 'redirect_url', 'landing_title', 'landing_subtitle', 'landing_text', 'landing_video_url', 'email_required', 'phone_required', 'formula_id', 'capture_type', 'popup_delay', 'booking_duration', 'booking_title', 'booking_description', 'booking_with', 'booking_assign_mode', 'booking_assigned_members', 'booking_distribution', 'booking_via_setter', 'setter_assign_mode', 'setter_assigned_members', 'setter_distribution', 'team_id', 'is_active', 'confirmation_page'])
 const TEAM_MEMBER_WRITABLE = new Set(['role', 'team_id', 'owner_assignable', 'owner_assignable_roles', 'can_manage_campaigns'])
 const FORM_WRITABLE = new Set(['name', 'description', 'blocks', 'settings', 'is_active', 'crm_enabled', 'crm_mapping', 'crm_source', 'crm_stage', 'crm_campaign_id', 'notify_enabled', 'notify_email'])
 
@@ -287,6 +287,73 @@ function pick(obj, allowed) {
   const out = {}
   for (const [k, v] of Object.entries(obj || {})) if (allowed.has(k)) out[k] = v
   return out
+}
+
+// ───────── Page de confirmation de campagne ─────────
+// Miroir de src/lib/confirmationPage.ts (le MCP est en JS sans import du front).
+
+const CONF_BLOCKS = ['sections', 'questionnaire', 'buttons']
+const CONF_QUESTION_TYPES = ['text', 'textarea', 'select', 'multiple_choice', 'yes_no']
+const CONF_SCALARS = ['enabled', 'bg_color', 'accent_color', 'title', 'message', 'show_recap', 'video_url', 'video_title']
+const shortId = () => Math.random().toString(36).slice(2, 10)
+const isHex = (v) => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v.trim())
+
+function confButton(b, accent) {
+  b = b || {}
+  if (b.bg_color !== undefined && !isHex(b.bg_color)) throw new Error(`bg_color invalide (${b.bg_color}) — format #rrggbb.`)
+  if (b.text_color !== undefined && !isHex(b.text_color)) throw new Error(`text_color invalide (${b.text_color}) — format #rrggbb.`)
+  return {
+    id: b.id || shortId(),
+    label: String(b.label || ''),
+    url: String(b.url || ''),
+    bg_color: b.bg_color || accent || '#111111',
+    text_color: b.text_color || '#ffffff',
+    new_tab: b.new_tab !== false,
+  }
+}
+function confVideo(v) {
+  v = v || {}
+  return { id: v.id || shortId(), url: String(v.url || ''), title: String(v.title || '') }
+}
+function confSection(sec) {
+  sec = sec || {}
+  return { id: sec.id || shortId(), title: String(sec.title || 'Éducation'), videos: (sec.videos || []).map(confVideo) }
+}
+function confQuestion(q) {
+  q = q || {}
+  const type = q.type || 'text'
+  if (!CONF_QUESTION_TYPES.includes(type)) throw new Error(`type de question invalide (${type}). Valeurs : ${CONF_QUESTION_TYPES.join(', ')}`)
+  return { id: q.id || shortId(), label: String(q.label || ''), type, options: Array.isArray(q.options) ? q.options.map(String) : [], required: !!q.required }
+}
+function confBlockOrder(raw) {
+  const seen = (Array.isArray(raw) ? raw : []).filter((k, i, arr) => CONF_BLOCKS.includes(k) && arr.indexOf(k) === i)
+  return [...seen, ...CONF_BLOCKS.filter((k) => !seen.includes(k))]
+}
+/** Config complète et valide, à partir d'une config partielle (ids générés si absents). */
+function normalizeConfirmationPage(raw) {
+  const r = raw && typeof raw === 'object' ? raw : {}
+  for (const k of ['bg_color', 'accent_color']) if (r[k] !== undefined && !isHex(r[k])) throw new Error(`${k} invalide (${r[k]}) — format #rrggbb.`)
+  const accent = r.accent_color || '#111111'
+  const q = r.questionnaire || {}
+  return {
+    enabled: !!r.enabled,
+    bg_color: r.bg_color || '#f4f2f1',
+    accent_color: accent,
+    title: String(r.title || ''),
+    message: String(r.message || ''),
+    show_recap: r.show_recap !== false,
+    video_url: String(r.video_url || ''),
+    video_title: String(r.video_title || ''),
+    sections: (r.sections || []).map(confSection),
+    buttons: (r.buttons || []).map((b) => confButton(b, accent)),
+    block_order: confBlockOrder(r.block_order),
+    questionnaire: {
+      enabled: !!q.enabled,
+      title: String(q.title || ''),
+      intro: String(q.intro || ''),
+      questions: (q.questions || []).map(confQuestion),
+    },
+  }
 }
 
 // ───────── Implémentation des outils ─────────
@@ -414,7 +481,7 @@ const impl = {
 
   async prospect_get(ctx, a) {
     if (!a.id) throw new Error('id requis.')
-    const p = await ownedProspect(ctx, a.id, `${PROSPECT_FIELDS},lead_answers,metadata,call_notes`)
+    const p = await ownedProspect(ctx, a.id, `${PROSPECT_FIELDS},lead_answers,metadata,call_notes,pre_meeting_answers`)
     const [tags, appts, rems, qAnswers, qMeta] = await Promise.all([
       sbSelect(`business_prospect_tags?prospect_id=eq.${enc(a.id)}&select=tag:business_tags(id,name,color)`),
       sbSelect(`business_appointments?prospect_id=eq.${enc(a.id)}&select=id,title,date,time,duration,status&order=date.desc&limit=10`),
@@ -444,7 +511,22 @@ const impl = {
             .sort((x, y) => x.sort_order - y.sort_order),
         }
       : null
-    return { prospect: p, tags: tags.map((t) => t.tag).filter(Boolean), appointments: appts, reminders: rems, qualification }
+    // Parcours sur la page de campagne (tracking : étapes, question d'arrêt, vidéos vues)
+    let campaign_journey = []
+    try {
+      const j = await callApi(ctx, '/api/business', 'funnel-prospect', 'GET', { query: { prospect_id: String(a.id), user_id: ctx.owner } })
+      campaign_journey = (j.sessions || []).map((s) => ({
+        campaign: s.campaign_name, date: s.created_at, device: s.device, reached_steps: s.reached, completed: s.completed, disqualified: s.disqualified,
+        questions_answered: `${(s.answered_question_ids || []).length}/${(s.questions || []).length}`,
+        stopped_at_question: !s.completed ? ((s.questions || []).find((q) => q.id === s.stuck_question_id)?.text || null) : null,
+        confirmation_videos: Object.entries(s.confirmation?.videos || {}).map(([k, v]) => ({
+          title: s.video_titles?.[k] || k, watched_seconds: v.watched, duration_seconds: v.duration,
+          percent: v.duration ? Math.round(Math.min(100, (Math.max(v.max, v.watched) / v.duration) * 100)) : null,
+        })),
+        pre_meeting: s.confirmation?.pre_meeting || null,
+      }))
+    } catch { /* tracking indisponible : on renvoie la fiche sans */ }
+    return { prospect: p, tags: tags.map((t) => t.tag).filter(Boolean), appointments: appts, reminders: rems, qualification, pre_meeting_answers: p.pre_meeting_answers || [], campaign_journey }
   },
 
   async prospect_create(ctx, a) {
@@ -678,6 +760,7 @@ const impl = {
   async campaign_create(ctx, a) {
     if (!a.name) throw new Error('name requis.')
     const body = { user_id: ctx.owner, ...pick(a, CAMPAIGN_WRITABLE), name: a.name }
+    if (body.confirmation_page) body.confirmation_page = normalizeConfirmationPage(body.confirmation_page)
     const data = await callApi(ctx, '/api/business', 'campaigns-create', 'POST', { body })
     const c = data.campaign
     return { campaign: c, url: `${ctx.base}/capture/${c.slug}` }
@@ -687,6 +770,7 @@ const impl = {
     if (!a.id) throw new Error('id requis.')
     const updates = pick(a.patch, CAMPAIGN_WRITABLE)
     if (Object.keys(updates).length === 0) throw new Error(`patch vide — champs autorisés : ${[...CAMPAIGN_WRITABLE].join(', ')}`)
+    if (updates.confirmation_page) updates.confirmation_page = normalizeConfirmationPage(updates.confirmation_page)
     const data = await callApi(ctx, '/api/business', 'campaigns-update', 'PUT', { body: { user_id: ctx.owner, id: a.id, ...updates } })
     return { campaign: data.campaign }
   },
@@ -725,6 +809,102 @@ const impl = {
       return await callApi(ctx, '/api/business', 'questionnaire-save', 'POST', { body })
     }
     throw new Error("action invalide ('get' | 'save').")
+  },
+
+  async campaign_confirmation_page(ctx, a) {
+    if (!a.campaign_id) throw new Error('campaign_id requis.')
+    const rows = await sbSelect(`business_campaigns?id=eq.${enc(a.campaign_id)}&user_id=eq.${ctx.owner}&select=id,name,slug,capture_type,confirmation_page&limit=1`)
+    if (!rows.length) throw new Error('Campagne introuvable sur ce compte.')
+    const camp = rows[0]
+    const cfg = normalizeConfirmationPage(camp.confirmation_page)
+    const action = a.action || 'get'
+    const out = (c) => ({ campaign: { id: camp.id, name: camp.name, capture_type: camp.capture_type, url: `${ctx.base}/capture/${camp.slug}` }, confirmation_page: c })
+    if (action === 'get') return out(cfg)
+
+    const findIdx = (list, id, what) => {
+      const i = list.findIndex((x) => x.id === id)
+      if (i < 0) throw new Error(`${what} introuvable (id ${id}). Ids existants : ${list.map((x) => x.id).join(', ') || 'aucun'}`)
+      return i
+    }
+    let next = cfg
+    switch (action) {
+      case 'update': {
+        // Patch : scalaires + listes complètes (remplacées) + questionnaire fusionné
+        const p = a.patch || {}
+        const merged = { ...cfg }
+        for (const k of CONF_SCALARS) if (p[k] !== undefined) merged[k] = p[k]
+        for (const k of ['buttons', 'sections', 'block_order']) if (p[k] !== undefined) merged[k] = p[k]
+        if (p.questionnaire) merged.questionnaire = { ...cfg.questionnaire, ...p.questionnaire }
+        next = normalizeConfirmationPage(merged)
+        break
+      }
+      case 'add_button':
+        next = normalizeConfirmationPage({ ...cfg, buttons: [...cfg.buttons, confButton(a.button, cfg.accent_color)] })
+        break
+      case 'update_button': {
+        const i = findIdx(cfg.buttons, a.button_id, 'Bouton')
+        const buttons = [...cfg.buttons]; buttons[i] = confButton({ ...buttons[i], ...(a.button || {}), id: buttons[i].id }, cfg.accent_color)
+        next = { ...cfg, buttons }
+        break
+      }
+      case 'remove_button':
+        findIdx(cfg.buttons, a.button_id, 'Bouton')
+        next = { ...cfg, buttons: cfg.buttons.filter((b) => b.id !== a.button_id) }
+        break
+      case 'add_section':
+        next = { ...cfg, sections: [...cfg.sections, confSection(a.section)] }
+        break
+      case 'update_section': {
+        const i = findIdx(cfg.sections, a.section_id, 'Section')
+        const sections = [...cfg.sections]
+        sections[i] = confSection({ ...sections[i], ...(a.section || {}), id: sections[i].id })
+        next = { ...cfg, sections }
+        break
+      }
+      case 'remove_section':
+        findIdx(cfg.sections, a.section_id, 'Section')
+        next = { ...cfg, sections: cfg.sections.filter((x) => x.id !== a.section_id) }
+        break
+      case 'add_video': {
+        const i = findIdx(cfg.sections, a.section_id, 'Section')
+        if (!a.video || !a.video.url) throw new Error('video.url requis.')
+        const sections = [...cfg.sections]
+        sections[i] = { ...sections[i], videos: [...sections[i].videos, confVideo(a.video)] }
+        next = { ...cfg, sections }
+        break
+      }
+      case 'remove_video': {
+        const i = findIdx(cfg.sections, a.section_id, 'Section')
+        findIdx(cfg.sections[i].videos, a.video_id, 'Vidéo')
+        const sections = [...cfg.sections]
+        sections[i] = { ...sections[i], videos: sections[i].videos.filter((v) => v.id !== a.video_id) }
+        next = { ...cfg, sections }
+        break
+      }
+      case 'add_question':
+        next = { ...cfg, questionnaire: { ...cfg.questionnaire, enabled: true, questions: [...cfg.questionnaire.questions, confQuestion(a.question)] } }
+        break
+      case 'update_question': {
+        const i = findIdx(cfg.questionnaire.questions, a.question_id, 'Question')
+        const questions = [...cfg.questionnaire.questions]
+        questions[i] = confQuestion({ ...questions[i], ...(a.question || {}), id: questions[i].id })
+        next = { ...cfg, questionnaire: { ...cfg.questionnaire, questions } }
+        break
+      }
+      case 'remove_question':
+        findIdx(cfg.questionnaire.questions, a.question_id, 'Question')
+        next = { ...cfg, questionnaire: { ...cfg.questionnaire, questions: cfg.questionnaire.questions.filter((q) => q.id !== a.question_id) } }
+        break
+      default:
+        throw new Error("action invalide : get | update | add_button | update_button | remove_button | add_section | update_section | remove_section | add_video | remove_video | add_question | update_question | remove_question")
+    }
+    await sbUpdate('business_campaigns', `id=eq.${enc(camp.id)}&user_id=eq.${ctx.owner}`, { confirmation_page: next })
+    return out(next)
+  },
+
+  async campaign_funnel(ctx, a) {
+    if (!a.campaign_id) throw new Error('campaign_id requis.')
+    return await callApi(ctx, '/api/business', 'funnel-stats', 'GET', { query: { campaign_id: a.campaign_id, user_id: ctx.owner, days: String(a.days ?? 30) } })
   },
 
   // ═══ Liens de booking ═══
@@ -1457,7 +1637,7 @@ const TOOLS = [
   },
   {
     name: 'prospect_get',
-    description: "Fiche complète d'un prospect : champs, réponses au questionnaire de qualification de la campagne (scorées, éliminatoires — dans `qualification`), tags, 10 derniers RDV et rappels.",
+    description: "Fiche complète d'un prospect : champs, réponses au questionnaire de qualification de la campagne (scorées, éliminatoires — dans `qualification`, y compris les réponses partielles d'un lead « Incomplet »), réponses au questionnaire avant RDV de la page de confirmation (`pre_meeting_answers`), parcours sur la page de campagne (`campaign_journey` : étapes franchies, question où il s'est arrêté, vidéos de confirmation regardées avec durée et %), tags, 10 derniers RDV et rappels.",
     inputSchema: obj({ id: num('Id du prospect') }, ['id']),
   },
   {
@@ -1511,11 +1691,12 @@ const TOOLS = [
       booking_with: str("'closer' | 'setter'"), booking_assign_mode: str("'all_role' | 'specific' | 'multiple'"),
       booking_assigned_members: { type: 'array', items: { type: 'string' }, description: 'Ids membres si specific/multiple' },
       formula_id: str('Formule rattachée'), email_required: bool('Email obligatoire'), phone_required: bool('Téléphone obligatoire'),
+      confirmation_page: { type: 'object', description: "Page de confirmation personnalisée (même format que l'outil campaign_confirmation_page ; enabled=true pour l'activer)" },
     }, ['name']),
   },
   {
     name: 'campaign_update',
-    description: 'Met à jour une campagne (patch partiel : name, is_active, landing_*, booking_*, capture_type…).',
+    description: "Met à jour une campagne (patch partiel : name, is_active, landing_*, booking_*, capture_type, confirmation_page…). Pour modifier finement la page de confirmation (boutons, sections, vidéos, questions), préférer l'outil campaign_confirmation_page.",
     inputSchema: obj({ id: str('Id de la campagne'), patch: obj({}, undefined) }, ['id', 'patch']),
   },
   {
@@ -1532,6 +1713,28 @@ const TOOLS = [
       max_eliminatory: num('Nb max de réponses éliminatoires tolérées'),
       questions: { type: 'array', description: '[{question_text, question_type, is_required, options[], eliminatory_answers[], counts_in_scoring}]', items: { type: 'object' } },
     }, ['campaign_id']),
+  },
+  {
+    name: 'campaign_confirmation_page',
+    description: "Lit, crée et modifie la PAGE DE CONFIRMATION personnalisée d'une campagne (affichée après la prise de RDV / l'inscription). Contenu : enabled (bool — false = page standard), title, message, show_recap (date/heure du RDV), bg_color et accent_color (#rrggbb), video_url + video_title (vidéo de confirmation : YouTube, Loom, Vimeo, Wistia), sections (sections de vidéos, ex. « Éducation » : {id,title,videos:[{id,url,title}]}), buttons ({id,label,url,bg_color,text_color,new_tab}), questionnaire avant RDV ({enabled,title,intro,questions:[{id,label,type,options[],required}]}, type : text | textarea | yes_no | select | multiple_choice — réponses enregistrées sur la fiche prospect), block_order (ordre d'affichage des blocs 'sections' | 'questionnaire' | 'buttons'). Actions : get (défaut) ; update (patch : scalaires, listes complètes remplacées, questionnaire fusionné) ; add_button / update_button / remove_button (button, button_id) ; add_section / update_section / remove_section (section, section_id) ; add_video / remove_video (section_id, video, video_id) ; add_question / update_question / remove_question (question, question_id). Pense à enabled=true pour activer la page. Renvoie la config complète avec les ids.",
+    inputSchema: obj({
+      campaign_id: str('Id de la campagne'),
+      action: str("'get' (défaut) | 'update' | 'add_button' | 'update_button' | 'remove_button' | 'add_section' | 'update_section' | 'remove_section' | 'add_video' | 'remove_video' | 'add_question' | 'update_question' | 'remove_question'"),
+      patch: { type: 'object', description: "Pour update : {enabled, title, message, show_recap, bg_color, accent_color, video_url, video_title, buttons[], sections[], block_order[], questionnaire{}}" },
+      button: { type: 'object', description: '{label, url, bg_color, text_color, new_tab}' },
+      button_id: str('Id du bouton (update/remove)'),
+      section: { type: 'object', description: "{title, videos:[{url, title}]}" },
+      section_id: str('Id de la section'),
+      video: { type: 'object', description: '{url, title}' },
+      video_id: str('Id de la vidéo (remove_video)'),
+      question: { type: 'object', description: "{label, type: 'text'|'textarea'|'yes_no'|'select'|'multiple_choice', options[], required}" },
+      question_id: str('Id de la question (update/remove)'),
+    }, ['campaign_id']),
+  },
+  {
+    name: 'campaign_funnel',
+    description: "Tracking du parcours d'une campagne : nombre de visites, entonnoir étape par étape (view → info_started → info_done → questionnaire_started → questionnaire_done → booking → slot_selected → payment → done) avec le nombre de visiteurs qui s'arrêtent à chaque étape (stopped), questionnaire de qualification question par question (answered = ont répondu, stopped = se sont arrêtés à cette question), et page de confirmation personnalisée : par vidéo (started, avg_watched en secondes, avg_pct, completed = vue à ≥ 90 %, measurable = false pour Loom/Wistia) et entonnoir du questionnaire avant RDV. Période via days (défaut 30, 0 = tout).",
+    inputSchema: obj({ campaign_id: str('Id de la campagne'), days: num('Période en jours (défaut 30, 0 = tout l\'historique)') }, ['campaign_id']),
   },
   {
     name: 'booking_links_manage',

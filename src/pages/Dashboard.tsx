@@ -287,8 +287,10 @@ export function Dashboard() {
       threeDaysLater.setDate(now.getDate() + 3)
       threeDaysLater.setHours(23, 59, 59, 999)
 
+      // Événements Google déjà importés en RDV CloseOS : on garde uniquement le RDV.
+      const importedGoogleIds = new Set(meetings.map(m => m.google_event_id).filter(Boolean) as string[])
       const transformedGoogle = googleEvents
-        .filter(ge => ge && ge.start && !ge.allDay)
+        .filter(ge => ge && ge.start && !ge.allDay && !importedGoogleIds.has(String(ge.id)))
         .map(ge => ({
           id: ge.id as string,
           title: ge.title,

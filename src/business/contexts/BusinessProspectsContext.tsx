@@ -7,6 +7,8 @@ import toast from 'react-hot-toast'
 
 export interface BusinessProspect {
   id: number
+  // Questionnaire de la page de confirmation de campagne (un bloc par campagne)
+  pre_meeting_answers?: { campaign_id: string; title: string | null; answered_at: string; answers: { question: string; answer: string }[] }[] | null
   user_id: string
   company: string
   contact: string

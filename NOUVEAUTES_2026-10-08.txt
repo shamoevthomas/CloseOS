@@ -1,0 +1,211 @@
+CLOSEOS BUSINESS — NOUVEAUTÉS DU 8 OCTOBRE 2026
+================================================
+
+Statut : développé et testé en local, NON déployé (rien n'est poussé).
+Base de données : les migrations ont déjà été appliquées en prod (ajouts seulement,
+rien de supprimé ni modifié dans l'existant).
+
+
+1. PAGES « ANNULER » ET « REPROGRAMMER » UN RENDEZ-VOUS
+-------------------------------------------------------
+Liens envoyés au prospect dans l'invitation agenda et les emails (/appointment/...).
+
+- Nouveau design façon landing page CloseOS Business : fond crème, taches de
+  couleur floues, petits dessins (doodles), boutons noirs, accents verts.
+- Chaque écran a son illustration : annulation (croix), report (horloge),
+  confirmation de report (coche), lien expiré (horloge grise).
+- Calendrier de report redessiné (jours en cases arrondies, créneau choisi en noir).
+
+- NOUVEAU : pop-up « Pourquoi pas reporter le rendez-vous plutôt ? »
+  Quand le prospect clique sur « Annuler le rendez-vous », une pop-up lui propose :
+    · « Reporter le rendez-vous » → l'envoie directement sur la page de report
+    · « Non, je veux l'annuler » → annule vraiment
+  (Si le report est impossible, l'annulation se fait directement.)
+
+- NOUVEAU : les liens expirent 24 h après la fin du rendez-vous.
+  Passé ce délai, plus d'annulation ni de report possible (bloqué aussi côté
+  serveur). Le prospect voit une page « Ce lien a expiré » avec le récap du RDV.
+
+
+2. PAGE DE CONFIRMATION PERSONNALISABLE (CAMPAGNES)
+--------------------------------------------------
+Page affichée juste après une prise de RDV ou une inscription sur une campagne.
+Réglage : Campagnes → modifier une campagne → nouvel onglet « Confirmation »
+(l'onglet s'élargit avec un APERÇU EN DIRECT à droite).
+
+- Interrupteur « Personnaliser la page de confirmation » (désactivé = ancienne
+  page standard, donc rien ne change pour les campagnes existantes).
+- Contenu : titre de la page, message, afficher ou non la date/heure du RDV.
+- Couleurs : fond de la page + couleur principale (pastilles prêtes ou code
+  couleur libre).
+- Vidéo de confirmation : lien YouTube, Loom, Vimeo ou Wistia + titre optionnel.
+- Sections de vidéos : autant de sections que voulu (« Éducation » par défaut,
+  renommables), chacune avec autant de vidéos que voulu (titre + lien),
+  réorganisables et supprimables.
+- Boutons : autant que voulu, chacun avec son texte, son lien, sa couleur de
+  fond, sa couleur de texte, l'option « nouvel onglet », et un ordre réglable.
+- Questionnaire avant rendez-vous (« complémentaire » en mode inscription) :
+  titre, intro, questions de type texte court, texte long, Oui/Non, choix
+  unique, choix multiples ; question obligatoire ou non ; ordre réglable.
+  → Les réponses arrivent sur la fiche du prospect (bloc dédié, avec la date).
+- Glisser-déposer : les blocs « Sections de vidéos », « Boutons » et
+  « Questionnaire » ont une poignée à gauche pour les réorganiser. L'ordre
+  choisi est celui de la page vue par le prospect.
+
+Ordre d'affichage côté prospect :
+  titre & message → récap du RDV → vidéo de confirmation → puis les 3 blocs
+  (sections / questionnaire / boutons) dans l'ordre choisi.
+
+
+3. RÉPONSES DE QUALIFICATION PARTIELLES SAUVEGARDÉES
+----------------------------------------------------
+Avant : si un prospect commençait le questionnaire de qualification puis
+quittait la page sans réserver, ses réponses étaient perdues (seuls nom /
+email / téléphone étaient gardés, en prospect « Incomplet »).
+
+Maintenant :
+- Les réponses sont enregistrées au fil de l'eau (1,5 s après chaque réponse)
+  sur la fiche « Incomplet ».
+- Dernier envoi automatique quand il ferme l'onglet ou quitte la page.
+- Elles s'affichent dans le bloc qualification habituel de la fiche, sans score
+  ni élimination (questionnaire non terminé).
+- S'il va au bout, ces réponses partielles sont remplacées par les définitives
+  (scoring normal, pas de doublons).
+
+
+4. TRACKING DU PARCOURS DES CAMPAGNES
+-------------------------------------
+Chaque visite d'une page de campagne est maintenant suivie (démarre à partir
+d'aujourd'hui, pas d'historique avant).
+
+Étapes suivies :
+  visite → début du formulaire → coordonnées remplies → début du questionnaire
+  → fin du questionnaire → arrivée au calendrier → choix d'un créneau
+  → ouverture du paiement (si payant) → RDV réservé / inscription validée
++ les questions répondues et LA QUESTION OÙ LE VISITEUR S'ARRÊTE.
+
+Page de confirmation personnalisée :
+- Pour chaque vidéo : lancée ou non, temps réellement regardé, position atteinte
+  (les sauts dans la vidéo ne comptent pas comme du visionnage).
+- Questionnaire avant RDV : commencé, envoyé, question où il s'est arrêté.
+- Temps de visionnage mesurable pour YouTube et Vimeo uniquement
+  (Loom / Wistia affichés « Non mesurable »).
+
+Dans la page ACQUISITION → bouton « Voir le parcours » sur chaque campagne :
+- Période : 7 j / 30 j / 90 j / tout.
+- Chiffres clés : visites, RDV réservés (nombre et %), part sur mobile,
+  disqualifiés.
+- Phrase qui résume le plus gros décrochage, ex. :
+  « 10 % des visiteurs s'arrêtent pendant le questionnaire, plus précisément
+    à la question 5 "…" »
+- Entonnoir étape par étape avec le nombre de personnes qui s'arrêtent à
+  chaque étape.
+- Questionnaire de qualification question par question : % de réponses,
+  abandons (la pire question en rouge).
+- Page de confirmation : par vidéo, qui l'a lancée, durée moyenne regardée,
+  % de la vidéo vu, combien l'ont vue en entier ; entonnoir du questionnaire
+  avant RDV.
+
+Sur chaque FICHE PROSPECT → bloc « Parcours sur la page de campagne » :
+- Étapes franchies (✓) ou non (✗), appareil (mobile / ordinateur), date.
+- « 3/7 questions répondues · arrêt à la question 4 "…" ».
+- Chaque vidéo avec barre de progression (ex. « 2 min 10 / 5 min 00 · 43 % »).
+- Questionnaire avant RDV : envoyé, ou non envoyé + question d'arrêt.
+- La visite est rattachée à la fiche dès que l'email ou le téléphone est saisi
+  (donc aussi pour les prospects « Incomplet »).
+
+
+5. LANDING PAGE CLOSEOS BUSINESS
+--------------------------------
+Deux nouvelles sections dans la partie CRM, juste après « Formulaires »
+(français + anglais) :
+- « Une page de confirmation qui prépare vos rendez-vous » : maquette d'une
+  page de confirmation (vidéo, section Éducation, questionnaire, bouton
+  WhatsApp) + 4 points clés.
+- « Sachez exactement où vos prospects décrochent » : maquette du parcours
+  (phrase de décrochage, entonnoir animé, stats vidéo, fiche prospect)
+  + 4 points clés.
+
+
+6. SERVEUR MCP CLOSEOS BUSINESS (pilotage par IA)
+-------------------------------------------------
+Tout ce qui précède est pilotable depuis Claude / ChatGPT via le connecteur MCP.
+
+- NOUVEL OUTIL « campaign_confirmation_page » : lire, créer et modifier la page
+  de confirmation d'une campagne.
+    · get / update (activer, titre, message, couleurs, vidéo de confirmation,
+      ordre des blocs…)
+    · boutons : add_button / update_button / remove_button
+    · sections de vidéos : add_section / update_section / remove_section,
+      add_video / remove_video
+    · questionnaire avant RDV : add_question / update_question / remove_question
+  Les couleurs et types de questions sont vérifiés (message d'erreur clair).
+- NOUVEL OUTIL « campaign_funnel » : le tracking d'une campagne (entonnoir,
+  question où les gens s'arrêtent, visionnage des vidéos, questionnaire avant
+  RDV), sur une période au choix.
+- campaign_create / campaign_update acceptent la page de confirmation complète.
+- prospect_get renvoie en plus : les réponses au questionnaire avant RDV, et le
+  parcours du prospect (étapes franchies, question d'arrêt, vidéos regardées
+  avec durée et %). Les réponses de qualification partielles d'un lead
+  « Incomplet » y apparaissent aussi.
+
+
+7. ENVIRONNEMENT LOCAL (DÉVELOPPEMENT UNIQUEMENT)
+------------------------------------------------
+- Le serveur d'API local applique maintenant les redirections de vercel.json
+  (corrige l'erreur « No handler found » à l'écran de vérification de
+  connexion). Aucun impact sur la prod.
+- La clé Brevo de .env.local a été remplacée par la clé valide (l'ancienne était
+  désactivée). .env contient encore l'ancienne clé, à remplacer un jour.
+
+
+À NOTER / LIMITES CONNUES
+-------------------------
+- Le lien « Annuler » tronqué dans l'app Google Agenda sur iPhone (« cel » non
+  cliquable) n'est PAS encore corrigé : solution proposée = remplacer les URL
+  brutes par de vrais liens dans la description de l'événement.
+- Campagne payante : si Stripe valide le paiement avant la page (rare), le
+  questionnaire avant RDV de la confirmation est masqué.
+- Le champ « URL de redirection » (onglet Page de capture) n'est plus utilisé
+  quand la page de confirmation personnalisée est activée → ajouter un bouton.
+- Si un prospect incomplet a été créé avec le téléphone seul (sans email), la
+  soumission finale crée un nouveau prospect au lieu de reprendre l'incomplet
+  (comportement existant, inchangé).
+
+
+DÉTAIL TECHNIQUE
+----------------
+Migrations (déjà appliquées en prod) :
+- supabase/migrations/20261008_business_confirmation_page.sql
+    business_campaigns.confirmation_page (jsonb)
+    business_prospects.pre_meeting_answers (jsonb)
+- supabase/migrations/20261008_campaign_funnel_sessions.sql
+    table campaign_funnel_sessions (RLS activée, accès via l'API uniquement)
+
+Nouveaux endpoints (api/business.ts) :
+- capture-confirmation-answers  réponses du questionnaire avant RDV (jeton signé)
+- capture-partial-answers       réponses de qualification partielles
+- funnel-track                  enregistrement du parcours (public)
+- funnel-stats                  stats d'une campagne (Acquisition)
+- funnel-prospect               parcours d'un prospect (fiche)
+Modifiés : appointment-info / appointment-cancel / appointment-reschedule
+(expiration 24 h, report depuis le lien d'annulation), capture-info,
+capture-submit, capture-partial, capture-init-payment, capture-confirm-payment,
+campaigns-create.
+
+Nouveaux fichiers :
+- src/lib/confirmationPage.ts
+- src/lib/funnelTracker.ts
+- src/components/CampaignConfirmationPage.tsx
+- src/business/components/CampaignConfirmationEditor.tsx
+- src/business/components/CampaignFunnelModal.tsx
+- src/business/components/ProspectFunnelJourney.tsx
+
+Fichiers modifiés :
+- src/pages/AppointmentManage.tsx, src/pages/CaptureForm.tsx
+- src/business/pages/BusinessCampaigns.tsx, src/business/pages/BusinessAcquisition.tsx
+- src/pages/BusinessLanding.tsx, src/pages/businessLandingI18n.ts
+- src/business/components/BusinessProspectView.tsx
+- src/business/contexts/BusinessProspectsContext.tsx
+- src/index.css, scripts/dev-api.ts
+- api/business-mcp.js (outils MCP)

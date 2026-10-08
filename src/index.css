@@ -173,3 +173,11 @@ html.dark body:has(.business-app) {
 .rte-content i, .rte-content em { font-style: italic; }
 .rte-content u { text-decoration: underline; }
 .rte-content s, .rte-content strike { text-decoration: line-through; }
+
+/* Pages prospect /appointment/:token (annuler / reprogrammer) */
+@keyframes apptRise { from { opacity: 0; transform: translateY(14px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes apptFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes apptWiggle { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+.appt-rise { animation: apptRise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.appt-fade { animation: apptFade 0.25s ease-out both; }
+.appt-wiggle { animation: apptWiggle 3.2s ease-in-out infinite; }

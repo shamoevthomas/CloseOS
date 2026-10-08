@@ -65,7 +65,7 @@ export interface Offer {
   billingPhone?: string
   hasFixedFee?: boolean
   fixedFeeAmount?: string
-  crmProvider?: 'iclosed' | 'hubspot' | 'pipedrive' | 'gohighlevel' | 'systemeio' | 'airtable' | 'other'
+  crmProvider?: 'iclosed' | 'hubspot' | 'pipedrive' | 'gohighlevel' | 'systemeio' | 'airtable' | 'google_calendar' | 'other'
   crmApiKey?: string
   crmMapping?: CrmMapping
   defaultFormulaId?: string

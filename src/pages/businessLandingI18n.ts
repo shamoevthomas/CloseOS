@@ -202,6 +202,43 @@ export interface Translations {
   forms_mock_slash_hint: string
   forms_mock_bridge_label: string
   forms_mock_bridge_value: string
+  confirm_badge: string
+  confirm_title: string
+  confirm_subtitle: string
+  confirm_check_1: string
+  confirm_check_2: string
+  confirm_check_3: string
+  confirm_check_4: string
+  confirm_mock_url: string
+  confirm_mock_title: string
+  confirm_mock_message: string
+  confirm_mock_video: string
+  confirm_mock_section: string
+  confirm_mock_section_v1: string
+  confirm_mock_section_v2: string
+  confirm_mock_question: string
+  confirm_mock_button: string
+  confirm_mock_drag: string
+  funnel_badge: string
+  funnel_title: string
+  funnel_subtitle: string
+  funnel_check_1: string
+  funnel_check_2: string
+  funnel_check_3: string
+  funnel_check_4: string
+  funnel_mock_title: string
+  funnel_mock_insight: string
+  funnel_mock_step_view: string
+  funnel_mock_step_form: string
+  funnel_mock_step_quiz: string
+  funnel_mock_step_booking: string
+  funnel_mock_step_done: string
+  funnel_mock_stop: string
+  funnel_mock_video_label: string
+  funnel_mock_video_title: string
+  funnel_mock_video_stat: string
+  funnel_mock_prospect_label: string
+  funnel_mock_prospect_value: string
 
   // CRM KPIs
   crm_kpi_pipeline_title: string
@@ -623,6 +660,43 @@ const fr: Translations = {
   forms_mock_slash_hint: 'Tapez \u00ab / \u00bb pour ins\u00e9rer un bloc',
   forms_mock_bridge_label: 'Pont CRM',
   forms_mock_bridge_value: 'Nouvelle r\u00e9ponse \u2192 Prospect cr\u00e9\u00e9, stage "\u00c0 qualifier"',
+  confirm_badge: 'Page de confirmation',
+  confirm_title: 'Une page de confirmation qui prépare vos rendez-vous',
+  confirm_subtitle: 'Après la prise de RDV ou l\'inscription, votre prospect atterrit sur une page à votre image : vidéos à regarder avant l\'appel, boutons, questionnaire. Il arrive au rendez-vous déjà éduqué.',
+  confirm_check_1: 'Titre, message et couleurs de la page à vos couleurs',
+  confirm_check_2: 'Vidéo de confirmation + sections de vidéos illimitées (ex. « Éducation »)',
+  confirm_check_3: 'Boutons personnalisés : texte, lien, couleurs (WhatsApp, témoignages…)',
+  confirm_check_4: 'Questionnaire avant rendez-vous, réponses directement sur la fiche prospect',
+  confirm_mock_url: 'closeos.fr/capture/coaching-business',
+  confirm_mock_title: 'Rendez-vous confirmé ! 🎉',
+  confirm_mock_message: 'Jeudi 15 octobre · 14:00 avec Thomas',
+  confirm_mock_video: 'Regardez ça avant notre appel',
+  confirm_mock_section: 'Éducation',
+  confirm_mock_section_v1: '1. Notre méthode en 5 minutes',
+  confirm_mock_section_v2: '2. Les résultats de nos clients',
+  confirm_mock_question: 'Quel est votre objectif principal ?',
+  confirm_mock_button: 'Rejoindre le groupe WhatsApp',
+  confirm_mock_drag: 'Glissez-déposez les blocs pour les réorganiser',
+  funnel_badge: 'Tracking du parcours',
+  funnel_title: 'Sachez exactement où vos prospects décrochent',
+  funnel_subtitle: 'Chaque visite de vos pages de campagne est suivie étape par étape, jusqu\'à la question précise où les gens abandonnent et au temps passé sur chaque vidéo.',
+  funnel_check_1: 'Entonnoir complet : visite, formulaire, questionnaire, calendrier, réservation',
+  funnel_check_2: 'La question exacte où chaque visiteur arrête de répondre',
+  funnel_check_3: 'Durée de visionnage et % vu pour chaque vidéo de la page de confirmation',
+  funnel_check_4: 'Le parcours détaillé de chaque prospect, directement sur sa fiche',
+  funnel_mock_title: 'Parcours · Coaching Business',
+  funnel_mock_insight: '18 % des visiteurs s’arrêtent pendant le questionnaire, plus précisément à la question 5 « Quel est votre budget ? »',
+  funnel_mock_step_view: 'Visite la page',
+  funnel_mock_step_form: 'Coordonnées remplies',
+  funnel_mock_step_quiz: 'Termine le questionnaire',
+  funnel_mock_step_booking: 'Choisit un créneau',
+  funnel_mock_step_done: 'Rendez-vous réservé',
+  funnel_mock_stop: 's\'arrêtent ici',
+  funnel_mock_video_label: 'Vidéo de confirmation',
+  funnel_mock_video_title: 'Notre méthode en 5 minutes',
+  funnel_mock_video_stat: '3 min 40 vues en moyenne · 74 %',
+  funnel_mock_prospect_label: 'Fiche prospect',
+  funnel_mock_prospect_value: 'Julie a vu 92 % de la vidéo et répondu au questionnaire',
 
   // CRM KPIs
   crm_kpi_pipeline_title: 'KPI CRM \u2022 Pipeline',
@@ -1311,6 +1385,43 @@ const en: Translations = {
   forms_mock_slash_hint: 'Type “/” to insert a block',
   forms_mock_bridge_label: 'CRM bridge',
   forms_mock_bridge_value: 'New response → Prospect created, stage "To qualify"',
+  confirm_badge: 'Confirmation page',
+  confirm_title: 'A confirmation page that prepares your calls',
+  confirm_subtitle: 'After booking or signing up, your prospect lands on a page that looks like you: videos to watch before the call, buttons, a questionnaire. They show up already educated.',
+  confirm_check_1: 'Page title, message and colors that match your brand',
+  confirm_check_2: 'Confirmation video + unlimited video sections (e.g. “Education”)',
+  confirm_check_3: 'Custom buttons: text, link, colors (WhatsApp, testimonials…)',
+  confirm_check_4: 'Pre-meeting questionnaire, answers saved on the prospect\'s record',
+  confirm_mock_url: 'closeos.fr/capture/coaching-business',
+  confirm_mock_title: 'Appointment confirmed! 🎉',
+  confirm_mock_message: 'Thursday, Oct 15 · 2:00 PM with Thomas',
+  confirm_mock_video: 'Watch this before our call',
+  confirm_mock_section: 'Education',
+  confirm_mock_section_v1: '1. Our method in 5 minutes',
+  confirm_mock_section_v2: '2. Our clients\' results',
+  confirm_mock_question: 'What is your main goal?',
+  confirm_mock_button: 'Join the WhatsApp group',
+  confirm_mock_drag: 'Drag and drop blocks to reorder them',
+  funnel_badge: 'Funnel tracking',
+  funnel_title: 'Know exactly where your prospects drop off',
+  funnel_subtitle: 'Every visit to your campaign pages is tracked step by step, down to the exact question where people give up and the time spent on each video.',
+  funnel_check_1: 'Full funnel: visit, form, questionnaire, calendar, booking',
+  funnel_check_2: 'The exact question where each visitor stops answering',
+  funnel_check_3: 'Watch time and % viewed for every confirmation page video',
+  funnel_check_4: 'Each prospect\'s detailed journey, right on their record',
+  funnel_mock_title: 'Funnel · Coaching Business',
+  funnel_mock_insight: '18% of visitors stop during the questionnaire, precisely at question 5 “What is your budget?”',
+  funnel_mock_step_view: 'Visits the page',
+  funnel_mock_step_form: 'Contact details filled',
+  funnel_mock_step_quiz: 'Finishes the questionnaire',
+  funnel_mock_step_booking: 'Picks a slot',
+  funnel_mock_step_done: 'Appointment booked',
+  funnel_mock_stop: 'stop here',
+  funnel_mock_video_label: 'Confirmation video',
+  funnel_mock_video_title: 'Our method in 5 minutes',
+  funnel_mock_video_stat: '3 min 40 watched on average · 74%',
+  funnel_mock_prospect_label: 'Prospect record',
+  funnel_mock_prospect_value: 'Julie watched 92% of the video and answered the questionnaire',
 
   // CRM KPIs
   crm_kpi_pipeline_title: 'CRM KPI \u2022 Pipeline',

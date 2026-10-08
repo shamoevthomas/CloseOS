@@ -423,7 +423,7 @@ export function ProspectView({
       .from('meetings')
       .select('id, date, time')
       .eq('user_id', user.id)
-      .eq('prospectId', prospect.id)
+      .eq('prospect_id', prospect.id)
       .in('status', ['upcoming', 'scheduled'])
       .gte('date', nowIso)
       .order('date', { ascending: true })

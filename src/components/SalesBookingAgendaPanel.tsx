@@ -125,8 +125,9 @@ export function SalesBookingAgendaPanel({
     }
 
     // Événements Google (détaillés, agenda perso)
+    const importedGoogleIds = new Set(meetings.map(m => m.google_event_id).filter(Boolean) as string[])
     for (const ge of googleEvents) {
-      if (!ge.start || ge.allDay) continue
+      if (!ge.start || ge.allDay || importedGoogleIds.has(String(ge.id))) continue
       const start = ge.start instanceof Date ? ge.start : new Date(ge.start)
       if (!isSameDay(start, date)) continue
       const end = ge.end instanceof Date ? ge.end : new Date(ge.end)

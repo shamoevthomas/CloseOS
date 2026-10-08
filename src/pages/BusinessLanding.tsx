@@ -738,6 +738,12 @@ export const BusinessLanding: React.FC = () => {
             {/* Forms Section */}
             <FormsSection />
 
+            {/* Confirmation page Section */}
+            <ConfirmationPageSection />
+
+            {/* Funnel tracking Section */}
+            <FunnelTrackingSection />
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-16 border-t border-stone-200">
               <CRMKPIBox index={0} titleKey="crm_kpi_pipeline_title" valueKey="crm_kpi_pipeline_value" descKey="crm_kpi_pipeline_desc" />
               <CRMKPIBox index={1} titleKey="crm_kpi_performance_title" valueKey="crm_kpi_performance_value" descKey="crm_kpi_performance_desc" />
@@ -1784,6 +1790,191 @@ const FormsSection = () => {
               <div>
                 <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest mb-0.5">{t.forms_mock_bridge_label}</p>
                 <p className="text-sm font-semibold text-emerald-800">{t.forms_mock_bridge_value}</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+};
+
+const ConfirmationPageSection = () => {
+  const { t } = useLang();
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-20">
+      {/* Left, Mockup */}
+      <div className="lg:col-span-7 order-2 lg:order-1">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="bg-[#0f172a] rounded-3xl overflow-hidden shadow-xl border border-stone-200 text-left p-5 sm:p-8"
+        >
+          <div className="bg-white/10 rounded-xl p-3 flex items-center gap-3 mb-6">
+            <div className="flex gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+              <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+            </div>
+            <div className="flex-1 bg-white/10 rounded-lg px-3 py-1.5 text-xs text-white/50 font-mono truncate">{t.confirm_mock_url}</div>
+          </div>
+
+          <div className="bg-white rounded-[24px] p-5 sm:p-7 max-w-md mx-auto">
+            <div className="flex justify-center mb-4">
+              <div className="size-12 rounded-2xl bg-emerald-50 flex items-center justify-center">
+                <CheckCircle className="size-6 text-emerald-600" />
+              </div>
+            </div>
+            <p className="text-xl font-extrabold text-[#111111] text-center tracking-tight">{t.confirm_mock_title}</p>
+            <p className="text-sm text-stone-500 text-center mt-1 mb-5">{t.confirm_mock_message}</p>
+
+            <p className="text-xs font-bold text-[#111111] mb-2">{t.confirm_mock_video}</p>
+            <div className="aspect-video rounded-xl bg-stone-900 flex items-center justify-center mb-5 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#8a43e1]/40 via-transparent to-[#ef7b16]/30" />
+              <div className="relative size-11 rounded-full bg-[#ff2f2f] flex items-center justify-center shadow-lg">
+                <div className="w-0 h-0 border-y-[7px] border-y-transparent border-l-[11px] border-l-white ml-1" />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 mb-3">
+              <span className="h-px flex-1 bg-stone-200" />
+              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-stone-500">{t.confirm_mock_section}</span>
+              <span className="h-px flex-1 bg-stone-200" />
+            </div>
+            <div className="space-y-2 mb-5">
+              {[t.confirm_mock_section_v1, t.confirm_mock_section_v2].map((v, i) => (
+                <div key={i} className="flex items-center gap-3 rounded-xl border border-stone-200 p-2.5">
+                  <div className="w-14 aspect-video rounded-md bg-stone-800 flex items-center justify-center flex-shrink-0">
+                    <div className="w-0 h-0 border-y-[4px] border-y-transparent border-l-[6px] border-l-white ml-0.5" />
+                  </div>
+                  <span className="text-xs font-semibold text-stone-700">{v}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-xl border border-stone-200 p-3 mb-4">
+              <p className="text-xs font-semibold text-[#111111] mb-2">{t.confirm_mock_question}</p>
+              <div className="h-8 rounded-lg bg-stone-50 border border-stone-200" />
+            </div>
+
+            <div className="rounded-xl bg-[#25D366] text-white text-sm font-semibold py-3 flex items-center justify-center gap-2">
+              {t.confirm_mock_button} <ArrowRight className="size-4" />
+            </div>
+          </div>
+
+          <p className="text-center text-[11px] text-white/50 mt-5 flex items-center justify-center gap-2">
+            <Layers className="size-3.5" /> {t.confirm_mock_drag}
+          </p>
+        </motion.div>
+      </div>
+
+      {/* Right, Text */}
+      <div className="lg:col-span-5 flex flex-col justify-center order-1 lg:order-2">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-stone-100 border border-stone-200 shadow-sm mb-6 w-fit">
+          <Video className="size-3.5 text-stone-600" />
+          <span className="text-xs font-bold text-stone-600 uppercase tracking-widest">{t.confirm_badge}</span>
+        </div>
+        <h3 className="text-3xl md:text-4xl font-bold text-[#111111] tracking-tight mb-4">{t.confirm_title}</h3>
+        <p className="text-stone-500 text-lg font-medium leading-relaxed mb-6">{t.confirm_subtitle}</p>
+        <div className="space-y-3">
+          {([t.confirm_check_1, t.confirm_check_2, t.confirm_check_3, t.confirm_check_4]).map((item, i) => (
+            <div key={i} className="flex items-start gap-3 text-stone-700 font-medium">
+              <CheckCircle className="size-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+              <span>{item}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const FunnelTrackingSection = () => {
+  const { t, lang } = useLang();
+  const steps = [
+    { label: t.funnel_mock_step_view, pct: 100, stop: 0 },
+    { label: t.funnel_mock_step_form, pct: 64, stop: 0 },
+    { label: t.funnel_mock_step_quiz, pct: 46, stop: 18 },
+    { label: t.funnel_mock_step_booking, pct: 38, stop: 0 },
+    { label: t.funnel_mock_step_done, pct: 34, stop: 0 },
+  ];
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-20">
+      {/* Left, Text */}
+      <div className="lg:col-span-5 flex flex-col justify-center">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-stone-100 border border-stone-200 shadow-sm mb-6 w-fit">
+          <BarChart3 className="size-3.5 text-stone-600" />
+          <span className="text-xs font-bold text-stone-600 uppercase tracking-widest">{t.funnel_badge}</span>
+        </div>
+        <h3 className="text-3xl md:text-4xl font-bold text-[#111111] tracking-tight mb-4">{t.funnel_title}</h3>
+        <p className="text-stone-500 text-lg font-medium leading-relaxed mb-6">{t.funnel_subtitle}</p>
+        <div className="space-y-3">
+          {([t.funnel_check_1, t.funnel_check_2, t.funnel_check_3, t.funnel_check_4]).map((item, i) => (
+            <div key={i} className="flex items-start gap-3 text-stone-700 font-medium">
+              <CheckCircle className="size-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+              <span>{item}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Right, Mockup */}
+      <div className="lg:col-span-7">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="bg-white rounded-3xl overflow-hidden shadow-xl border border-stone-200 text-left"
+        >
+          <div className="px-6 py-4 border-b border-stone-100 bg-stone-50 flex items-center justify-between">
+            <p className="text-sm font-bold text-[#111111]">{t.funnel_mock_title}</p>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">{lang === 'fr' ? '30 j' : '30d'}</span>
+          </div>
+
+          <div className="p-6 space-y-5">
+            <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4 flex gap-3">
+              <span className="text-lg leading-none">💡</span>
+              <p className="text-sm font-semibold text-amber-900">{t.funnel_mock_insight}</p>
+            </div>
+
+            <div className="space-y-3">
+              {steps.map((s, i) => (
+                <div key={i}>
+                  <div className="flex justify-between text-sm">
+                    <span className="font-semibold text-stone-800">{s.label}</span>
+                    <span className="font-bold text-[#111111] tabular-nums">{s.pct}%</span>
+                  </div>
+                  <div className="mt-1.5 h-2.5 rounded-full bg-stone-100 overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      whileInView={{ width: `${s.pct}%` }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.8, delay: 0.1 * i }}
+                      className={`h-full rounded-full ${i === steps.length - 1 ? 'bg-emerald-500' : 'bg-[#111111]'}`}
+                    />
+                  </div>
+                  {s.stop > 0 && <p className="text-[11px] font-semibold text-rose-500 mt-1">↳ {s.stop}% {t.funnel_mock_stop}</p>}
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="rounded-2xl bg-stone-50 border border-stone-200 p-4">
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">{t.funnel_mock_video_label}</p>
+                <p className="text-sm font-bold text-[#111111] mb-2">{t.funnel_mock_video_title}</p>
+                <div className="h-1.5 rounded-full bg-stone-200 overflow-hidden mb-1.5">
+                  <div className="h-full w-[74%] rounded-full bg-emerald-500" />
+                </div>
+                <p className="text-[11px] text-stone-500">{t.funnel_mock_video_stat}</p>
+              </div>
+              <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4">
+                <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest mb-1">{t.funnel_mock_prospect_label}</p>
+                <p className="text-sm font-semibold text-emerald-800">{t.funnel_mock_prospect_value}</p>
               </div>
             </div>
           </div>

@@ -1,4 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { CampaignConfirmationPage } from '../components/CampaignConfirmationPage'
+import { createFunnelTracker, type FunnelTracker } from '../lib/funnelTracker'
+import { type ConfirmationPageConfig, type PreMeetingAnswer, normalizeConfirmationPage } from '../lib/confirmationPage'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { Loader2, CheckCircle2, Calendar, ChevronLeft, ChevronRight, Lock, ArrowRight, ChevronDown, XCircle, Globe } from 'lucide-react'
 import { toUTC, fromUTC, getTimezoneLabel } from '../lib/timezone'
@@ -35,6 +38,7 @@ interface Campaign {
   email_required: boolean
   phone_required: boolean
   redirect_url: string | null
+  confirmation_page?: ConfirmationPageConfig | null
   capture_type: 'with_rdv' | 'without_rdv'
   stripe_enabled?: boolean
   stripe_price?: number
@@ -88,6 +92,13 @@ const isValidEmail = (e: string) => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]
 
 export function CaptureForm() {
   const { slug } = useParams<{ slug: string }>()
+  // Tracking du parcours (étapes, questions, vidéos de confirmation)
+  const funnelRef = useRef<FunnelTracker | null>(null)
+  if (!funnelRef.current && slug && typeof window !== 'undefined') {
+    const p = new URLSearchParams(window.location.search)
+    funnelRef.current = createFunnelTracker(slug, p.get('payment_intent_return') === 'true')
+  }
+  const funnel = funnelRef.current
   const [searchParams] = useSearchParams()
   const isEmbed = searchParams.get('embed') === 'true'
 
@@ -145,6 +156,11 @@ export function CaptureForm() {
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null)
+  // Autorise l'envoi du questionnaire de la page de confirmation pour ce prospect
+  const [confirmationAuth, setConfirmationAuth] = useState<{ prospect_id: string; token: string } | null>(null)
+  const rememberConfirmationAuth = (data: any) => {
+    if (data?.prospect?.id && data?.confirmation_token) setConfirmationAuth({ prospect_id: data.prospect.id, token: data.confirmation_token })
+  }
 
   // Payment states
   const [paymentProcessing, setPaymentProcessing] = useState(false)
@@ -259,6 +275,7 @@ export function CaptureForm() {
           setCampaign(data.campaign)
           if (data.questionnaire) setQuestionnaire(data.questionnaire)
           if (data.questions) setCaptureQuestions(data.questions)
+          funnel?.reach('view')
           // Track page view (fire-and-forget)
           fetch(`${API_URL}?action=capture-view`, {
             method: 'POST',
@@ -306,6 +323,7 @@ export function CaptureForm() {
       confirmWithRetry()
         .then(data => {
           if (data) {
+            rememberConfirmationAuth(data)
             setSubmitted(true)
             if (window.parent !== window) window.parent.postMessage('closeos-capture-done', '*')
             const rUrl = data.redirect_url || campaign?.redirect_url
@@ -400,7 +418,7 @@ export function CaptureForm() {
       await fetch(`${API_URL}?action=capture-partial`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug, name, email, phone: pPhone, custom_data: customData }),
+        body: JSON.stringify({ slug, name, email, phone: pPhone, custom_data: customData, funnel_session_id: funnel?.sessionId }),
       })
     } catch { /* fire-and-forget */ }
   }, [slug, firstName, lastName, email, phone, countryCode, customData])
@@ -426,6 +444,55 @@ export function CaptureForm() {
       answers,
     )
   }, [captureQuestions, answers])
+
+  // Réponses de qualification partielles : enregistrées au fil de l'eau sur le
+  // lead « Incomplet », pour ne rien perdre si le prospect quitte la page avant
+  // de réserver. La soumission finale les remplace.
+  const partialAnswersPayload = useMemo(() => {
+    if (!slug || !hasQuestionnaire) return null
+    const list = Object.entries(answers)
+      .filter(([question_id, v]) => visibleQuestionIds.has(question_id) && !(v === '' || v == null || (Array.isArray(v) && v.length === 0)))
+      .map(([question_id, answer_value]) => ({ question_id, answer_value }))
+    if (list.length === 0 || (!email.trim() && !phone.trim())) return null
+    return JSON.stringify({ slug, email: email.trim(), phone: phone.trim() ? `${countryCode} ${phone.trim()}` : '', answers: list })
+  }, [slug, hasQuestionnaire, answers, visibleQuestionIds, email, phone, countryCode])
+  const pendingPartialAnswersRef = useRef<string | null>(null)
+  const lastSentPartialAnswersRef = useRef<string | null>(null)
+
+  const flushPartialAnswers = useCallback(async () => {
+    const body = pendingPartialAnswersRef.current
+    if (!body || body === lastSentPartialAnswersRef.current) return
+    lastSentPartialAnswersRef.current = body
+    try {
+      if (!partialSavedRef.current) await savePartialLead()
+      await fetch(`${API_URL}?action=capture-partial-answers`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true })
+    } catch { /* fire-and-forget */ }
+  }, [savePartialLead])
+
+  useEffect(() => {
+    if (submitted) { pendingPartialAnswersRef.current = null; return }
+    pendingPartialAnswersRef.current = partialAnswersPayload
+    if (!partialAnswersPayload) return
+    const timer = setTimeout(() => { flushPartialAnswers() }, 1500)
+    return () => clearTimeout(timer)
+  }, [partialAnswersPayload, submitted, flushPartialAnswers])
+
+  // Fermeture / changement d'onglet : dernier envoi sans attendre le délai
+  useEffect(() => {
+    const onHide = () => {
+      const body = pendingPartialAnswersRef.current
+      if (!body || body === lastSentPartialAnswersRef.current) return
+      lastSentPartialAnswersRef.current = body
+      try { navigator.sendBeacon(`${API_URL}?action=capture-partial-answers`, body) } catch { /* ignore */ }
+    }
+    const onVisibility = () => { if (document.visibilityState === 'hidden') onHide() }
+    window.addEventListener('pagehide', onHide)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener('pagehide', onHide)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [])
 
   // Clear answers for hidden questions (so reappearing starts fresh + nothing stale is submitted/scored)
   useEffect(() => {
@@ -457,6 +524,38 @@ export function CaptureForm() {
     return true
   }, [hasQuestionnaire, questionnaire, captureQuestions, answers, visibleQuestionIds])
 
+  // ─── Tracking du parcours ───
+  useEffect(() => {
+    if (firstName || lastName || email || phone || Object.keys(customData).length) funnel?.reach('info_started')
+  }, [firstName, lastName, email, phone, customData, funnel])
+  useEffect(() => { if (isInfoComplete) funnel?.reach('info_done') }, [isInfoComplete, funnel])
+  useEffect(() => {
+    if (!hasQuestionnaire || submitted) return
+    const answeredIds = captureQuestions
+      .filter(q => visibleQuestionIds.has(q.id))
+      .filter(q => { const v = answers[q.id]; return !(v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0)) })
+      .map(q => q.id)
+    const started = answeredIds.length > 0 || (!isInscriptionMode && currentStep === 2)
+    if (!started) return
+    funnel?.reach('questionnaire_started')
+    // Question où le visiteur s'est arrêté : la première question visible sans réponse
+    const stuck = captureQuestions.find(q => visibleQuestionIds.has(q.id) && !answeredIds.includes(q.id))
+    funnel?.update({ answered_question_ids: answeredIds, stuck_question_id: stuck?.id ?? null })
+  }, [answers, visibleQuestionIds, captureQuestions, hasQuestionnaire, isInscriptionMode, currentStep, submitted, funnel])
+  useEffect(() => {
+    if (isInscriptionMode || currentStep < bookingStep) return
+    if (hasQuestionnaire) funnel?.reach('questionnaire_done')
+    funnel?.reach('booking')
+  }, [currentStep, bookingStep, hasQuestionnaire, isInscriptionMode, funnel])
+  useEffect(() => { if (selectedDate && selectedTime) funnel?.reach('slot_selected') }, [selectedDate, selectedTime, funnel])
+  useEffect(() => { if (inlinePayment) funnel?.reach('payment') }, [inlinePayment, funnel])
+  useEffect(() => {
+    if (!submitted) return
+    if (hasQuestionnaire) funnel?.reach('questionnaire_done')
+    funnel?.reach('done')
+  }, [submitted, hasQuestionnaire, funnel])
+  useEffect(() => { if (disqualifiedMsg) funnel?.update({ disqualified: true }) }, [disqualifiedMsg, funnel])
+
   // Auto-advance when info is complete (vertical + horizontal)
   useEffect(() => {
     if (!isInscriptionMode && isInfoComplete && currentStep === 1) {
@@ -470,7 +569,7 @@ export function CaptureForm() {
 
   const buildSubmitPayload = () => {
     const name = `${firstName} ${lastName}`.trim()
-    const payload: any = { slug, name, email, phone: fullPhone, custom_data: customData }
+    const payload: any = { slug, name, email, phone: fullPhone, custom_data: customData, funnel_session_id: funnel?.sessionId }
     if (hasQuestionnaire && Object.keys(answers).length > 0) {
       payload.answers = Object.entries(answers)
         .filter(([question_id]) => visibleQuestionIds.has(question_id))
@@ -530,6 +629,7 @@ export function CaptureForm() {
           setDisqualifiedMsg(true)
           if (window.parent !== window) window.parent.postMessage('closeos-capture-done', '*')
         } else {
+          rememberConfirmationAuth(data)
           setSubmitted(true)
           if (window.parent !== window) window.parent.postMessage('closeos-capture-done', '*')
           const rUrl = data.redirect_url || campaign?.redirect_url
@@ -635,6 +735,39 @@ export function CaptureForm() {
           </p>
         </div>
       </div>
+    )
+  }
+
+  const confirmationConfig = campaign?.confirmation_page ? normalizeConfirmationPage(campaign.confirmation_page) : null
+  if (submitted && confirmationConfig?.enabled) {
+    const paid = campaign?.stripe_enabled && campaign.stripe_price && campaign.stripe_price > 0
+    const submitAnswers = confirmationAuth && slug
+      ? async (list: PreMeetingAnswer[]) => {
+          const r = await fetch(`${API_URL}?action=capture-confirmation-answers`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slug, prospect_id: confirmationAuth.prospect_id, token: confirmationAuth.token, answers: list }),
+          })
+          return r.ok
+        }
+      : undefined
+    return (
+      <CampaignConfirmationPage
+        config={confirmationConfig}
+        lang={lang === 'en' ? 'en' : 'fr'}
+        inscription={isInscriptionMode}
+        embed={isEmbed}
+        defaultTitle={t.success_title}
+        defaultMessage={isInscriptionMode ? t.success_inscription : t.success_rdv}
+        recap={selectedDate && selectedTime ? {
+          label: t.success_confirmed,
+          detail: `${selectedDate.toLocaleDateString(t.date_locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} ${t.at_time} ${selectedTime}`,
+          extra: paid ? `${lang === 'fr' ? 'Paiement reçu' : 'Payment received'} — ${((campaign!.stripe_price || 0) / 100).toFixed(2).replace('.00', '')}€` : undefined,
+        } : null}
+        footnotes={[isInscriptionMode ? t.success_email : t.success_email_rdv, t.success_spam]}
+        onSubmitAnswers={submitAnswers}
+        onTrack={p => funnel?.confirmation(p)}
+      />
     )
   }
 
@@ -1409,8 +1542,9 @@ export function CaptureForm() {
           confirmEndpoint={`${API_URL}?action=capture-confirm-payment`}
           cancelEndpoint={`${API_URL}?action=capture-cancel-payment`}
           returnUrl={`${window.location.origin}/capture/${slug || ''}?payment_intent_return=true`}
-          onSuccess={() => {
+          onSuccess={(data: any) => {
             setInlinePayment(null)
+            rememberConfirmationAuth(data)
             setSubmitted(true)
             if (window.parent !== window) window.parent.postMessage('closeos-capture-done', '*')
             const rUrl = campaign?.redirect_url

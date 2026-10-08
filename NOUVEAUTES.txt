@@ -1,0 +1,147 @@
+NOUVEAUTÉS CLOSEOS — à déployer
+================================
+Préparé le 08/10/2026. Rien de ce qui suit n'est encore déployé.
+
+
+1. SALES — Création automatique des prospects depuis Google Agenda
+------------------------------------------------------------------
+
+Pourquoi : les closers dont un setter pose les RDV directement dans leur Google Agenda
+veulent que la fiche prospect se crée toute seule dans le CRM.
+
+Ce qui change pour l'utilisateur :
+- Où : fiche Offre → section « Synchronisation CRM » → « Source de données (CRM) »
+  → choisir « Google Agenda ». Le panneau de configuration s'affiche juste en dessous
+  (enregistrement automatique). On peut y connecter Google Agenda s'il ne l'est pas.
+- L'utilisateur y « éduque » le CRM avec les formats de titre des RDV de cette offre.
+  Il colle un titre et remplace le nom du prospect par une balise :
+    Diagnostic Closing 1:1 — [Nom complet] × Thomas
+  Balises disponibles :
+    [Nom complet]  prénom + nom
+    [Prénom]       prénom seul
+    [Nom]          nom seul
+    [*]            n'importe quel texte (ex. le nom du closer quand il y en a plusieurs)
+- Plusieurs formats possibles par offre. Les prospects reconnus sont créés dans
+  cette offre (avec sa formule par défaut). Un closer qui travaille pour plusieurs
+  infopreneurs configure chaque offre avec ses propres formats.
+- Changer la source de l'offre (ou l'archiver) arrête l'import pour cette offre.
+- Un aperçu en direct indique combien de RDV de son agenda sont reconnus,
+  et quelles personnes seraient créées.
+- Options liées aux invités :
+    · récupérer l'email du prospect parmi les invités du RDV (activé par défaut) ;
+    · liste d'emails à ignorer (setters, collègues…) — commune à toutes les offres.
+  L'utilisateur lui-même et l'organisateur du RDV (souvent le setter)
+  ne sont jamais importés.
+- Toute personne d'un RDV reconnu qui n'existe pas dans le CRM (même email ou même nom)
+  est créée au stade « Qualifié », avec la source « Google Agenda », l'offre du format
+  et une note qui rappelle le RDV d'origine.
+- L'import tourne côté serveur toutes les 15 minutes, même quand CloseOS est fermé.
+  Quand l'app est ouverte, il se lance aussi immédiatement, et un bouton
+  « Synchroniser » (dans le panneau de l'offre) le fait à la demande.
+- L'utilisateur est prévenu par une notification « Nouveau prospect depuis Google Agenda »,
+  et par un toast quand l'app est ouverte.
+- RDV pris en compte : des 7 derniers jours aux 90 prochains. Les RDV journée entière,
+  annulés ou refusés sont ignorés.
+- Chaque RDV n'est traité qu'une fois : un prospect importé puis supprimé n'est pas recréé.
+- Le prospect créé est envoyé vers HubSpot / GoHighLevel / Pipedrive / systeme.io /
+  Airtable selon l'offre attribuée (comme une création manuelle). iClosed n'est pas
+  concerné, car sa route exige la session de l'utilisateur.
+- Le RDV est programmé dans CloseOS : chaque RDV reconnu crée un rendez-vous relié à
+  la fiche du prospect (date, heure, durée, lien Meet), qu'il vienne d'être créé ou
+  existait déjà. Il apparaît dans « Prochain RDV » sur la fiche prospect, dans
+  l'Agenda et sur le Dashboard, sans doublon avec l'événement Google.
+  Le RDV reste synchronisé avec Google : déplacé dans Google → déplacé dans CloseOS ;
+  supprimé ou annulé dans Google → annulé dans CloseOS.
+  (Google fait foi : un RDV importé déplacé seulement dans CloseOS sera recalé sur
+  Google au passage suivant.)
+- Bonus : la connexion Google Agenda de Sales est désormais permanente.
+  L'utilisateur n'a plus à se reconnecter toutes les heures.
+
+À savoir :
+- Les utilisateurs Sales déjà connectés à Google Agenda doivent se reconnecter une fois
+  pour activer l'import en arrière-plan (un bandeau « Reconnecter » le leur indique).
+- Si Google ne renvoie pas d'accès permanent (cas rare), l'utilisateur doit retirer
+  CloseOS sur myaccount.google.com/permissions puis se reconnecter.
+
+Technique :
+- Base de données : migration supabase/migrations/20261008_sales_gcal_import.sql
+  DÉJÀ APPLIQUÉE EN PROD (tables sales_gcal_import_settings et
+  sales_google_calendar_tokens ; la seconde n'est lisible que par le serveur).
+- Nouveau cron : /api/cron/sales-gcal-import toutes les 15 min (ajouté dans vercel.json).
+- Nouvelle route API authentifiée : /api/sales-gcal (connect, token, disconnect, sync).
+- Variable d'environnement requise sur Vercel : GOOGLE_CLIENT_SECRET
+  (déjà utilisée par Business, à vérifier).
+- Fichiers :
+    src/lib/gcalProspectImport.ts            moteur de reconnaissance (partagé front/serveur)
+    api/_lib/sales-gcal-import.ts            import côté serveur
+    api/sales-gcal.ts                        route API
+    api/cron/sales-gcal-import.ts            cron
+    src/components/GcalOfferImportPanel.tsx      panneau dans la fiche Offre
+    src/components/OfferDetailModal.tsx          option « Google Agenda » (modifié)
+    src/components/GcalProspectImporter.tsx      synchro quand l'app est ouverte
+    src/hooks/useGcalImportSettings.ts           lecture/écriture des réglages
+    src/contexts/GoogleCalendarContext.tsx       connexion Google permanente (modifié)
+    src/App.tsx                                  branchement de la synchro (modifié)
+
+Landing page Sales (/sales) : la fonctionnalité est mise en avant dans le bloc
+« Agenda & Booking & Rappel » (phrase ajoutée + tag « Import auto des prospects »),
+en FR et en EN — src/pages/landingPageI18n.ts, src/pages/LandingPage.tsx.
+
+Après le déploiement, pour tester :
+  1. Vérifier GOOGLE_CLIENT_SECRET sur Vercel.
+  2. Reconnecter Google Agenda dans l'Agenda Sales.
+  3. Dans une offre : Source de données = Google Agenda, ajouter un format de titre,
+     cliquer sur « Synchroniser » et vérifier la création du prospect et de son RDV.
+
+
+1 bis. SALES — Correction : lien entre rendez-vous et prospect
+-------------------------------------------------------------
+
+Bug corrigé (existait avant) : les RDV n'étaient jamais reliés à un prospect.
+- La fiche prospect cherchait une colonne « prospectId » inexistante dans la table
+  meetings : le bloc « Prochain RDV » restait toujours vide.
+- Un RDV créé depuis une fiche prospect perdait le lien avec le prospect.
+- Modifier un RDV qui avait été créé avec un contact échouait (la colonne inexistante
+  était envoyée à la base).
+Désormais le lien est stocké (colonne meetings.prospect_id) et tout fonctionne.
+Les RDV créés avant la correction restent sans lien (rien à rattacher en base).
+
+Technique :
+- Migration supabase/migrations/20261008b_meetings_prospect_link.sql DÉJÀ APPLIQUÉE
+  EN PROD (colonnes meetings.prospect_id et meetings.google_event_id).
+- src/contexts/MeetingsContext.tsx (prospectId ↔ prospect_id), src/components/ProspectView.tsx,
+  src/pages/Agenda.tsx, src/pages/Dashboard.tsx, src/components/SalesBookingAgendaPanel.tsx
+  (pas de doublon des événements Google importés).
+
+
+2. SALES — Bouton « Générer Facture » toujours visible
+------------------------------------------------------
+
+Pourquoi : certains closers facturent un fixe + des bonus même sans aucun deal
+sur la période. Le bouton n'apparaissait que s'il y avait au moins un deal.
+
+Ce qui change :
+- Page Factures de Sales : le bouton « Générer Facture » s'affiche dès qu'une offre
+  est sélectionnée, même sans deal sur la période. La facture reprend alors le fixe
+  de l'offre, et les bonus s'ajoutent dans les lignes modifiables (section « Autres »).
+- Business (page Factures côté membre d'équipe) : déjà le cas, aucun changement.
+
+Technique : src/pages/InvoicesPage.tsx (condition du bouton).
+
+
+3. Autre (déjà fait, rien à déployer)
+-------------------------------------
+
+- Compte démo TEKA / ADMIN (teka@closeos.local) : c'est désormais une copie anonymisée
+  du compte tekatubois (Business + Sign), opération faite le 29/09/2026.
+  Prospects, contacts et signataires ont de faux noms, emails et téléphones.
+  Ce compte est complètement séparé de celui de tekatubois.
+
+
+POINT DE SÉCURITÉ RELEVÉ (non corrigé)
+--------------------------------------
+- Business : les routes Google Agenda de api/business.ts (google-calendar-connect,
+  google-calendar-refresh, google-calendar-disconnect) ne vérifient pas qui fait la
+  demande. Avec l'identifiant d'un utilisateur, on peut récupérer son accès Google Agenda.
+  Il faudrait les protéger par la session (comme la nouvelle route Sales).
+- Le compte admin TEKA / ADMIN a un mot de passe très faible pour un compte de prod.

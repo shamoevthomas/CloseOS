@@ -37,6 +37,7 @@ import { useInternalContacts } from '../contexts/InternalContactsContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useCustomStages } from '../hooks/useCustomStages'
+import { GcalOfferImportPanel } from './GcalOfferImportPanel'
 export { type Offer, type OfferContact, type OfferResource, type OfferFormula } from '../contexts/OffersContext'
 import { type Offer, type OfferContact, type OfferResource, type OfferFormula } from '../contexts/OffersContext'
 
@@ -1662,6 +1663,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     <option value="zapier">Zapier</option>
                     <option value="make">Make</option>
                     <option value="n8n">n8n</option>
+                    <option value="google_calendar">Google Agenda</option>
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400 dark:text-neutral-500">
                     <ChevronDown className="h-4 w-4" />
@@ -1678,6 +1680,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                               offer.crmProvider === 'zapier' ? 'bg-[#FF4A00]' :
                                 offer.crmProvider === 'make' ? 'bg-[#6D00CC]' :
                                   offer.crmProvider === 'n8n' ? 'bg-[#EA4B71]' :
+                                    offer.crmProvider === 'google_calendar' ? 'bg-[#4285F4]' :
                                 'bg-white/40'
                     }`} />
                   <p className="text-sm font-medium text-slate-900 dark:text-white capitalize">
@@ -1689,11 +1692,17 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                               offer.crmProvider === 'zapier' ? 'Zapier' :
                                 offer.crmProvider === 'make' ? 'Make' :
                                   offer.crmProvider === 'n8n' ? 'n8n' :
+                                    offer.crmProvider === 'google_calendar' ? 'Google Agenda' :
                                 offer.crmProvider || 'iClosed'}
                   </p>
                 </div>
               )}
             </div>
+
+            {/* --- GOOGLE AGENDA (import des RDV → prospects) --- */}
+            {editedOffer.crmProvider === 'google_calendar' && offer.id && (
+              <GcalOfferImportPanel offerId={Number(offer.id)} />
+            )}
 
             {/* --- PIPEDRIVE CONFIG --- */}
             {editedOffer.crmProvider === 'pipedrive' && (

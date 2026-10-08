@@ -11,6 +11,8 @@ import {
 import { BusinessStripeConnectModal } from '../components/BusinessStripeConnectModal'
 import { RichTextEditor } from '../components/RichTextEditor'
 import { QuestionConditionalEditor } from '../components/QuestionConditionalEditor'
+import { CampaignConfirmationEditor } from '../components/CampaignConfirmationEditor'
+import { type ConfirmationPageConfig, defaultConfirmationPage, normalizeConfirmationPage } from '../../lib/confirmationPage'
 import type { ConditionalRule } from '../../lib/questionnaireConditions'
 import toast from 'react-hot-toast'
 
@@ -37,6 +39,7 @@ interface QuestionConfig {
 
 interface Campaign {
   id: string
+  confirmation_page?: ConfirmationPageConfig | null
   name: string
   description: string | null
   source: string
@@ -126,7 +129,7 @@ export function BusinessCampaigns() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null)
   const [saving, setSaving] = useState(false)
-  const [modalTab, setModalTab] = useState<'general' | 'landing' | 'fields' | 'questionnaire' | 'booking' | 'payment'>('general')
+  const [modalTab, setModalTab] = useState<'general' | 'landing' | 'fields' | 'questionnaire' | 'booking' | 'payment' | 'confirmation'>('general')
 
   // Team members for booking assignment
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
@@ -159,6 +162,9 @@ export function BusinessCampaigns() {
   const [formLandingSubtitle, setFormLandingSubtitle] = useState('')
   const [formLandingText, setFormLandingText] = useState('')
   const [formLandingVideoUrl, setFormLandingVideoUrl] = useState('')
+
+  // Page de confirmation personnalisée
+  const [formConfirmationPage, setFormConfirmationPage] = useState<ConfirmationPageConfig>(defaultConfirmationPage)
 
   // Form state - Fields config
   const [formEmailRequired, setFormEmailRequired] = useState(true)
@@ -327,6 +333,7 @@ export function BusinessCampaigns() {
     setFormUtmSource(''); setFormUtmMedium(''); setFormUtmCampaign('')
     setFormRedirectUrl('')
     setFormLandingTitle(''); setFormLandingSubtitle(''); setFormLandingText(''); setFormLandingVideoUrl('')
+    setFormConfirmationPage(defaultConfirmationPage())
     setFormEmailRequired(true); setFormPhoneRequired(false)
     setFormCustomFields([]); setEditingCampaign(null); setModalTab('general')
     setFormFormulaId(null); setFormCaptureType('with_rdv'); setFormPopupDelay(0)
@@ -354,6 +361,7 @@ export function BusinessCampaigns() {
     setFormRedirectUrl(campaign.redirect_url || '')
     setFormLandingTitle(campaign.landing_title || ''); setFormLandingSubtitle(campaign.landing_subtitle || '')
     setFormLandingText(campaign.landing_text || ''); setFormLandingVideoUrl(campaign.landing_video_url || '')
+    setFormConfirmationPage(normalizeConfirmationPage(campaign.confirmation_page))
     setFormEmailRequired(campaign.email_required ?? true); setFormPhoneRequired(campaign.phone_required ?? false)
     setFormCustomFields(campaign.custom_fields || [])
     setFormFormulaId(campaign.formula_id || null)
@@ -428,6 +436,7 @@ export function BusinessCampaigns() {
     email_required: formEmailRequired, phone_required: formPhoneRequired,
     formula_id: formFormulaId || null,
     redirect_url: formRedirectUrl || null,
+    confirmation_page: formConfirmationPage,
     capture_type: formCaptureType,
     popup_delay: formPopupDelay,
     booking_duration: formBookingDuration,
@@ -745,7 +754,7 @@ window.addEventListener('message',function(e){
       {/* Modal Create/Edit - Tabbed */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4">
-          <div className="w-full sm:max-w-2xl h-[92dvh] sm:h-auto max-h-[92dvh] sm:max-h-[90vh] flex flex-col bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-xl overflow-hidden" style={{ boxShadow: '0 40px 100px rgba(0,0,0,0.08)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+          <div className={`w-full ${modalTab === 'confirmation' && formConfirmationPage.enabled ? 'sm:max-w-6xl' : 'sm:max-w-2xl'} h-[92dvh] sm:h-auto max-h-[92dvh] sm:max-h-[90vh] flex flex-col bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-xl overflow-hidden transition-[max-width] duration-300`} style={{ boxShadow: '0 40px 100px rgba(0,0,0,0.08)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
             {/* Poignée de la feuille (mobile) */}
             <div className="sm:hidden mx-auto mt-2 h-1 w-10 rounded-full bg-stone-300 dark:bg-neutral-700 flex-shrink-0" />
             {/* Modal header */}
@@ -767,6 +776,7 @@ window.addEventListener('message',function(e){
                 { key: 'questionnaire' as const, label: t.campaigns_tab_qualification },
                 { key: 'booking' as const, label: formCaptureType === 'with_rdv' ? t.campaigns_tab_booking : t.campaigns_tab_assignation },
                 { key: 'payment' as const, label: t.campaigns_tab_payment },
+                { key: 'confirmation' as const, label: lang === 'fr' ? 'Confirmation' : 'Confirmation' },
               ]).map(tab => (
                 <button
                   key={tab.key}
@@ -1206,6 +1216,15 @@ window.addEventListener('message',function(e){
               )}
 
               {/* Landing page tab */}
+              {modalTab === 'confirmation' && (
+                <CampaignConfirmationEditor
+                  value={formConfirmationPage}
+                  onChange={setFormConfirmationPage}
+                  lang={lang === 'en' ? 'en' : 'fr'}
+                  inscription={formCaptureType === 'without_rdv'}
+                />
+              )}
+
               {modalTab === 'landing' && (
                 <div className="space-y-4">
                   <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mb-2">{t.campaigns_landing_desc}</p>

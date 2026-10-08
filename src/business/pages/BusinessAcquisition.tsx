@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Megaphone, Eye, UserCheck, Loader2, TrendingUp, TrendingDown, Radar, Plus, MousePointerClick, Users, Repeat, ExternalLink, Trash2 } from 'lucide-react'
+import { Megaphone, Eye, UserCheck, Loader2, TrendingUp, TrendingDown, Radar, Plus, MousePointerClick, Users, Repeat, ExternalLink, Trash2, Route } from 'lucide-react'
 import {
   PieChart, Pie, Cell,
   BarChart, Bar,
@@ -10,6 +10,7 @@ import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { CreateTrackingModal } from '../components/CreateTrackingModal'
 import { TrackingDetailModal } from '../components/TrackingDetailModal'
+import { CampaignFunnelModal } from '../components/CampaignFunnelModal'
 
 interface TrackingLink {
   id: string
@@ -81,6 +82,7 @@ export function BusinessAcquisition() {
   const [trackings, setTrackings] = useState<TrackingLink[]>([])
   const [createOpen, setCreateOpen] = useState(false)
   const [detailLink, setDetailLink] = useState<{ id: string; name: string } | null>(null)
+  const [funnelCampaign, setFunnelCampaign] = useState<{ id: string; name: string } | null>(null)
 
   const fetchTrackings = useCallback(async () => {
     if (!effectiveUserId) return
@@ -408,10 +410,26 @@ export function BusinessAcquisition() {
                     </div>
                   </div>
                 </div>
+                <button
+                  onClick={() => setFunnelCampaign({ id: c.id, name: c.name })}
+                  className="mt-6 w-full flex items-center justify-center gap-2 rounded-xl border border-stone-200 dark:border-neutral-700 py-2.5 text-sm font-bold text-stone-700 dark:text-neutral-200 hover:bg-stone-900 hover:text-white hover:border-stone-900 dark:hover:bg-white dark:hover:text-stone-900 transition-colors"
+                >
+                  <Route className="h-4 w-4" /> {lang === 'fr' ? 'Voir le parcours' : 'View funnel'}
+                </button>
               </div>
             ))}
           </div>
         </section>
+      )}
+
+      {funnelCampaign && effectiveUserId && (
+        <CampaignFunnelModal
+          campaignId={funnelCampaign.id}
+          campaignName={funnelCampaign.name}
+          userId={effectiveUserId}
+          lang={lang === 'en' ? 'en' : 'fr'}
+          onClose={() => setFunnelCampaign(null)}
+        />
       )}
 
       {/* ─── Charts Row: Pie + Conversion Client ─── */}
