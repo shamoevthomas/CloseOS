@@ -12,6 +12,7 @@ import { CallsProvider } from './contexts/CallsContext'
 import { MessagesProvider } from './contexts/MessagesContext'
 import { Toaster } from 'react-hot-toast'
 import { GoogleCalendarProvider } from './contexts/GoogleCalendarContext'
+import { GcalProspectImporter } from './components/GcalProspectImporter'
 import { UpgradeProvider } from './contexts/UpgradeContext'
 import { OrganizationProvider } from './contexts/OrganizationContext'
 import { LanguageProvider } from './contexts/LanguageContext'
@@ -772,6 +773,7 @@ function App() {
                         <UpgradeProvider>
                           <AuthenticatedApp />
                         </UpgradeProvider>
+                        <GcalProspectImporter />
                         <Analytics />
                         <ErrorReportModal />
                         <ErrorReportTrigger />

@@ -84,6 +84,7 @@ export interface SalesTranslations {
   feat5_tag1: string
   feat5_tag2: string
   feat5_tag3: string
+  feat5_tag4: string
   feat6_title: string
   feat6_desc: string
   feat7_title: string
@@ -393,10 +394,11 @@ const fr: SalesTranslations = {
   feat4_tracking: "\u{1F441}\u{FE0F} Suivi Infopreneur",
   feat4_tracking_desc: "Votre infopreneur suit votre pipeline et vos KPIs sans avoir besoin d'un compte. Transparence totale, confiance maximale.",
   feat5_title: "Agenda & Booking & Rappel",
-  feat5_desc: "Connectez votre Google Calendar. Vos rendez-vous et créneaux de booking remontent automatiquement dans votre Pipeline. Programmez des rappels sur vos appels directement depuis votre pipeline.",
+  feat5_desc: "Connectez votre Google Calendar. Vos rendez-vous et créneaux de booking remontent automatiquement dans votre Pipeline. Un setter vous pose un RDV dans votre agenda ? La fiche prospect se crée toute seule dans votre CRM, déjà qualifiée. Programmez des rappels sur vos appels directement depuis votre pipeline.",
   feat5_tag1: "Sync Bi-directionnelle",
   feat5_tag2: "Intégration native",
   feat5_tag3: "Rappels intégrés",
+  feat5_tag4: "Import auto des prospects",
   feat6_title: "Facturation Auto & Paiement CB",
   feat6_desc: "Générez vos factures de commissions en un clic. Créez des liens de paiement CB sécurisés et envoyez automatiquement la facture à votre infopreneur.",
   feat7_title: "Sync CRM",
@@ -716,10 +718,11 @@ const en: SalesTranslations = {
   feat4_tracking: "\u{1F441}\u{FE0F} Client Visibility",
   feat4_tracking_desc: "Your client follows your pipeline and KPIs without needing an account. Total transparency, maximum trust.",
   feat5_title: "Calendar & Booking & Reminders",
-  feat5_desc: "Connect your Google Calendar. Appointments and booking slots automatically appear in your Pipeline. Schedule call reminders directly from your pipeline.",
+  feat5_desc: "Connect your Google Calendar. Appointments and booking slots automatically appear in your Pipeline. A setter books a call in your calendar? The prospect record is created in your CRM on its own, already qualified. Schedule call reminders directly from your pipeline.",
   feat5_tag1: "Bi-directional Sync",
   feat5_tag2: "Native integration",
   feat5_tag3: "Built-in reminders",
+  feat5_tag4: "Auto prospect import",
   feat6_title: "Auto Invoicing & Card Payments",
   feat6_desc: "Generate commission invoices in one click. Create secure card payment links and automatically send the invoice to your client.",
   feat7_title: "CRM Sync",

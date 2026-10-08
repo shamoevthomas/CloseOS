@@ -140,6 +140,10 @@
       "schedule": "*/5 * * * *"
     },
     {
+      "path": "/api/cron/sales-gcal-import",
+      "schedule": "*/15 * * * *"
+    },
+    {
       "path": "/api/cron/contacted-reminders",
       "schedule": "0 12 * * *"
     },

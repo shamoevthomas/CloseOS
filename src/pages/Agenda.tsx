@@ -411,10 +411,14 @@ export function Agenda() {
       })
     );
 
+    // Événements Google déjà importés en RDV CloseOS (import CRM) : affichés une seule fois.
+    const importedGoogleIds = new Set(meetings.map(m => m.google_event_id).filter(Boolean) as string[])
+
     const googleMeetingsForDate = googleEvents
       .filter(event => {
         try {
           if (!event || !event.start) return false
+          if (importedGoogleIds.has(String(event.id))) return false
           if (isGoogleAllDay(event)) return false
 
           const startDate = getGoogleDate(event.start)

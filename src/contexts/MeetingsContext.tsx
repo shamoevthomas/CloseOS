@@ -24,6 +24,19 @@ export interface Meeting {
   notes?: string
   video_link?: string
   cal_booking_uid?: string
+  /** Colonne en base (prospectId côté front est conservé pour compatibilité) */
+  prospect_id?: number | null
+  /** RDV importé depuis Google Agenda : « google-<eventId> » */
+  google_event_id?: string | null
+  source?: string
+}
+
+// La base stocke le lien prospect dans prospect_id ; le front historique utilise prospectId.
+const fromDb = (row: any): Meeting => ({ ...row, prospectId: row?.prospect_id ?? undefined })
+const toDb = (m: any) => {
+  const { prospectId, ...rest } = m || {}
+  if (prospectId !== undefined && rest.prospect_id === undefined) rest.prospect_id = prospectId
+  return rest
 }
 
 interface MeetingsContextType {
@@ -63,7 +76,7 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
         toast.error(getLang() === 'fr' ? 'Impossible de charger les rendez-vous' : 'Unable to load appointments', { id: 'load-meetings' })
         return
       }
-      setMeetings(data || [])
+      setMeetings(((data as any[]) || []).map(fromDb))
     } finally {
       setLoading(false)
     }
@@ -91,7 +104,7 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
         (payload) => {
           setMeetings(prev => {
             if (prev.some(m => m.id === payload.new.id)) return prev
-            return [...prev, payload.new as Meeting].sort((a, b) => a.date.localeCompare(b.date))
+            return [...prev, fromDb(payload.new)].sort((a, b) => a.date.localeCompare(b.date))
           })
         }
       )
@@ -100,7 +113,7 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
         { event: 'UPDATE', schema: 'public', table: 'meetings', filter: `user_id=eq.${userId}` },
         (payload) => {
           setMeetings(prev =>
-            prev.map(m => m.id === payload.new.id ? { ...m, ...payload.new } as Meeting : m)
+            prev.map(m => m.id === payload.new.id ? { ...m, ...fromDb(payload.new) } : m)
           )
         }
       )
@@ -146,6 +159,7 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
         phone: meetingData.phone || null,
         notes: meetingData.notes || null,
         video_link: meetingData.video_link || null,
+        prospect_id: meetingData.prospectId ?? meetingData.prospect_id ?? null,
       }
 
       const { data, error } = await withRetry(
@@ -159,7 +173,7 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
       }
 
       if (data) {
-        setMeetings((prev) => [...prev, data[0]].sort((a, b) => a.date.localeCompare(b.date)))
+        setMeetings((prev) => [...prev, fromDb(data[0])].sort((a, b) => a.date.localeCompare(b.date)))
       }
 
       return { data, error: null }
@@ -177,7 +191,7 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
 
     try {
       const { error } = await withRetry(
-        () => supabase.from('meetings').update(updates).eq('id', id).eq('user_id', user.id),
+        () => supabase.from('meetings').update(toDb(updates)).eq('id', id).eq('user_id', user.id),
         { context: 'UpdateMeeting' }
       )
 

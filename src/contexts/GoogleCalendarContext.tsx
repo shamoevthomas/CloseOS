@@ -4,6 +4,8 @@ import { useGoogleLogin } from '@react-oauth/google'
 // @ts-ignore
 import axios from 'axios'
 import { useAuth } from './AuthContext'
+import { supabase } from '../lib/supabase'
+import type { GcalAttendee } from '../lib/gcalProspectImport'
 
 interface GoogleCalendarEvent {
   id: string
@@ -17,6 +19,11 @@ interface GoogleCalendarEvent {
   location?: string
   hangoutLink?: string // AJOUT : Pour détecter la visio
   source: 'google'
+  // Données brutes pour l'import automatique de prospects
+  rawTitle?: string
+  status?: string
+  attendees?: GcalAttendee[]
+  organizerEmail?: string
 }
 
 interface GoogleCalendarContextType {
@@ -25,6 +32,10 @@ interface GoogleCalendarContextType {
   login: () => void
   logout: () => void
   isLoading: boolean
+  /** Connexion stockée côté serveur (refresh token) : l'import CRM tourne même app fermée. */
+  serverConnected: boolean
+  /** L'utilisateur a retiré l'accès dans son compte Google : il doit se reconnecter. */
+  googleRevoked: boolean
   refreshEvents: () => void
   createEvent: (event: { title: string; date: string; startTime: string; endTime: string; description?: string; location?: string; withGoogleMeet?: boolean }) => Promise<{ success: boolean; hangoutLink?: string }>
 }
@@ -33,6 +44,13 @@ const GoogleCalendarContext = createContext<GoogleCalendarContextType | undefine
 
 const getStorageKey = (userId: string) => `closeros_google_token_${userId}`
 const GOOGLE_BLUE = '#4285F4'
+const API_URL = '/api/sales-gcal'
+
+const authHeaders = async (): Promise<Record<string, string>> => {
+  const { data } = await supabase.auth.getSession()
+  const jwt = data.session?.access_token
+  return jwt ? { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' }
+}
 
 export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth()
@@ -40,17 +58,46 @@ export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(null)
   const [googleEvents, setGoogleEvents] = useState<GoogleCalendarEvent[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [serverConnected, setServerConnected] = useState(false)
+  const [googleRevoked, setGoogleRevoked] = useState(false)
 
-  // Charger le token depuis localStorage quand l'utilisateur change
+  // Jeton frais depuis le serveur (refresh token). null si l'utilisateur n'est pas connecté côté serveur.
+  const fetchServerToken = async (uid: string): Promise<string | null> => {
+    try {
+      const res = await fetch(`${API_URL}?action=token`, { headers: await authHeaders() })
+      if (!res.ok) return null
+      const data = await res.json()
+      setGoogleRevoked(!!data.revoked)
+      if (data.access_token) {
+        setServerConnected(true)
+        localStorage.setItem(getStorageKey(uid), data.access_token)
+        return data.access_token
+      }
+      setServerConnected(false)
+      return null
+    } catch {
+      return null
+    }
+  }
+
+  // Au changement d'utilisateur : jeton serveur d'abord, sinon ancien jeton navigateur
+  // (connexions faites avant la synchro serveur, valables ~1 h).
   useEffect(() => {
     if (authLoading) return
-    if (userId) {
-      const savedToken = localStorage.getItem(getStorageKey(userId))
-      setAccessToken(savedToken)
-    } else {
+    if (!userId) {
       setAccessToken(null)
       setGoogleEvents([])
+      setServerConnected(false)
+      return
     }
+    let cancelled = false
+    const savedToken = localStorage.getItem(getStorageKey(userId))
+    if (savedToken) setAccessToken(savedToken)
+    fetchServerToken(userId).then(token => {
+      if (!cancelled && token && token !== savedToken) setAccessToken(token)
+    })
+    return () => { cancelled = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, authLoading])
 
   const fetchEvents = async (token: string) => {
@@ -98,6 +145,10 @@ export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
           location: finalLocation,
           hangoutLink: item.hangoutLink, // On garde le lien brut
           source: 'google' as const,
+          rawTitle: item.summary || '',
+          status: item.status,
+          attendees: item.attendees,
+          organizerEmail: item.organizer?.email,
         }
       })
 
@@ -105,22 +156,49 @@ export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
     } catch (error: any) {
       console.error("Erreur Google Calendar:", error)
       if (error.response?.status === 401 && userId) {
-        localStorage.removeItem(getStorageKey(userId))
-        setAccessToken(null)
-        setGoogleEvents([])
+        // Jeton expiré : on en redemande un au serveur avant de considérer Google déconnecté.
+        const fresh = await fetchServerToken(userId)
+        if (fresh && fresh !== token) {
+          setAccessToken(fresh)
+        } else {
+          localStorage.removeItem(getStorageKey(userId))
+          setAccessToken(null)
+          setGoogleEvents([])
+        }
       }
     } finally {
       setIsLoading(false)
     }
   }
 
+  // Flux auth-code : le serveur échange le code contre un refresh token (import CRM en arrière-plan).
   const login = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      const token = tokenResponse.access_token
-      if (userId) {
-        setAccessToken(token)
-        localStorage.setItem(getStorageKey(userId), token)
-        await fetchEvents(token)
+    flow: 'auth-code',
+    onSuccess: async (codeResponse: any) => {
+      if (!userId) return
+      const fr = (localStorage.getItem('closeos_lang') || 'fr') === 'fr'
+      try {
+        const res = await fetch(`${API_URL}?action=connect`, {
+          method: 'POST',
+          headers: await authHeaders(),
+          body: JSON.stringify({ code: codeResponse.code }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (data.access_token) {
+          setAccessToken(data.access_token)
+          setServerConnected(true)
+          setGoogleRevoked(false)
+          localStorage.setItem(getStorageKey(userId), data.access_token)
+          await fetchEvents(data.access_token)
+        } else if (data.error === 'no_refresh_token') {
+          alert(fr
+            ? "Google n'a pas renvoyé d'accès permanent. Retirez CloseOS dans myaccount.google.com/permissions puis reconnectez Google Agenda."
+            : "Google did not return a permanent access. Remove CloseOS at myaccount.google.com/permissions, then reconnect Google Calendar.")
+        } else {
+          alert(fr ? 'Erreur lors de la connexion à Google Calendar' : 'Error connecting to Google Calendar')
+        }
+      } catch {
+        alert(fr ? 'Erreur lors de la connexion à Google Calendar' : 'Error connecting to Google Calendar')
       }
     },
     onError: () => alert((localStorage.getItem('closeos_lang') || 'fr') === 'fr' ? 'Erreur lors de la connexion à Google Calendar' : 'Error connecting to Google Calendar'),
@@ -181,6 +259,8 @@ export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
     if (userId) localStorage.removeItem(getStorageKey(userId))
     setAccessToken(null)
     setGoogleEvents([])
+    setServerConnected(false)
+    authHeaders().then(headers => fetch(`${API_URL}?action=disconnect`, { method: 'POST', headers })).catch(() => {})
   }
 
   useEffect(() => {
@@ -197,6 +277,8 @@ export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         isLoading,
+        serverConnected,
+        googleRevoked,
         refreshEvents: () => accessToken && fetchEvents(accessToken),
         createEvent,
       }}

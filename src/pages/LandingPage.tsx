@@ -1294,7 +1294,7 @@ export function LandingPage() {
                 <h3 className="text-xl font-extrabold text-slate-900 mb-4" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat5_title}</h3>
                 <p className="text-slate-500 text-sm leading-[1.7] mb-5">{t.feat5_desc}</p>
                 <div className="flex flex-wrap gap-2">
-                  {[t.feat5_tag1, t.feat5_tag2, t.feat5_tag3].map((tag, idx) => (
+                  {[t.feat5_tag1, t.feat5_tag2, t.feat5_tag3, t.feat5_tag4].map((tag, idx) => (
                     <span key={idx} className="px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-[0.68rem] font-semibold text-sky-600">{tag}</span>
                   ))}
                 </div>

@@ -110,10 +110,31 @@ function decorateResponse(res: ServerResponse) {
   return vres
 }
 
+// ─── Rewrites de vercel.json ───
+
+// En prod, Vercel réécrit des alias (/api/business-verify-code →
+// /api/business?action=verify-code). On rejoue ici les rewrites exacts
+// (sans paramètre ni regex) pour que ces routes marchent aussi en local.
+const API_REWRITES = new Map<string, string>()
+try {
+  const vercel = JSON.parse(readFileSync(resolve(ROOT, 'vercel.json'), 'utf8'))
+  for (const r of vercel.rewrites || []) {
+    if (typeof r.source === 'string' && r.source.startsWith('/api/') && !/[:(*]/.test(r.source)) {
+      API_REWRITES.set(r.source, r.destination)
+    }
+  }
+} catch { /* pas de vercel.json lisible : aucun rewrite */ }
+
 // ─── Serveur ───
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url || '/', `http://localhost:${PORT}`)
+  const rewrite = API_REWRITES.get(url.pathname.replace(/\/$/, ''))
+  if (rewrite) {
+    const dest = new URL(rewrite, `http://localhost:${PORT}`)
+    url.pathname = dest.pathname
+    dest.searchParams.forEach((v, k) => { if (!url.searchParams.has(k)) url.searchParams.set(k, v) })
+  }
 
   if (!url.pathname.startsWith('/api/')) {
     res.statusCode = 404

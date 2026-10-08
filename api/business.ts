@@ -267,6 +267,87 @@ async function buildQuestionnaireSectionForAppointment(supabase: any, appointmen
   return formatQuestionnaireSection(items)
 }
 
+/** Étapes du parcours d'une page de campagne, dans l'ordre. */
+const FUNNEL_MILESTONES = ['view', 'info_started', 'info_done', 'questionnaire_started', 'questionnaire_done', 'booking', 'slot_selected', 'payment', 'done']
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** Le visionnage n'est mesurable que pour YouTube et Vimeo (API postMessage). */
+function isMeasurableVideo(url: string): boolean {
+  return /youtube\.com|youtu\.be|vimeo\.com/i.test(url || '')
+}
+
+/**
+ * Fusionne le suivi de la page de confirmation. Les compteurs vidéo envoyés par
+ * le front sont cumulatifs : on garde le max (un rechargement repart de zéro).
+ */
+function mergeFunnelConfirmation(prev: any, patch: any): any {
+  const out: any = { ...(prev || {}) }
+  if (patch.viewed) out.viewed = out.viewed || new Date().toISOString()
+  if (patch.videos && typeof patch.videos === 'object') {
+    const videos = { ...(out.videos || {}) }
+    for (const [key, v] of Object.entries(patch.videos).slice(0, 60)) {
+      if (!v || typeof v !== 'object' || key.length > 64) continue
+      const o: any = videos[key] || {}
+      const n = v as any
+      const num = (x: unknown) => (typeof x === 'number' && isFinite(x) && x >= 0 ? Math.min(x, 86400) : 0)
+      videos[key] = {
+        watched: Math.max(num(o.watched), num(n.watched)),
+        duration: Math.max(num(o.duration), num(n.duration)),
+        max: Math.max(num(o.max), num(n.max)),
+      }
+    }
+    out.videos = videos
+  }
+  if (patch.pre_meeting && typeof patch.pre_meeting === 'object') {
+    const pm = patch.pre_meeting
+    const prevPm = out.pre_meeting || {}
+    out.pre_meeting = {
+      answered: Array.isArray(pm.answered) ? pm.answered.filter((x: unknown) => typeof x === 'string').slice(0, 100) : (prevPm.answered || []),
+      stuck: typeof pm.stuck === 'string' ? pm.stuck.slice(0, 64) : (pm.stuck === null ? null : (prevPm.stuck ?? null)),
+      submitted: !!(prevPm.submitted || pm.submitted),
+    }
+  }
+  return out
+}
+
+/** Rattache une session de parcours au prospect créé (si elle appartient bien à la campagne). */
+async function linkFunnelSession(supabase: any, sessionId: unknown, campaignId: string, prospectId: number | string) {
+  if (typeof sessionId !== 'string' || !UUID_RE.test(sessionId) || !prospectId) return
+  await supabase.from('campaign_funnel_sessions').update({ prospect_id: prospectId }).eq('id', sessionId).eq('campaign_id', campaignId).then(undefined, () => undefined)
+}
+
+/** Questions de qualification actives d'une campagne, dans l'ordre. */
+async function loadCampaignQuestions(supabase: any, campaignId: string): Promise<{ id: string; question_text: string }[]> {
+  const { data: qn } = await supabase.from('campaign_questionnaires').select('id').eq('campaign_id', campaignId).eq('enabled', true).maybeSingle()
+  if (!qn) return []
+  const { data: qs } = await supabase.from('campaign_questions').select('id, question_text, sort_order').eq('questionnaire_id', qn.id).order('sort_order')
+  return qs || []
+}
+
+/**
+ * Jeton remis au prospect à la fin d'une capture : il l'autorise à envoyer
+ * ensuite le questionnaire de la page de confirmation pour SA fiche, sans
+ * exposer d'endpoint qui écrirait sur n'importe quel prospect.
+ */
+function confirmationToken(campaignId: string, prospectId: string): string {
+  return crypto.createHmac('sha256', supabaseServiceKey).update(`confirmation:${campaignId}:${prospectId}`).digest('hex')
+}
+
+/**
+ * Les liens prospect (annuler / reprogrammer) expirent 24 h après la fin du
+ * rendez-vous : au-delà, plus d'annulation ni de report possible.
+ */
+function isAppointmentLinkExpired(appt: { datetime_utc?: string | null; date?: string | null; time?: string | null; duration?: number | null }): boolean {
+  let start = appt.datetime_utc ? new Date(appt.datetime_utc) : null
+  if (!start || isNaN(start.getTime())) {
+    if (!appt.date) return false
+    start = new Date(`${appt.date}T${(appt.time || '00:00').slice(0, 5)}:00Z`)
+    if (isNaN(start.getTime())) return false
+  }
+  const end = start.getTime() + (appt.duration || 30) * 60_000
+  return Date.now() > end + 24 * 3600_000
+}
+
 /**
  * Build the GCal description we set on a reschedule: header on top, original
  * base description preserved, questionnaire section (optional), action links at bottom.
@@ -2442,7 +2523,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (action === 'campaigns-create' && req.method === 'POST') {
-      const { user_id, name, description, source, utm_source, utm_medium, utm_campaign, custom_fields, redirect_url, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, formula_id, capture_type, popup_delay, booking_duration, booking_title, booking_description, booking_with, booking_assign_mode, booking_assigned_members, booking_distribution, booking_via_setter, setter_assign_mode, setter_assigned_members, setter_distribution, team_id, stripe_enabled, stripe_price, stripe_currency, refund_enabled, refund_tiers, reschedule_enabled, reschedule_paid, reschedule_price, reschedule_currency } = req.body
+      const { user_id, name, description, source, utm_source, utm_medium, utm_campaign, custom_fields, redirect_url, confirmation_page, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, formula_id, capture_type, popup_delay, booking_duration, booking_title, booking_description, booking_with, booking_assign_mode, booking_assigned_members, booking_distribution, booking_via_setter, setter_assign_mode, setter_assigned_members, setter_distribution, team_id, stripe_enabled, stripe_price, stripe_currency, refund_enabled, refund_tiers, reschedule_enabled, reschedule_paid, reschedule_price, reschedule_currency } = req.body
       if (!user_id || !name) return res.status(400).json({ error: 'user_id and name required' })
 
       // Ensure business_users entry exists
@@ -2471,6 +2552,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           custom_fields: custom_fields || [],
           slug, is_active: true,
           redirect_url: redirect_url || null,
+          confirmation_page: confirmation_page || null,
           landing_title: landing_title || null,
           landing_subtitle: landing_subtitle || null,
           landing_text: landing_text || null,
@@ -4230,7 +4312,7 @@ ${notesSection}
 
       const { data: campaign, error } = await supabase
         .from('business_campaigns')
-        .select('id, name, description, custom_fields, slug, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, redirect_url, capture_type, booking_duration, booking_with, booking_assign_mode, booking_assigned_members, booking_distribution, user_id, stripe_enabled, stripe_price, stripe_currency')
+        .select('id, name, description, custom_fields, slug, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, redirect_url, confirmation_page, capture_type, booking_duration, booking_with, booking_assign_mode, booking_assigned_members, booking_distribution, user_id, stripe_enabled, stripe_price, stripe_currency')
         .eq('slug', slug)
         .eq('is_active', true)
         .single()
@@ -4259,6 +4341,249 @@ ${notesSection}
       }
 
       return res.status(200).json({ campaign, questionnaire, questions: campaignQuestions })
+    }
+
+    // ─── Tracking du parcours de campagne (public) ───
+    // Une session = une visite de /capture/:slug. Le front envoie des « patchs »
+    // cumulatifs (étapes atteintes, questions répondues, visionnage des vidéos
+    // de la page de confirmation…) qu'on fusionne ici. sendBeacon → text/plain.
+    if (action === 'funnel-track' && req.method === 'POST') {
+      const body = typeof req.body === 'string' ? (() => { try { return JSON.parse(req.body) } catch { return {} } })() : (req.body || {})
+      const { slug, session_id } = body
+      if (!slug || typeof session_id !== 'string' || !UUID_RE.test(session_id)) return res.status(400).json({ error: 'slug and session_id required' })
+
+      const { data: campaign } = await supabase.from('business_campaigns').select('id, user_id').eq('slug', slug).maybeSingle()
+      if (!campaign) return res.status(404).json({ error: 'Campaign not found' })
+
+      const { data: existing } = await supabase
+        .from('campaign_funnel_sessions')
+        .select('campaign_id, reached, confirmation, completed, disqualified')
+        .eq('id', session_id)
+        .maybeSingle()
+      if (existing && existing.campaign_id !== campaign.id) return res.status(409).json({ error: 'Session belongs to another campaign' })
+
+      const strList = (v: unknown, max: number) => Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x.length <= 64).slice(0, max) : null
+      const reachedIn = (strList(body.reached, 20) || []).filter(m => FUNNEL_MILESTONES.includes(m))
+      const update: Record<string, any> = { updated_at: new Date().toISOString() }
+      update.reached = [...new Set([...(existing?.reached || []), ...reachedIn])]
+      const answered = strList(body.answered_question_ids, 200)
+      if (answered) update.answered_question_ids = answered
+      if ('stuck_question_id' in body) update.stuck_question_id = typeof body.stuck_question_id === 'string' ? body.stuck_question_id.slice(0, 64) : null
+      if (body.completed === true || existing?.completed) update.completed = true
+      if (body.disqualified === true || existing?.disqualified) update.disqualified = true
+      if (typeof body.device === 'string') update.device = body.device.slice(0, 20)
+      if (body.confirmation && typeof body.confirmation === 'object') {
+        update.confirmation = mergeFunnelConfirmation(existing?.confirmation || {}, body.confirmation)
+      }
+
+      if (existing) {
+        await supabase.from('campaign_funnel_sessions').update(update).eq('id', session_id)
+      } else {
+        await supabase.from('campaign_funnel_sessions').insert({ id: session_id, campaign_id: campaign.id, owner_id: campaign.user_id, ...update })
+      }
+      return res.status(200).json({ ok: true })
+    }
+
+    // ─── Stats du parcours d'une campagne (page Acquisition) ───
+    if (action === 'funnel-stats' && req.method === 'GET') {
+      const campaignId = req.query.campaign_id as string
+      const userId = req.query.user_id as string
+      const days = Math.max(0, Math.min(3650, Number(req.query.days) || 0))
+      if (!campaignId || !userId) return res.status(400).json({ error: 'campaign_id and user_id required' })
+
+      const { data: campaign } = await supabase
+        .from('business_campaigns')
+        .select('id, name, capture_type, stripe_enabled, stripe_price, confirmation_page')
+        .eq('id', campaignId)
+        .eq('user_id', userId)
+        .maybeSingle()
+      if (!campaign) return res.status(404).json({ error: 'Campaign not found' })
+
+      // Pagination : PostgREST plafonne à 1000 lignes par requête
+      const sessions: any[] = []
+      const since = days ? new Date(Date.now() - days * 864e5).toISOString() : null
+      for (let from = 0; from < 50000; from += 1000) {
+        let q = supabase
+          .from('campaign_funnel_sessions')
+          .select('reached, answered_question_ids, stuck_question_id, completed, disqualified, confirmation, device')
+          .eq('campaign_id', campaignId)
+          .order('created_at', { ascending: false })
+          .range(from, from + 999)
+        if (since) q = q.gte('created_at', since)
+        const { data, error } = await q
+        if (error) return res.status(500).json({ error: error.message })
+        sessions.push(...(data || []))
+        if (!data || data.length < 1000) break
+      }
+
+      const questions = await loadCampaignQuestions(supabase, campaignId)
+      const has = (s: any, m: string) => (s.reached || []).includes(m)
+
+      // Étapes applicables à cette campagne, dans l'ordre du parcours
+      const stepKeys = ['view', 'info_started', 'info_done']
+      if (questions.length) stepKeys.push('questionnaire_started', 'questionnaire_done')
+      if (campaign.capture_type !== 'without_rdv') stepKeys.push('booking', 'slot_selected')
+      if (campaign.stripe_enabled && (campaign.stripe_price || 0) > 0) stepKeys.push('payment')
+      stepKeys.push('done')
+
+      // Étape la plus avancée de chaque visite : l'entonnoir reste monotone même
+      // quand une étape facultative (questionnaire non obligatoire) est sautée.
+      const total = sessions.length
+      const furthest = sessions.map(s => {
+        if (s.completed) return stepKeys.length - 1
+        let f = 0
+        stepKeys.forEach((k, i) => { if (has(s, k)) f = Math.max(f, i) })
+        return f
+      })
+      const steps = stepKeys.map((key, i) => ({
+        key,
+        reached: furthest.filter(f => f >= i).length,
+        stopped: i === stepKeys.length - 1 ? 0 : furthest.filter(f => f === i).length,
+      }))
+
+      const qStarted = sessions.filter(s => has(s, 'questionnaire_started')).length
+      const questionStats = questions.map((q, index) => {
+        const answered = sessions.filter(s => (s.answered_question_ids || []).includes(q.id)).length
+        const stopped = sessions.filter(s => !s.completed && !has(s, 'questionnaire_done') && has(s, 'questionnaire_started') && s.stuck_question_id === q.id).length
+        return { id: q.id, index: index + 1, text: q.question_text, answered, stopped }
+      })
+
+      // Page de confirmation personnalisée
+      const cp = (campaign.confirmation_page || {}) as any
+      const confSessions = sessions.filter(s => s.completed && s.confirmation && s.confirmation.viewed)
+      const videoDefs: { key: string; title: string; url: string }[] = []
+      if (cp.video_url) videoDefs.push({ key: 'main', title: cp.video_title || 'Vidéo de confirmation', url: cp.video_url })
+      for (const sec of (cp.sections || [])) for (const v of (sec.videos || [])) {
+        if (v.url) videoDefs.push({ key: v.id, title: `${sec.title ? sec.title + ' · ' : ''}${v.title || 'Vidéo'}`, url: v.url })
+      }
+      const videos = videoDefs.map(def => {
+        const plays = confSessions.map(s => s.confirmation?.videos?.[def.key]).filter((v: any) => v && (v.watched || 0) > 0)
+        const pct = (v: any) => v.duration ? Math.min(100, (Math.max(v.max || 0, v.watched || 0) / v.duration) * 100) : 0
+        return {
+          key: def.key,
+          title: def.title,
+          measurable: isMeasurableVideo(def.url),
+          viewers: confSessions.length,
+          started: plays.length,
+          avg_watched: plays.length ? plays.reduce((a: number, v: any) => a + (v.watched || 0), 0) / plays.length : 0,
+          avg_pct: plays.length ? plays.reduce((a: number, v: any) => a + pct(v), 0) / plays.length : 0,
+          completed: plays.filter((v: any) => pct(v) >= 90).length,
+        }
+      })
+      const pmQuestions = (cp.questionnaire?.enabled ? (cp.questionnaire.questions || []) : []).filter((q: any) => q.label)
+      const pmStarted = confSessions.filter(s => (s.confirmation?.pre_meeting?.answered || []).length > 0)
+      const preMeeting = {
+        enabled: pmQuestions.length > 0,
+        shown: confSessions.length,
+        started: pmStarted.length,
+        submitted: confSessions.filter(s => s.confirmation?.pre_meeting?.submitted).length,
+        questions: pmQuestions.map((q: any, i: number) => ({
+          id: q.id,
+          index: i + 1,
+          text: q.label,
+          answered: confSessions.filter(s => (s.confirmation?.pre_meeting?.answered || []).includes(q.id)).length,
+          stopped: confSessions.filter(s => !s.confirmation?.pre_meeting?.submitted && s.confirmation?.pre_meeting?.stuck === q.id).length,
+        })),
+      }
+
+      return res.status(200).json({
+        campaign: { id: campaign.id, name: campaign.name, capture_type: campaign.capture_type },
+        total,
+        mobile: sessions.filter(s => s.device === 'mobile').length,
+        disqualified: sessions.filter(s => s.disqualified).length,
+        steps,
+        questionnaire: { started: qStarted, questions: questionStats },
+        confirmation: { enabled: !!cp.enabled, viewed: confSessions.length, videos, pre_meeting: preMeeting },
+      })
+    }
+
+    // ─── Parcours d'un prospect précis (fiche prospect) ───
+    if (action === 'funnel-prospect' && req.method === 'GET') {
+      const prospectId = req.query.prospect_id as string
+      const userId = req.query.user_id as string
+      if (!prospectId || !userId) return res.status(400).json({ error: 'prospect_id and user_id required' })
+
+      const { data: rows } = await supabase
+        .from('campaign_funnel_sessions')
+        .select('id, campaign_id, device, reached, answered_question_ids, stuck_question_id, completed, disqualified, confirmation, created_at, updated_at')
+        .eq('prospect_id', prospectId)
+        .eq('owner_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(10)
+      if (!rows || rows.length === 0) return res.status(200).json({ sessions: [] })
+
+      const campaignIds = [...new Set(rows.map((r: any) => r.campaign_id))]
+      const { data: camps } = await supabase.from('business_campaigns').select('id, name, capture_type, stripe_enabled, stripe_price, confirmation_page').in('id', campaignIds)
+      const campById = new Map((camps || []).map((c: any) => [c.id, c]))
+      const questionsByCampaign = new Map<string, any[]>()
+      for (const id of campaignIds) questionsByCampaign.set(id, await loadCampaignQuestions(supabase, id))
+
+      const sessions = rows.map((r: any) => {
+        const c: any = campById.get(r.campaign_id) || {}
+        const cp = c.confirmation_page || {}
+        const questions = questionsByCampaign.get(r.campaign_id) || []
+        const videoTitles: Record<string, string> = {}
+        if (cp.video_url) videoTitles.main = cp.video_title || 'Vidéo de confirmation'
+        for (const sec of (cp.sections || [])) for (const v of (sec.videos || [])) videoTitles[v.id] = `${sec.title ? sec.title + ' · ' : ''}${v.title || 'Vidéo'}`
+        const pmQuestions = (cp.questionnaire?.questions || []).filter((q: any) => q.label)
+        return {
+          ...r,
+          campaign_name: c.name || null,
+          capture_type: c.capture_type || 'with_rdv',
+          has_payment: !!(c.stripe_enabled && (c.stripe_price || 0) > 0),
+          questions: questions.map((q, i) => ({ id: q.id, index: i + 1, text: q.question_text })),
+          video_titles: videoTitles,
+          pre_meeting_questions: pmQuestions.map((q: any, i: number) => ({ id: q.id, index: i + 1, text: q.label })),
+        }
+      })
+      return res.status(200).json({ sessions })
+    }
+
+    // ─── Questionnaire de la page de confirmation (public, jeton signé) ───
+    // Les réponses s'ajoutent à business_prospects.pre_meeting_answers ; une
+    // nouvelle soumission pour la même campagne remplace la précédente.
+    if (action === 'capture-confirmation-answers' && req.method === 'POST') {
+      const { slug, prospect_id, token, answers } = req.body || {}
+      if (!slug || !prospect_id || !token || !Array.isArray(answers)) return res.status(400).json({ error: 'slug, prospect_id, token and answers required' })
+
+      const { data: campaign } = await supabase
+        .from('business_campaigns')
+        .select('id, user_id, confirmation_page')
+        .eq('slug', slug)
+        .maybeSingle()
+      if (!campaign) return res.status(404).json({ error: 'Campaign not found' })
+
+      const expected = confirmationToken(campaign.id, String(prospect_id))
+      const given = String(token)
+      if (given.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(given), Buffer.from(expected))) {
+        return res.status(403).json({ error: 'Invalid token' })
+      }
+
+      const clean = answers
+        .slice(0, 50)
+        .map((a: any) => ({ question: String(a?.question || '').slice(0, 500), answer: String(a?.answer || '').slice(0, 5000) }))
+        .filter((a: any) => a.question && a.answer)
+      if (clean.length === 0) return res.status(400).json({ error: 'No answers' })
+
+      const { data: prospect } = await supabase
+        .from('business_prospects')
+        .select('id, pre_meeting_answers')
+        .eq('id', prospect_id)
+        .eq('user_id', campaign.user_id)
+        .maybeSingle()
+      if (!prospect) return res.status(404).json({ error: 'Prospect not found' })
+
+      const previous = Array.isArray(prospect.pre_meeting_answers) ? prospect.pre_meeting_answers : []
+      const entry = {
+        campaign_id: campaign.id,
+        title: (campaign.confirmation_page as any)?.questionnaire?.title || null,
+        answered_at: new Date().toISOString(),
+        answers: clean,
+      }
+      const next = [...previous.filter((e: any) => e?.campaign_id !== campaign.id), entry]
+      const { error: upErr } = await supabase.from('business_prospects').update({ pre_meeting_answers: next }).eq('id', prospect.id)
+      if (upErr) return res.status(500).json({ error: upErr.message })
+      return res.status(200).json({ success: true })
     }
 
     // ─── Public capture view tracking (no auth) ───
@@ -4688,6 +5013,7 @@ ${notesSection}
         .single()
 
       if (!appt) return res.status(404).json({ error: 'Appointment not found' })
+      const linkExpired = isAppointmentLinkExpired(appt)
 
       // Get prospect name
       const { data: prospect } = await supabase
@@ -4769,6 +5095,11 @@ ${notesSection}
         user_id: appt.user_id,
         assigned_to: appt.assigned_to,
         token_type: token === appt.cancel_token ? 'cancel' : 'reschedule',
+        expired: linkExpired,
+        // Le lien d'annulation propose « reporter plutôt » : les deux jetons
+        // arrivent ensemble chez le prospect, exposer l'un via l'autre ne lui
+        // donne aucun droit de plus.
+        reschedule_token: !linkExpired && token === appt.cancel_token ? (appt.reschedule_token || null) : null,
         // Stripe payment data
         stripe_payment_status: appt.stripe_payment_status || null,
         stripe_amount_paid: appt.stripe_amount_paid || 0,
@@ -4844,12 +5175,13 @@ ${notesSection}
 
       const { data: appt } = await supabase
         .from('business_appointments')
-        .select('id, status, user_id, assigned_to, date, time, prospect_id, campaign_id, google_calendar_event_id, stripe_payment_intent_id, stripe_payment_status, stripe_amount_paid')
+        .select('id, status, user_id, assigned_to, date, time, duration, datetime_utc, prospect_id, campaign_id, google_calendar_event_id, stripe_payment_intent_id, stripe_payment_status, stripe_amount_paid')
         .eq('cancel_token', token)
         .single()
 
       if (!appt) return res.status(404).json({ error: 'Appointment not found' })
       if (appt.status === 'cancelled') return res.status(200).json({ already: true })
+      if (isAppointmentLinkExpired(appt)) return res.status(410).json({ error: 'Link expired', expired: true })
 
       // Cancel the appointment
       await supabase.from('business_appointments').update({ status: 'cancelled' }).eq('id', appt.id)
@@ -4980,11 +5312,12 @@ ${notesSection}
 
       const { data: appt } = await supabase
         .from('business_appointments')
-        .select('id, status, user_id, assigned_to, date, time, prospect_id, campaign_id, duration, google_calendar_event_id, stripe_payment_status')
+        .select('id, status, user_id, assigned_to, date, time, datetime_utc, prospect_id, campaign_id, duration, google_calendar_event_id, stripe_payment_status')
         .eq('reschedule_token', token)
         .single()
 
       if (!appt) return res.status(404).json({ error: 'Appointment not found' })
+      if (isAppointmentLinkExpired(appt)) return res.status(410).json({ error: 'Link expired', expired: true })
 
       // Check if paid reschedule is required
       if (appt.campaign_id && !payment_session_id) {
@@ -5171,7 +5504,7 @@ ${notesSection}
 
     // ─── Passive partial lead capture (no auth) ───
     if (action === 'capture-partial' && req.method === 'POST') {
-      const { slug, name, email, phone, custom_data } = req.body
+      const { slug, name, email, phone, custom_data, funnel_session_id } = req.body
       if (!slug) return res.status(400).json({ error: 'slug required' })
       if (!email && !phone) return res.status(400).json({ error: 'email or phone required' })
 
@@ -5211,6 +5544,7 @@ ${notesSection}
         existing = data
       }
 
+      let linkedProspectId: number | null = existing?.id ?? null
       // Only create if not already exists (avoid duplicates)
       if (!existing) {
         const { data: newProspect } = await supabase
@@ -5229,6 +5563,7 @@ ${notesSection}
           .select('id')
           .single()
 
+        linkedProspectId = newProspect?.id ?? null
         // Add "Incomplet" system tag
         if (newProspect) {
           const { data: incompletTag } = await supabase
@@ -5248,7 +5583,67 @@ ${notesSection}
         }
       }
 
+      if (linkedProspectId) await linkFunnelSession(supabase, funnel_session_id, campaign.id, linkedProspectId)
+
       return res.status(200).json({ success: true })
+    }
+
+    // ─── Réponses de qualification d'un lead incomplet (public) ───
+    // Le prospect a commencé le questionnaire sans aller au bout : on garde ce
+    // qu'il a déjà répondu sur sa fiche « partial » (sans score, sans élimination).
+    // Ne touche jamais un prospect déjà converti.
+    if (action === 'capture-partial-answers' && req.method === 'POST') {
+      // sendBeacon envoie du text/plain : le corps peut arriver en chaîne
+      const body = typeof req.body === 'string' ? (() => { try { return JSON.parse(req.body) } catch { return {} } })() : (req.body || {})
+      const { slug, email, phone, answers } = body
+      if (!slug || (!email && !phone) || !Array.isArray(answers)) return res.status(400).json({ error: 'slug, email or phone, answers required' })
+
+      const { data: campaign } = await supabase
+        .from('business_campaigns')
+        .select('id, user_id')
+        .eq('slug', slug)
+        .eq('is_active', true)
+        .maybeSingle()
+      if (!campaign) return res.status(404).json({ error: 'Campaign not found' })
+
+      const { data: qConfig } = await supabase
+        .from('campaign_questionnaires')
+        .select('id')
+        .eq('campaign_id', campaign.id)
+        .eq('enabled', true)
+        .maybeSingle()
+      if (!qConfig) return res.status(200).json({ saved: 0 })
+      const { data: qs } = await supabase.from('campaign_questions').select('id').eq('questionnaire_id', qConfig.id)
+      const validIds = new Set((qs || []).map((q: any) => q.id))
+
+      let prospectId: string | null = null
+      for (const [col, val] of [['email', email], ['phone', phone]] as const) {
+        if (!val || prospectId) continue
+        const { data } = await supabase
+          .from('business_prospects')
+          .select('id')
+          .eq('user_id', campaign.user_id)
+          .eq('campaign_id', campaign.id)
+          .eq('stage', 'partial')
+          .eq(col, val)
+          .limit(1)
+          .maybeSingle()
+        prospectId = data?.id || null
+      }
+      if (!prospectId) return res.status(404).json({ error: 'Partial lead not found' })
+
+      const isEmpty = (v: unknown) => v === null || v === undefined || (typeof v === 'string' && !v.trim()) || (Array.isArray(v) && v.length === 0)
+      const rows = answers
+        .filter((a: any) => a && validIds.has(a.question_id) && !isEmpty(a.answer_value))
+        .slice(0, 200)
+        .map((a: any) => ({ prospect_id: prospectId, question_id: a.question_id, answer_value: a.answer_value, score: null, is_eliminatory: false }))
+
+      await supabase.from('prospect_answers').delete().eq('prospect_id', prospectId)
+      if (rows.length > 0) {
+        const { error } = await supabase.from('prospect_answers').insert(rows)
+        if (error) return res.status(500).json({ error: error.message })
+      }
+      return res.status(200).json({ saved: rows.length })
     }
 
     // ─── Native CloseOS booking: fetch info + available slots ───
@@ -6499,7 +6894,7 @@ ${notesSection}
         campaign_id: campaign.id,
         stripe_checkout_session_id: paymentIntent.id, // legacy column name; stores PI id for inline flow
         stripe_payment_intent_id: paymentIntent.id,
-        prospect_data: { slug, name, email, phone, custom_data, date, time, datetime_utc, prospect_timezone, available_member_ids, answers },
+        prospect_data: { slug, name, email, phone, custom_data, date, time, datetime_utc, prospect_timezone, available_member_ids, answers, funnel_session_id: req.body.funnel_session_id || null },
         payment_type: 'initial',
         amount,
       })
@@ -6615,6 +7010,7 @@ ${notesSection}
             appointment: submitData.appointment,
             prospect: submitData.prospect,
             redirect_url: submitData.redirect_url,
+            confirmation_token: submitData.confirmation_token || null,
           })
         }
 
@@ -7050,6 +7446,7 @@ ${notesSection}
 
       // Check for existing partial lead
       let prospect = null
+      let upgradedFromPartial = false
       if (email) {
         const { data } = await supabase
           .from('business_prospects')
@@ -7069,6 +7466,7 @@ ${notesSection}
             .single()
           if (upErr) return res.status(500).json({ error: upErr.message })
           prospect = updated
+          upgradedFromPartial = true
         }
       }
 
@@ -7134,6 +7532,12 @@ ${notesSection}
             // Fallback: ignore if RPC fails (trigger may block it)
           }
         }
+      }
+
+      // Réponses partielles enregistrées pendant le remplissage (capture-partial-answers) :
+      // la soumission complète fait foi, on repart de zéro avant de (re)scorer.
+      if (upgradedFromPartial && prospect?.id) {
+        await supabase.from('prospect_answers').delete().eq('prospect_id', prospect.id)
       }
 
       // ─── Questionnaire scoring & disqualification ───
@@ -7322,6 +7726,7 @@ ${notesSection}
 
       // If disqualified, skip appointment creation and return early
       if (disqualified) {
+        await linkFunnelSession(supabase, req.body.funnel_session_id, campaign.id, prospect.id)
         return res.status(200).json({ prospect, appointment: null, redirect_url: campaign.redirect_url || null, disqualified: true })
       }
 
@@ -7690,7 +8095,8 @@ ${notesSection}
         }
       }
 
-      return res.status(200).json({ prospect, appointment, redirect_url: campaign.redirect_url || null, disqualified: false })
+      await linkFunnelSession(supabase, req.body.funnel_session_id, campaign.id, prospect.id)
+      return res.status(200).json({ prospect, appointment, redirect_url: campaign.redirect_url || null, disqualified: false, confirmation_token: confirmationToken(campaign.id, prospect.id) })
     }
 
     // ─── Welcome email ───

@@ -29,6 +29,7 @@ import { useChannelPrompt } from '../contexts/BusinessChannelPromptContext'
 import { appendRelanceChannel } from '../lib/contactChannels'
 import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
+import { ProspectFunnelJourney } from './ProspectFunnelJourney'
 
 const GLASS_PANEL = 'bg-white/70 dark:bg-white/5 backdrop-blur-xl'
 const LABEL_STYLE = 'text-[11px] font-business-display font-extrabold uppercase tracking-widest text-stone-500 dark:text-neutral-400'
@@ -2510,6 +2511,38 @@ export function BusinessProspectView({
                   </div>
                 </div>
               )}
+
+              {/* Parcours sur la page de campagne (tracking) */}
+              {(ownerUserId || user?.id) && (
+                <ProspectFunnelJourney
+                  prospectId={local.id}
+                  userId={(ownerUserId || user?.id) as string}
+                  lang={lang === 'en' ? 'en' : 'fr'}
+                  labelClassName={cn(LABEL_STYLE, 'block mb-2 ml-1 flex items-center gap-2')}
+                />
+              )}
+
+              {/* Questionnaire avant RDV (page de confirmation de campagne) */}
+              {Array.isArray(local.pre_meeting_answers) && local.pre_meeting_answers.filter(e => e?.answers?.length).map(entry => (
+                <div key={entry.campaign_id}>
+                  <label className={cn(LABEL_STYLE, 'block mb-2 ml-1 flex items-center gap-2')}>
+                    <ClipboardList className="h-3.5 w-3.5" strokeWidth={1.5} /> {entry.title || (lang === 'fr' ? 'Questionnaire avant rendez-vous' : 'Pre-meeting questionnaire')}
+                  </label>
+                  <div className="rounded-xl bg-white dark:bg-neutral-800 p-5 space-y-3 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm">
+                    {entry.answers.map((a, i) => (
+                      <div key={i}>
+                        <p className="text-xs font-bold text-stone-500 dark:text-neutral-400">{a.question}</p>
+                        <p className="text-sm text-stone-900 dark:text-white whitespace-pre-line mt-0.5">{a.answer}</p>
+                      </div>
+                    ))}
+                    {entry.answered_at && (
+                      <p className="text-[11px] text-stone-400 dark:text-neutral-500 pt-1">
+                        {new Date(entry.answered_at).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
 
               {/* Qualification (questionnaire answers) */}
               {qualificationData && qualificationData.answers.length > 0 && (() => {
