@@ -112,25 +112,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Cache email/prénom des destinataires (membres + owner)
-    const recipientCache: Record<string, { email: string; firstName: string } | null> = {};
-    const resolveRecipient = async (id: string | null): Promise<{ email: string; firstName: string } | null> => {
+    // authUserId : compte de connexion du destinataire (push ntfy) — user_id du membre, ou l'owner.
+    type Recipient = { email: string; firstName: string; authUserId: string | null };
+    const recipientCache: Record<string, Recipient | null> = {};
+    const resolveRecipient = async (id: string | null): Promise<Recipient | null> => {
       if (!id) return null;
       if (id in recipientCache) return recipientCache[id];
-      let result: { email: string; firstName: string } | null = null;
+      let result: Recipient | null = null;
       const { data: member } = await supabaseAdmin
         .from('business_team_members')
-        .select('email, first_name')
+        .select('email, first_name, user_id')
         .eq('id', id)
         .maybeSingle();
       if (member?.email) {
-        result = { email: member.email, firstName: member.first_name || '' };
+        result = { email: member.email, firstName: member.first_name || '', authUserId: member.user_id || null };
       } else {
         const { data: owner } = await supabaseAdmin
           .from('business_users')
           .select('email, full_name')
           .eq('id', id)
           .maybeSingle();
-        if (owner?.email) result = { email: owner.email, firstName: (owner.full_name || '').split(' ')[0] || '' };
+        if (owner?.email) result = { email: owner.email, firstName: (owner.full_name || '').split(' ')[0] || '', authUserId: id };
       }
       recipientCache[id] = result;
       return result;
@@ -152,7 +154,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!prospects?.length) continue;
 
       // 3. Regrouper les relances DUES par destinataire (setter → closer → owner)
-      const digests: Record<string, { firstName: string; items: DigestItem[] }> = {};
+      const digests: Record<string, { firstName: string; authUserId: string | null; items: DigestItem[] }> = {};
       for (const p of prospects) {
         const t = new Date(p.contacted_at as string);
         if (isNaN(t.getTime())) continue;
@@ -179,7 +181,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             ? `${p.firstName || ''} ${p.lastName || ''}`.trim()
             : (p.contact || 'Ce prospect');
 
-        const d = (digests[recipient.email] ||= { firstName: recipient.firstName, items: [] });
+        const d = (digests[recipient.email] ||= { firstName: recipient.firstName, authUserId: recipient.authUserId, items: [] });
         d.items.push({
           prospect_name: prospectName,
           relance_number: done + 1,
@@ -194,6 +196,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (!digest.items.length) continue;
         const htmlContent = buildDigestEmail(digest.firstName || '', digest.items);
         const subject = `${digest.items.length} relance${digest.items.length > 1 ? 's' : ''} à faire aujourd'hui`;
+        // Push ntfy (test Business) — sans effet si le destinataire n'a pas d'abonnement ntfy actif.
+        if (digest.authUserId) {
+          const names = digest.items.map(i => i.prospect_name)
+          const { error: ntfyErr } = await supabaseAdmin.rpc('ntfy_notify', {
+            p_user: digest.authUserId,
+            p_event: 'relance',
+            p_title: subject.charAt(0).toUpperCase() + subject.slice(1),
+            p_message: names.slice(0, 5).join(', ') + (names.length > 5 ? ` et ${names.length - 5} autre(s)` : ''),
+            p_click: 'https://www.closeos.fr/business/crm',
+            p_tags: ['repeat'],
+            p_priority: 3,
+          });
+          if (ntfyErr) console.error('contacted-reminders: ntfy error', ntfyErr.message);
+        }
         try {
           const emailRes = await fetch('https://api.brevo.com/v3/smtp/email', {
             method: 'POST',

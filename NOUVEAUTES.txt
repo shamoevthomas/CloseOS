@@ -145,3 +145,48 @@ POINT DE SÉCURITÉ RELEVÉ (non corrigé)
   demande. Avec l'identifiant d'un utilisateur, on peut récupérer son accès Google Agenda.
   Il faudrait les protéger par la session (comme la nouvelle route Sales).
 - Le compte admin TEKA / ADMIN a un mot de passe très faible pour un compte de prod.
+
+
+4. BUSINESS — Notifications push sur téléphone (ntfy) — TEST compte tekatubois
+------------------------------------------------------------------------------
+
+Pourquoi : recevoir une vraie notification sur le téléphone, en temps réel, sur les
+événements importants (jusqu'ici : uniquement emails et notifications dans l'app).
+
+Comment : app gratuite « ntfy » (iOS / Android), abonnée à un topic secret.
+Le topic n'est PAS dans le code : il est stocké en base (table ntfy_subscriptions,
+lisible uniquement par le serveur). Actif seulement pour le compte tekatubois.
+
+Événements envoyés :
+- Nouveau RDV (réservation publique, création dans l'app, webhooks…) :
+  « Nouveau RDV — Prospect — 09/10 à 14h00 · avec Membre »
+- Nouveau prospect en Incomplet : « Nouveau prospect incomplet — Prospect — Campagne »
+- Prospect passé en Gagné : « Deal gagné 🎉 — Prospect — 2 500 € » (priorité haute)
+- Réponses aux formulaires, par formulaire, aux paliers 1, 3, 5, 10, 30, 50, 100,
+  puis toutes les 100 (200, 300…)
+- Rappels : à l'heure du rappel (comme l'email), envoyés à la bonne personne :
+  membre assigné, sinon membre créateur, sinon propriétaire.
+- Relances : le récap quotidien « N relances à faire aujourd'hui » (mêmes destinataires
+  que l'email : setter → closer → propriétaire).
+- Attribution (membres) : « Un nouveau prospect à setter / à closer vous a été attribué »
+  dès qu'un prospect est attribué à un membre (création ou réattribution) — pas quand
+  le membre se l'attribue lui-même.
+
+Abonnés (test) :
+- Thomas (propriétaire) : nouveau RDV, incomplet, gagné, formulaires, rappels, relances.
+- Marianne (setter-closer) : attribution, relances, rappels.
+(Topics secrets stockés en base uniquement — pas dans ce fichier.)
+Chaque notification est cliquable et ouvre la bonne page de CloseOS Business.
+
+Technique :
+- Migration supabase/migrations/20261008c_business_ntfy.sql DÉJÀ APPLIQUÉE EN PROD :
+  table ntfy_subscriptions, fonction ntfy_notify() (envoi via pg_net, ne bloque
+  jamais une écriture), triggers sur business_appointments, business_prospects,
+  business_form_responses. → RDV / incomplet / gagné / formulaires : DÉJÀ ACTIFS.
+- Migration 20261008d_business_ntfy_assign.sql DÉJÀ APPLIQUÉE (trigger d'attribution) → actif.
+- Rappels : api/cron/reminder-time-emails.ts ; relances : api/cron/contacted-reminders.ts
+  (appels de ntfy_notify) → actifs après déploiement.
+- Couper : update ntfy_subscriptions set enabled = false where user_id = '<id>';
+  ou retirer un type d'événement de la colonne events.
+- Pour l'ouvrir aux clients plus tard : serveur ntfy à soi ou offre payante ntfy.sh
+  (topics protégés par token), sinon un topic deviné = notifications lisibles.

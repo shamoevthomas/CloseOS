@@ -184,6 +184,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (emailRes.ok) {
           await supabaseAdmin.from('reminders').update({ email_sent: true }).eq('id', r.id);
           sentCount++;
+          // Push ntfy (test Business) au destinataire du rappel : membre assigné, sinon membre
+          // créateur, sinon propriétaire. Sans effet si cette personne n'a pas d'abonnement ntfy actif.
+          if (isBusiness) {
+            let pushUserId: string | null = r.user_id;
+            const memberId = r.assigned_to || r.created_by_member_id;
+            if (memberId) {
+              const { data: tm } = await supabaseAdmin.from('business_team_members').select('user_id').eq('id', memberId).maybeSingle();
+              pushUserId = tm?.user_id || null;
+            }
+            if (pushUserId) {
+              const { error: ntfyErr } = await supabaseAdmin.rpc('ntfy_notify', {
+                p_user: pushUserId,
+                p_event: 'reminder',
+                p_title: r.has_time ? `Rappel dans 5 min · ${timeLabel}` : 'Rappel aujourd’hui',
+                p_message: [r.title || 'Rappel', prospectName].filter(Boolean).join(' — '),
+                p_click: 'https://www.closeos.fr/business/rappels',
+                p_tags: ['bell'],
+                p_priority: r.has_time ? 4 : 3,
+              });
+              if (ntfyErr) console.error('reminder-time-emails: ntfy error', ntfyErr.message);
+            }
+          }
         } else {
           const errData = await emailRes.json().catch(() => ({}));
           console.error('Failed to send reminder email:', errData);
