@@ -8,7 +8,7 @@ export function ThemeToggle() {
     <button
       onClick={toggle}
       aria-label={dark ? 'Passer en mode jour' : 'Passer en mode nuit'}
-      className="relative w-14 h-7 rounded-full p-0.5 transition-colors duration-300 focus:outline-none"
+      className="relative w-14 h-7 shrink-0 rounded-full p-0.5 transition-colors duration-300 focus:outline-none"
       style={{ background: dark ? '#1b1c1b' : '#efedec' }}
     >
       {/* Track icons */}

@@ -345,7 +345,7 @@ const CodeBlock = ({ label, language, children }: CodeBlockProps) => {
           {copied ? <><Check className="size-3" /> Copié</> : <><Copy className="size-3" /> Copier</>}
         </button>
       </div>
-      <pre className="p-5 text-[12px] leading-relaxed font-mono text-stone-300 overflow-x-auto whitespace-pre">{children}</pre>
+      <pre className="p-4 sm:p-5 text-[12px] leading-relaxed font-mono text-stone-300 overflow-x-auto overscroll-x-contain whitespace-pre">{children}</pre>
     </div>
   )
 }
@@ -386,7 +386,7 @@ const MultiCodeBlock = ({ examples }: MultiCodeBlockProps) => {
           {copied ? <><Check className="size-3" /> Copié</> : <><Copy className="size-3" /> Copier</>}
         </button>
       </div>
-      <pre className="p-5 text-[12px] leading-relaxed font-mono text-stone-300 overflow-x-auto whitespace-pre">{active.code}</pre>
+      <pre className="p-4 sm:p-5 text-[12px] leading-relaxed font-mono text-stone-300 overflow-x-auto overscroll-x-contain whitespace-pre">{active.code}</pre>
     </div>
   )
 }
@@ -706,16 +706,16 @@ export default function BusinessDocsAPI() {
     <div className="min-h-screen bg-[#0a0a0a] text-white" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       {/* Top header */}
       <header className="sticky top-0 z-50 bg-[#0a0a0a]/85 backdrop-blur-xl border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6 md:px-10 h-16 flex items-center justify-between gap-4">
-          <Link to="/business" className="flex items-center gap-3 group">
-            <ArrowLeft className="size-4 text-stone-400 group-hover:text-white transition-colors" />
-            <div className="flex items-baseline gap-2">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 h-16 flex items-center justify-between gap-4">
+          <Link to="/business" className="flex min-w-0 items-center gap-2.5 sm:gap-3 group">
+            <ArrowLeft className="size-4 shrink-0 text-stone-400 group-hover:text-white transition-colors" />
+            <div className="flex min-w-0 items-baseline gap-2">
               <span className="font-bold text-lg tracking-tight">CloseOS</span>
-              <span className="text-[10px] uppercase font-bold tracking-[0.18em] text-stone-500">Business · Docs</span>
+              <span className="truncate whitespace-nowrap text-[10px] uppercase font-bold tracking-[0.18em] text-stone-500">Business · Docs</span>
             </div>
           </Link>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-full p-1">
               <button
                 onClick={() => persistLang('fr')}
@@ -736,7 +736,31 @@ export default function BusinessDocsAPI() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 md:px-10 flex gap-12">
+      {/* Sommaire mobile : rangée de puces défilante sous l'en-tête (la barre latérale n'apparaît qu'à partir de md) */}
+      <nav className="md:hidden sticky top-16 z-40 bg-[#0a0a0a]/95 border-b border-white/5" aria-label={lang === 'fr' ? 'Sommaire' : 'Contents'}>
+        <div className="flex gap-2 overflow-x-auto no-scrollbar overscroll-x-contain snap-x px-4 py-2.5">
+          {SECTIONS.map(s => {
+            const Icon = s.icon
+            const isActive = activeId === s.id
+            return (
+              <a
+                key={s.id}
+                href={`#${s.id}`}
+                className={`snap-start shrink-0 whitespace-nowrap flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors active:scale-[0.97] ${
+                  isActive
+                    ? 'bg-white text-black border-white'
+                    : 'bg-white/5 border-white/10 text-stone-400'
+                }`}
+              >
+                <Icon className="size-3.5 shrink-0" />
+                {(t as any)[s.labelKey]}
+              </a>
+            )
+          })}
+        </div>
+      </nav>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 flex gap-12">
         {/* Sidebar */}
         <aside className="hidden md:block w-64 shrink-0 sticky top-16 self-start py-12 max-h-[calc(100vh-4rem)] overflow-y-auto">
           <nav className="space-y-6 text-sm">
@@ -770,15 +794,15 @@ export default function BusinessDocsAPI() {
         </aside>
 
         {/* Content */}
-        <main className="flex-1 min-w-0 py-12 pb-32 space-y-24 max-w-3xl">
+        <main className="flex-1 min-w-0 py-8 pb-20 space-y-16 sm:py-12 sm:pb-32 sm:space-y-24 max-w-3xl">
           {/* Hero */}
-          <section className="border-b border-white/5 pb-12">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 mb-6">
+          <section className="border-b border-white/5 pb-8 sm:pb-12">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 mb-4 sm:mb-6">
               <Sparkles className="size-3 text-[#d511fd]" />
               <span className="text-[11px] font-bold uppercase tracking-[0.15em] bg-gradient-to-r from-[#ff2f2f] via-[#ef7b16] to-[#d511fd] text-transparent bg-clip-text">{t.badge}</span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4" style={{ letterSpacing: '-0.03em' }}>{t.productName}</h1>
-            <p className="text-stone-400 text-lg leading-relaxed">{t.tagline}</p>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-3 sm:mb-4" style={{ letterSpacing: '-0.03em' }}>{t.productName}</h1>
+            <p className="text-stone-400 text-base sm:text-lg leading-relaxed sm:leading-relaxed">{t.tagline}</p>
           </section>
 
           {/* Introduction */}
@@ -843,22 +867,22 @@ export default function BusinessDocsAPI() {
             <h3 className="text-base font-bold mt-10 mb-3">{t.mcp_tools_h3}</h3>
             <p className="text-stone-300 leading-relaxed">{t.mcp_tools_p1}</p>
             <div className="overflow-x-auto rounded-2xl border border-white/10 mt-6">
-              <table className="w-full text-sm">
-                <thead className="bg-white/5">
+              <table className="w-full text-sm max-sm:block">
+                <thead className="bg-white/5 max-sm:hidden">
                   <tr className="text-left">
                     <th className="px-4 py-3 font-bold text-stone-300">{t.lbl_tool}</th>
                     <th className="px-4 py-3 font-bold text-stone-300">{t.lbl_category}</th>
                     <th className="px-4 py-3 font-bold text-stone-300">{t.lbl_description}</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="max-sm:block">
                   {MCP_TOOLS.map(tool => (
-                    <tr key={tool.name} className="border-t border-white/5">
-                      <td className="px-4 py-3 align-top">
+                    <tr key={tool.name} className="border-t border-white/5 max-sm:first:border-t-0 max-sm:flex max-sm:flex-wrap max-sm:items-center max-sm:gap-x-2 max-sm:gap-y-1.5 max-sm:px-4 max-sm:py-3">
+                      <td className="px-4 py-3 align-top max-sm:p-0">
                         <code className="text-[12px] font-mono text-emerald-300 bg-white/5 rounded px-1.5 py-0.5 whitespace-nowrap">{tool.name}</code>
                       </td>
-                      <td className="px-4 py-3 align-top text-stone-400 text-[12px] whitespace-nowrap">{lang === 'fr' ? tool.cat_fr : tool.cat_en}</td>
-                      <td className="px-4 py-3 align-top text-stone-300">{lang === 'fr' ? tool.fr : tool.en}</td>
+                      <td className="px-4 py-3 align-top text-stone-400 text-[12px] whitespace-nowrap max-sm:p-0">{lang === 'fr' ? tool.cat_fr : tool.cat_en}</td>
+                      <td className="px-4 py-3 align-top text-stone-300 max-sm:p-0 max-sm:basis-full">{lang === 'fr' ? tool.fr : tool.en}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -895,23 +919,23 @@ export default function BusinessDocsAPI() {
             <p className="text-stone-300 leading-relaxed">{t.f_p1}</p>
             <p className="text-stone-400 text-sm mt-4 italic">{lang === 'fr' ? 'Au moins un parmi : firstName, lastName, email, phone est requis.' : 'At least one of: firstName, lastName, email, phone is required.'}</p>
             <div className="overflow-x-auto rounded-2xl border border-white/10 mt-6">
-              <table className="w-full text-sm">
-                <thead className="bg-white/5">
+              <table className="w-full text-sm max-sm:block">
+                <thead className="bg-white/5 max-sm:hidden">
                   <tr className="text-left">
                     <th className="px-4 py-3 font-bold text-stone-300">{t.lbl_field}</th>
                     <th className="px-4 py-3 font-bold text-stone-300">{t.lbl_type}</th>
                     <th className="px-4 py-3 font-bold text-stone-300">{t.lbl_description}</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="max-sm:block">
                   {FIELDS.map(f => (
-                    <tr key={f.name} className="border-t border-white/5">
-                      <td className="px-4 py-3 align-top">
+                    <tr key={f.name} className="border-t border-white/5 max-sm:first:border-t-0 max-sm:flex max-sm:flex-wrap max-sm:items-center max-sm:gap-x-2 max-sm:gap-y-1.5 max-sm:px-4 max-sm:py-3">
+                      <td className="px-4 py-3 align-top max-sm:p-0">
                         <code className="text-[12px] font-mono text-[#d511fd] bg-white/5 rounded px-1.5 py-0.5">{f.name}</code>
                         {f.required === 'one_of' && <span className="ml-2 text-[9px] uppercase font-bold text-amber-400 tracking-wider">one-of</span>}
                       </td>
-                      <td className="px-4 py-3 align-top text-stone-400 font-mono text-[12px]">{f.type}</td>
-                      <td className="px-4 py-3 align-top text-stone-300">{lang === 'fr' ? f.fr_desc : f.en_desc}</td>
+                      <td className="px-4 py-3 align-top text-stone-400 font-mono text-[12px] max-sm:p-0">{f.type}</td>
+                      <td className="px-4 py-3 align-top text-stone-300 max-sm:p-0 max-sm:basis-full">{lang === 'fr' ? f.fr_desc : f.en_desc}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -948,20 +972,20 @@ export default function BusinessDocsAPI() {
           <Section id="events" title={t.ev_h1}>
             <p className="text-stone-300 leading-relaxed">{t.ev_p1}</p>
             <div className="overflow-x-auto rounded-2xl border border-white/10 mt-6">
-              <table className="w-full text-sm">
-                <thead className="bg-white/5">
+              <table className="w-full text-sm max-sm:block">
+                <thead className="bg-white/5 max-sm:hidden">
                   <tr className="text-left">
                     <th className="px-4 py-3 font-bold text-stone-300">{t.lbl_event}</th>
                     <th className="px-4 py-3 font-bold text-stone-300">{t.lbl_when}</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="max-sm:block">
                   {EVENTS.map(ev => (
-                    <tr key={ev.id} className="border-t border-white/5">
-                      <td className="px-4 py-3 align-top">
+                    <tr key={ev.id} className="border-t border-white/5 max-sm:first:border-t-0 max-sm:flex max-sm:flex-col max-sm:gap-1.5 max-sm:px-4 max-sm:py-3">
+                      <td className="px-4 py-3 align-top max-sm:p-0">
                         <code className="text-[12px] font-mono text-[#d511fd] bg-white/5 rounded px-1.5 py-0.5 whitespace-nowrap">{ev.id}</code>
                       </td>
-                      <td className="px-4 py-3 align-top text-stone-300">{lang === 'fr' ? ev.fr_when : ev.en_when}</td>
+                      <td className="px-4 py-3 align-top text-stone-300 max-sm:p-0">{lang === 'fr' ? ev.fr_when : ev.en_when}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1015,7 +1039,7 @@ export default function BusinessDocsAPI() {
 
           {/* Changelog */}
           <Section id="changelog" title={t.cl_h1}>
-            <div className="rounded-2xl border border-white/10 p-6 bg-white/[0.02] mb-4">
+            <div className="rounded-2xl border border-white/10 p-4 sm:p-6 bg-white/[0.02] mb-4">
               <h3 className="font-bold text-base mb-3">{t.cl_v11_date}</h3>
               <ul className="list-disc list-inside space-y-1.5 text-stone-300 ml-2 text-sm">
                 <li>{t.cl_v11_item1}</li>
@@ -1023,7 +1047,7 @@ export default function BusinessDocsAPI() {
                 <li>{t.cl_v11_item3}</li>
               </ul>
             </div>
-            <div className="rounded-2xl border border-white/10 p-6 bg-white/[0.02]">
+            <div className="rounded-2xl border border-white/10 p-4 sm:p-6 bg-white/[0.02]">
               <h3 className="font-bold text-base mb-3">{t.cl_v1_date}</h3>
               <ul className="list-disc list-inside space-y-1.5 text-stone-300 ml-2 text-sm">
                 <li>{t.cl_v1_item1}</li>
@@ -1036,8 +1060,8 @@ export default function BusinessDocsAPI() {
         </main>
       </div>
 
-      <footer className="border-t border-white/5 py-10">
-        <div className="max-w-7xl mx-auto px-6 md:px-10 flex items-center justify-between text-stone-500 text-xs">
+      <footer className="border-t border-white/5 py-8 sm:py-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 flex items-center justify-between gap-4 text-stone-500 text-xs">
           <span>© 2026 CloseOS</span>
           <Link to="/business" className="hover:text-white transition-colors">{t.backToLanding} →</Link>
         </div>
@@ -1051,9 +1075,10 @@ export default function BusinessDocsAPI() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const Section = ({ id, title, children }: { id: string; title: string; children: React.ReactNode }) => (
-  <section id={id} className="scroll-mt-24">
-    <h2 className="text-3xl font-bold tracking-tight mb-6 group flex items-center gap-3" style={{ letterSpacing: '-0.02em' }}>
-      <a href={`#${id}`} className="text-stone-600 group-hover:text-stone-300 transition-colors text-2xl">#</a>
+  // scroll-mt plus grand sur mobile : en-tête (64px) + sommaire collant (~49px)
+  <section id={id} className="scroll-mt-32 md:scroll-mt-24">
+    <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-4 sm:mb-6 group flex items-center gap-3" style={{ letterSpacing: '-0.02em' }}>
+      <a href={`#${id}`} className="hidden sm:inline text-stone-600 group-hover:text-stone-300 transition-colors text-2xl">#</a>
       <span>{title}</span>
     </h2>
     <div className="space-y-2">{children}</div>

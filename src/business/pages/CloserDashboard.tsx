@@ -41,6 +41,14 @@ const formatPct = (v: number) => `${v.toFixed(1)}%`
 
 const glassCard = "bg-white/60 backdrop-blur-xl border border-neutral-900/5 dark:border-white/10 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:bg-white/5"
 
+// Tuiles KPI : sous lg, grille compacte (icône à côté du libellé, valeur dessous, détail en 3e ligne) ;
+// à partir de lg, les enveloppes `contents` redeviennent des blocs → disposition d'origine.
+const KPI_TILE = 'p-3 sm:p-4 lg:p-5 grid grid-cols-[auto_minmax(0,1fr)_auto] content-start items-center gap-x-2 gap-y-1.5 lg:flex lg:flex-col lg:justify-between lg:items-stretch lg:gap-0 hover:scale-[1.02] active:scale-[0.98] transition-transform cursor-pointer h-full'
+const KPI_ICON = 'col-start-1 row-start-1 w-fit p-1.5 lg:p-2 rounded-lg'
+const KPI_LABEL = 'col-start-2 col-span-2 row-start-1 min-w-0 max-lg:line-clamp-2 max-lg:leading-tight text-[10px] text-neutral-400 uppercase font-black tracking-wide lg:tracking-[0.15em] lg:mb-1'
+const KPI_VALUE = 'col-start-1 col-span-2 row-start-2 min-w-0 max-lg:truncate text-lg sm:text-xl font-black text-neutral-900 dark:text-white tracking-tight'
+const KPI_SUB = 'col-start-1 col-span-3 row-start-3 min-w-0 max-lg:truncate text-neutral-400 text-[11px] lg:mt-0.5 font-medium'
+
 function KpiTooltip({ children, text }: { children: React.ReactNode; text: string }) {
   const [show, setShow] = useState(false)
   const [pos, setPos] = useState<'bottom' | 'top'>('bottom')
@@ -58,7 +66,8 @@ function KpiTooltip({ children, text }: { children: React.ReactNode; text: strin
     <div className="relative" ref={ref} onMouseEnter={handleEnter} onMouseLeave={() => setShow(false)}>
       {children}
       {show && (
-        <div className={`absolute z-50 left-1/2 -translate-x-1/2 w-56 px-3 py-2.5 rounded-xl bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-[11px] leading-relaxed font-medium shadow-xl pointer-events-none ${pos === 'bottom' ? 'top-full mt-2' : 'bottom-full mb-2'}`} style={{ fontFamily: 'Inter, sans-serif' }}>
+        // Infobulle réservée aux écrans à survol (au doigt, le tap ouvre directement la page liée)
+        <div className={`[@media(hover:none)]:hidden absolute z-50 left-1/2 -translate-x-1/2 w-56 px-3 py-2.5 rounded-xl bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-[11px] leading-relaxed font-medium shadow-xl pointer-events-none ${pos === 'bottom' ? 'top-full mt-2' : 'bottom-full mb-2'}`} style={{ fontFamily: 'Inter, sans-serif' }}>
           {text}
           <div className={`absolute left-1/2 -translate-x-1/2 w-2.5 h-2.5 rotate-45 bg-neutral-900 dark:bg-neutral-100 ${pos === 'bottom' ? '-top-1' : '-bottom-1'}`} />
         </div>
@@ -312,12 +321,12 @@ export function CloserDashboard() {
   }
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-10">
 
-      {/* ─── Header ─── */}
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 md:w-14 md:h-14 rounded-full overflow-hidden shrink-0 border-2 border-neutral-200 dark:border-neutral-700">
+      {/* ─── Header ─── (une seule ligne compacte sur mobile) */}
+      <header className="flex flex-row justify-between items-center gap-3 md:gap-6">
+        <div className="flex items-center gap-3 md:gap-4 min-w-0">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full overflow-hidden shrink-0 border-2 border-neutral-200 dark:border-neutral-700">
             {(teamMember?.avatar_url || user?.user_metadata?.avatar_url) ? (
               <img src={teamMember?.avatar_url || user?.user_metadata?.avatar_url} alt="" className="w-full h-full object-cover" />
             ) : (
@@ -326,45 +335,48 @@ export function CloserDashboard() {
               </div>
             )}
           </div>
-          <div className="space-y-1">
-            <h2 className="text-3xl md:text-4xl font-black tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <div className="min-w-0 space-y-0.5 sm:space-y-1">
+            <h2 className="text-lg sm:text-3xl md:text-4xl font-black tracking-tight text-neutral-900 dark:text-white max-sm:truncate" style={{ fontFamily: 'Manrope, sans-serif' }}>
               {t.dashboard_hello}, {scrambledName}.
             </h2>
-            <p className="text-neutral-500 dark:text-neutral-400 text-lg">{t.closer_dashboard_activity_status}</p>
+            <p className="text-neutral-500 dark:text-neutral-400 text-xs sm:text-base md:text-lg max-sm:truncate">{t.closer_dashboard_activity_status}</p>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <ThemeToggle />
           <div className="hidden sm:flex">
             <BusinessReminderBell />
           </div>
+          {/* Icône seule sur téléphone */}
           <Link
             to={kpiLink}
-            className="bg-neutral-900 text-white px-8 py-3 rounded-full font-bold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
+            aria-label={t.closer_dashboard_view_kpis}
+            className="bg-neutral-900 text-white max-sm:dark:bg-white max-sm:dark:text-neutral-900 h-10 w-10 justify-center sm:h-auto sm:w-auto sm:px-8 sm:py-3 rounded-full font-bold text-sm hover:opacity-90 active:scale-95 transition flex items-center gap-2"
             style={{ fontFamily: 'Manrope, sans-serif' }}
           >
             <FileDown className="h-4 w-4" />
-            {t.closer_dashboard_view_kpis}
+            <span className="hidden sm:inline">{t.closer_dashboard_view_kpis}</span>
           </Link>
         </div>
       </header>
 
       {/* ─── KPI Row ─── */}
-      <div className={`grid grid-cols-2 ${isSetter ? 'xl:grid-cols-4' : 'xl:grid-cols-5'} gap-6`}>
+      {/* Nombre impair de tuiles → la dernière prend toute la largeur (sauf au bureau, grille sur une ligne) */}
+      <div className={`grid grid-cols-2 ${isSetter ? 'xl:grid-cols-4' : 'xl:grid-cols-5'} gap-3 sm:gap-6 [&>*:last-child:nth-child(odd)]:col-span-2 xl:[&>*:last-child:nth-child(odd)]:col-span-1`}>
 
         {/* Commission / CA Généré */}
         <KpiTooltip text={teamMember?.compensation_type === 'fixed' ? t.closer_dashboard_tooltip_ca : t.closer_dashboard_tooltip_commission}>
-          <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
-            <div className="flex justify-between items-start mb-3">
-              <div className="p-2 rounded-lg bg-emerald-50">
+          <Link to={kpiLink} className={`${glassCard} rounded-2xl ${KPI_TILE}`}>
+            <div className="contents lg:flex lg:justify-between lg:items-start lg:mb-3">
+              <div className={`${KPI_ICON} bg-emerald-50 max-lg:dark:bg-emerald-900/30`}>
                 <DollarSign className="h-4 w-4 text-emerald-600" />
               </div>
             </div>
-            <div>
-              <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">{teamMember?.compensation_type === 'fixed' ? t.closer_dashboard_ca_generated : t.closer_dashboard_commission}</p>
-              <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(teamMember?.compensation_type === 'fixed' ? closerRevenue + setterRevenue : totalCommission)}</p>
+            <div className="contents lg:block">
+              <p className={KPI_LABEL}>{teamMember?.compensation_type === 'fixed' ? t.closer_dashboard_ca_generated : t.closer_dashboard_commission}</p>
+              <p className={KPI_VALUE} style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(teamMember?.compensation_type === 'fixed' ? closerRevenue + setterRevenue : totalCommission)}</p>
               {teamMember?.compensation_type !== 'fixed' && closerCommission > 0 && setterCommission > 0 && (
-                <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">Closer {formatCurrency(closerCommission)} + Setter {formatCurrency(setterCommission)}</p>
+                <p className={KPI_SUB}>Closer {formatCurrency(closerCommission)} + Setter {formatCurrency(setterCommission)}</p>
               )}
             </div>
           </Link>
@@ -373,14 +385,14 @@ export function CloserDashboard() {
         {/* Closing Rate (Closers only) */}
         {!isSetter && (
           <KpiTooltip text={t.closer_dashboard_tooltip_closing}>
-            <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
-              <div className="p-2 rounded-lg bg-stone-100 w-fit">
-                <TrendingUp className="h-4 w-4 text-neutral-600" />
+            <Link to={kpiLink} className={`${glassCard} rounded-2xl ${KPI_TILE}`}>
+              <div className={`${KPI_ICON} bg-stone-100 max-lg:dark:bg-neutral-800`}>
+                <TrendingUp className="h-4 w-4 text-neutral-600 max-lg:dark:text-neutral-400" />
               </div>
-              <div className="mt-3">
-                <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">{t.closer_dashboard_closing}</p>
-                <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(closingRate)}</p>
-                <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">{wonProspects.length} {t.closer_dashboard_signed_decided.replace('{decided}', String(totalDecided))}</p>
+              <div className="contents lg:block lg:mt-3">
+                <p className={KPI_LABEL}>{t.closer_dashboard_closing}</p>
+                <p className={KPI_VALUE} style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(closingRate)}</p>
+                <p className={KPI_SUB}>{wonProspects.length} {t.closer_dashboard_signed_decided.replace('{decided}', String(totalDecided))}</p>
               </div>
             </Link>
           </KpiTooltip>
@@ -388,89 +400,89 @@ export function CloserDashboard() {
 
         {/* Booking Rate */}
         <KpiTooltip text={t.closer_dashboard_tooltip_booking}>
-          <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
-            <div className="p-2 rounded-lg bg-blue-50 w-fit">
+          <Link to={kpiLink} className={`${glassCard} rounded-2xl ${KPI_TILE}`}>
+            <div className={`${KPI_ICON} bg-blue-50 max-lg:dark:bg-blue-900/30`}>
               <CalendarDays className="h-4 w-4 text-blue-600" />
             </div>
-            <div className="mt-3">
-              <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">{t.closer_dashboard_booking}</p>
-              <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(bookingRate)}</p>
-              <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">{bookedProspects.length} {t.closer_dashboard_booked_prospects.replace('{total}', String(mySetterProspects.length))}</p>
+            <div className="contents lg:block lg:mt-3">
+              <p className={KPI_LABEL}>{t.closer_dashboard_booking}</p>
+              <p className={KPI_VALUE} style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(bookingRate)}</p>
+              <p className={KPI_SUB}>{bookedProspects.length} {t.closer_dashboard_booked_prospects.replace('{total}', String(mySetterProspects.length))}</p>
             </div>
           </Link>
         </KpiTooltip>
 
         {/* Appointments */}
         <KpiTooltip text={t.closer_dashboard_tooltip_appointments}>
-          <Link to="/business/rendez-vous" className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
-            <div className="p-2 rounded-lg bg-stone-100 w-fit">
-              <CalendarDays className="h-4 w-4 text-neutral-600" />
+          <Link to="/business/rendez-vous" className={`${glassCard} rounded-2xl ${KPI_TILE}`}>
+            <div className={`${KPI_ICON} bg-stone-100 max-lg:dark:bg-neutral-800`}>
+              <CalendarDays className="h-4 w-4 text-neutral-600 max-lg:dark:text-neutral-400" />
             </div>
-            <div className="mt-3">
-              <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">{t.closer_dashboard_appointments_label}</p>
-              <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{upcomingAppts.length}</p>
-              <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">{t.closer_dashboard_upcoming}</p>
+            <div className="contents lg:block lg:mt-3">
+              <p className={KPI_LABEL}>{t.closer_dashboard_appointments_label}</p>
+              <p className={KPI_VALUE} style={{ fontFamily: 'Manrope, sans-serif' }}>{upcomingAppts.length}</p>
+              <p className={KPI_SUB}>{t.closer_dashboard_upcoming}</p>
             </div>
           </Link>
         </KpiTooltip>
 
         {/* No-Show Rate */}
         <KpiTooltip text={t.closer_dashboard_tooltip_noshow}>
-          <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
-            <div className="flex justify-between items-start">
-              <div className="p-2 rounded-lg bg-amber-50">
+          <Link to={kpiLink} className={`${glassCard} rounded-2xl ${KPI_TILE}`}>
+            <div className="contents lg:flex lg:justify-between lg:items-start">
+              <div className={`${KPI_ICON} bg-amber-50 max-lg:dark:bg-amber-900/30`}>
                 <UserX className="h-4 w-4 text-amber-600" />
               </div>
               {noshowRate > 5 && (
-                <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">!</span>
+                <span className="col-start-3 row-start-2 justify-self-end text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">!</span>
               )}
             </div>
-            <div className="mt-3">
-              <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">{t.closer_dashboard_noshow}</p>
-              <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(noshowRate)}</p>
+            <div className="contents lg:block lg:mt-3">
+              <p className={KPI_LABEL}>{t.closer_dashboard_noshow}</p>
+              <p className={KPI_VALUE} style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(noshowRate)}</p>
             </div>
           </Link>
         </KpiTooltip>
       </div>
 
       {/* ─── Two Column: RDV + Rappels ─── */}
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-12 gap-4 sm:gap-6">
 
-        {/* Prochains rendez-vous */}
-        <div className={`col-span-12 lg:col-span-7 ${glassCard} rounded-2xl p-8`}>
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.closer_dashboard_upcoming_appointments}</h3>
-              <p className="text-neutral-400 text-sm mt-0.5">{t.closer_dashboard_upcoming_desc}</p>
+        {/* Prochains rendez-vous — sous lg : lignes à fleur de carte */}
+        <div className={`col-span-12 lg:col-span-7 ${glassCard} rounded-2xl p-4 sm:p-6 lg:p-8`}>
+          <div className="flex justify-between items-center gap-3 mb-2 sm:mb-6 lg:mb-8">
+            <div className="min-w-0">
+              <h3 className="text-base sm:text-lg lg:text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.closer_dashboard_upcoming_appointments}</h3>
+              <p className="text-neutral-400 text-xs sm:text-sm mt-0.5 truncate sm:whitespace-normal">{t.closer_dashboard_upcoming_desc}</p>
             </div>
-            <Link to="/business/rendez-vous" className="text-sm font-bold text-neutral-900 dark:text-white border-b-2 border-neutral-900 dark:border-white pb-0.5 hover:opacity-70 transition-opacity uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            <Link to="/business/rendez-vous" className="shrink-0 whitespace-nowrap text-xs sm:text-sm font-bold text-neutral-900 dark:text-white border-b-2 border-neutral-900 dark:border-white pb-0.5 hover:opacity-70 transition-opacity uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
               {t.closer_dashboard_view_all}
             </Link>
           </div>
           {upcomingAppts.length === 0 ? (
-            <div className="text-center py-12">
-              <CalendarDays className="h-8 w-8 text-neutral-300 mx-auto mb-3" />
+            <div className="text-center py-8 lg:py-12">
+              <CalendarDays className="h-6 w-6 lg:h-8 lg:w-8 text-neutral-300 mx-auto mb-2 lg:mb-3" />
               <p className="text-sm text-neutral-400">{t.closer_dashboard_no_appointments}</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="-mx-4 sm:-mx-6 lg:mx-0 lg:space-y-4">
               {upcomingAppts.map((a, i) => {
                 const localDt = a.datetime_utc ? fromUTC(a.datetime_utc, userTimezone) : { date: a.date, time: a.time?.slice(0, 5) || '00:00' }
                 return (
                   <div
                     key={a.id}
                     onClick={() => navigate('/business/agenda')}
-                    className={`flex items-center justify-between p-5 bg-neutral-50/80 dark:bg-white/5 rounded-2xl group hover:bg-white dark:hover:bg-white/10 transition-all cursor-pointer ${i >= 3 ? 'opacity-60 hover:opacity-100' : ''}`}
+                    className={`flex items-center justify-between px-4 py-3 sm:px-6 lg:p-5 lg:rounded-2xl lg:bg-neutral-50/80 lg:dark:bg-white/5 max-lg:border-t max-lg:first:border-t-0 max-lg:border-neutral-900/5 max-lg:dark:border-white/10 group active:bg-neutral-100/70 dark:active:bg-white/5 lg:hover:bg-white lg:dark:hover:bg-white/10 transition-all cursor-pointer ${i >= 3 ? 'opacity-60 hover:opacity-100' : ''}`}
                   >
-                    <div className="flex items-center gap-5">
-                      <div className="text-center min-w-[55px]">
+                    <div className="flex items-center gap-3 lg:gap-5 min-w-0">
+                      <div className="text-center shrink-0 min-w-[52px] lg:min-w-[55px]">
                         <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{formatApptDate(localDt.date)}</p>
-                        <p className="text-xl font-extrabold text-neutral-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{localDt.time}</p>
+                        <p className="text-base lg:text-xl font-extrabold text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{localDt.time}</p>
                       </div>
-                      <div className="h-10 w-px bg-neutral-200 dark:bg-white/10" />
-                      <div>
-                        <p className="font-bold text-neutral-900 dark:text-white">{a.prospect?.contact || t.closer_dashboard_appointment_fallback}</p>
-                        <p className="text-sm text-neutral-400 dark:text-neutral-500">{a.campaign?.name || `${a.duration}min`}</p>
+                      <div className="h-8 lg:h-10 w-px shrink-0 bg-neutral-200 dark:bg-white/10" />
+                      <div className="min-w-0">
+                        <p className="text-sm lg:text-base font-bold text-neutral-900 dark:text-white max-lg:truncate">{a.prospect?.contact || t.closer_dashboard_appointment_fallback}</p>
+                        <p className="text-xs lg:text-sm text-neutral-400 dark:text-neutral-500 max-lg:truncate">{a.campaign?.name || `${a.duration}min`}</p>
                       </div>
                     </div>
                   </div>
@@ -481,11 +493,11 @@ export function CloserDashboard() {
         </div>
 
         {/* Rappels & Tâches */}
-        <div className={`col-span-12 lg:col-span-5 ${glassCard} rounded-2xl p-8 flex flex-col`}>
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.closer_dashboard_reminders}</h3>
+        <div className={`col-span-12 lg:col-span-5 ${glassCard} rounded-2xl p-4 sm:p-6 lg:p-8 flex flex-col`}>
+          <div className="flex justify-between items-center mb-2 sm:mb-4 lg:mb-6">
+            <h3 className="text-base sm:text-lg lg:text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.closer_dashboard_reminders}</h3>
             {reminders.length > 0 && (
-              <span className="w-6 h-6 bg-neutral-900 text-white text-[10px] flex items-center justify-center rounded-full font-bold">
+              <span className="w-6 h-6 bg-neutral-900 dark:bg-neutral-200 text-white dark:text-neutral-900 text-[10px] flex items-center justify-center rounded-full font-bold">
                 {reminders.length}
               </span>
             )}
@@ -493,7 +505,8 @@ export function CloserDashboard() {
           {reminders.length === 0 ? (
             <p className="text-sm text-neutral-400 text-center py-8 flex-1 flex items-center justify-center">{t.closer_dashboard_no_reminders}</p>
           ) : (
-            <div className="space-y-3 flex-1 overflow-y-auto">
+            // Sous lg : lignes à fleur de carte séparées par un filet ; au bureau : cartes à liseré (inchangé)
+            <div className="-mx-4 sm:-mx-6 lg:mx-0 lg:space-y-3 flex-1 overflow-y-auto">
               {reminders.map(r => {
                 const overdue = isOverdue(r.reminder_date)
                 const rDate = new Date(r.reminder_date)
@@ -501,7 +514,7 @@ export function CloserDashboard() {
                 return (
                   <div
                     key={r.id}
-                    className={`p-4 rounded-2xl cursor-pointer hover:shadow-md transition-all ${overdue ? 'border-l-4 border-red-500 bg-red-50/50 dark:bg-rose-900/20' : 'border-l-4 border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10'}`}
+                    className={`px-4 py-3 sm:px-6 lg:p-4 lg:rounded-2xl cursor-pointer lg:hover:shadow-md transition-all max-lg:border-t max-lg:first:border-t-0 max-lg:border-neutral-900/5 max-lg:dark:border-white/10 ${overdue ? 'lg:border-l-4 lg:border-red-500 bg-red-50/50 dark:bg-rose-900/20' : 'lg:border-l-4 lg:border-neutral-300 lg:dark:border-neutral-600 lg:bg-neutral-50 lg:dark:bg-white/5 active:bg-neutral-100/70 dark:active:bg-white/5 lg:hover:bg-white lg:dark:hover:bg-white/10'}`}
                     onClick={() => navigate('/business/rappels')}
                   >
                     <div className="flex items-center gap-3">
@@ -518,9 +531,10 @@ export function CloserDashboard() {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start mb-1">
-                          <h4 className="text-sm font-bold text-neutral-900 dark:text-white">{r.title}</h4>
-                          <span className={`text-[10px] font-black uppercase ${overdue ? 'text-red-500' : 'text-neutral-400'}`}>
+                        <div className="flex justify-between items-start gap-2 mb-0.5 lg:mb-1">
+                          <h4 className="min-w-0 max-lg:truncate text-sm font-bold text-neutral-900 dark:text-white">{r.title}</h4>
+                          {/* Statut masqué sur téléphone : la ligne de méta indique déjà le retard ou la date */}
+                          <span className={`max-lg:hidden shrink-0 whitespace-nowrap text-[10px] font-black uppercase ${overdue ? 'text-red-500' : 'text-neutral-400'}`}>
                             {overdue ? t.closer_dashboard_overdue : t.closer_dashboard_upcoming_tag}
                           </span>
                         </div>
@@ -552,7 +566,7 @@ export function CloserDashboard() {
           )}
           <Link
             to="/business/rappels"
-            className="mt-4 w-full py-3 border-2 border-dashed border-neutral-200 dark:border-white/10 rounded-2xl text-neutral-400 text-sm font-bold hover:border-neutral-900 dark:hover:border-white hover:text-neutral-900 dark:hover:text-white transition-all text-center block"
+            className="mt-3 lg:mt-4 w-full py-2.5 lg:py-3 border-2 border-dashed border-neutral-200 dark:border-white/10 rounded-2xl text-neutral-400 text-sm font-bold hover:border-neutral-900 dark:hover:border-white hover:text-neutral-900 dark:hover:text-white transition-all text-center block"
           >
             {t.closer_dashboard_create_reminder}
           </Link>

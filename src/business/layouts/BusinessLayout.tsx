@@ -12,6 +12,7 @@ import { getBrowserTimezone, getTimezoneLabel } from '../../lib/timezone'
 import BusinessVerification from '../pages/BusinessVerification'
 import { BusinessPaywallModal } from '../components/BusinessPaywallModal'
 import { BusinessSubscriptionBlockModal } from '../components/BusinessSubscriptionBlockModal'
+import { useIsDesktopNav } from '../hooks/useIsDesktopNav'
 
 const OWNER_PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/business/dashboard': { title: 'Dashboard', subtitle: "Vue d'ensemble de votre business" },
@@ -218,9 +219,10 @@ function BusinessLayoutInner({
   subscriptionGraceDeadline, subscriptionDeletionDeadline,
 }: any) {
   const { dark } = useTheme()
+  const isDesktopNav = useIsDesktopNav()
 
   return (
-    <div className={cn("flex h-screen bg-[#f4f2f1] dark:bg-[#141211] overflow-hidden transition-colors duration-300", dark && 'dark')}>
+    <div className={cn("business-app flex h-screen h-dvh bg-[#f4f2f1] dark:bg-[#141211] overflow-hidden transition-colors duration-300", dark && 'dark')}>
       <BusinessSidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
@@ -229,26 +231,29 @@ function BusinessLayoutInner({
         onCollapseChange={setIsSidebarCollapsed}
       />
 
-      <div className={cn("flex flex-1 flex-col min-w-0 overflow-hidden transition-all duration-300", isSidebarCollapsed && "lg:ml-24")}>
-        {/* Minimal mobile header — desktop has no header bar (content has its own) */}
-        <header className="z-30 lg:hidden border-b border-neutral-900/5 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 backdrop-blur-xl">
-          <div className="flex h-14 items-center justify-between px-4">
+      <div className={cn("flex flex-1 flex-col min-w-0 overflow-hidden transition-all duration-300", isDesktopNav && isSidebarCollapsed && "ml-24")}>
+        {/* En-tête mobile / tablette tactile — le bureau n'a pas de barre (le contenu a la sienne) */}
+        {!isDesktopNav && (
+        <header className="z-30 shrink-0 border-b border-neutral-900/5 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 backdrop-blur-xl">
+          <div className="flex h-14 items-center justify-between gap-2 px-2 sm:px-4">
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className="p-2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
+              aria-label="Menu"
+              className="p-2.5 text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
             >
               <Menu className="h-6 w-6" />
             </button>
-            <h1 className="text-sm font-extrabold text-neutral-900 dark:text-white uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            <h1 className="min-w-0 truncate text-sm font-extrabold text-neutral-900 dark:text-white uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
               {pageInfo.title}
             </h1>
             <BusinessReminderBell />
           </div>
         </header>
+        )}
 
         {/* Timezone change banner */}
         {tzBannerVisible && storedTz && (
-          <div className="border-b border-blue-200 bg-blue-50 px-4 sm:px-8 py-3 flex items-center justify-between gap-3">
+          <div className="border-b border-blue-200 bg-blue-50 px-4 sm:px-8 py-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
               <Globe className="h-4 w-4 text-blue-600 shrink-0" />
               <p className="text-sm text-blue-800">
@@ -276,7 +281,7 @@ function BusinessLayoutInner({
         {subscriptionGraceDeadline && !subscriptionDeletionDeadline && new Date(subscriptionGraceDeadline) > new Date() && (() => {
           const daysLeft = Math.ceil((new Date(subscriptionGraceDeadline).getTime() - Date.now()) / (24 * 60 * 60 * 1000))
           return (
-            <div className="border-b border-amber-200 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-900/40 px-4 sm:px-8 py-3 flex items-center justify-between gap-3">
+            <div className="border-b border-amber-200 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-900/40 px-4 sm:px-8 py-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 min-w-0">
                 <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
                 <p className="text-sm text-amber-800 dark:text-amber-300">
@@ -297,7 +302,7 @@ function BusinessLayoutInner({
         {seatGraceDeadline && new Date(seatGraceDeadline) > new Date() && (() => {
           const daysLeft = Math.ceil((new Date(seatGraceDeadline).getTime() - Date.now()) / (24 * 60 * 60 * 1000))
           return (
-            <div className="border-b border-red-200 bg-red-50 dark:bg-red-950/40 dark:border-red-900/40 px-4 sm:px-8 py-3 flex items-center justify-between gap-3">
+            <div className="border-b border-red-200 bg-red-50 dark:bg-red-950/40 dark:border-red-900/40 px-4 sm:px-8 py-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 min-w-0">
                 <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400 shrink-0" />
                 <p className="text-sm text-red-800 dark:text-red-300">
@@ -314,9 +319,10 @@ function BusinessLayoutInner({
           )
         })()}
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#f4f2f1] dark:bg-[#141211] px-6 sm:px-12 py-8 sm:py-10 min-h-0 relative transition-colors duration-300">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain bg-[#f4f2f1] dark:bg-[#141211] px-4 sm:px-8 lg:px-12 py-5 sm:py-8 lg:py-10 min-h-0 relative transition-colors duration-300">
           {/* Background decorative gradient */}
-          <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-br from-emerald-100/20 dark:from-emerald-900/10 to-transparent rounded-full -mr-64 -mt-64 blur-3xl pointer-events-none" />
+          {/* Masqué sur mobile/tablette : un flou de 800px coûte cher au défilement tactile */}
+          <div className="hidden lg:block absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-br from-emerald-100/20 dark:from-emerald-900/10 to-transparent rounded-full -mr-64 -mt-64 blur-3xl pointer-events-none" />
           {/* Pas de z-index ici : `relative` suffit a passer au-dessus du degrade decoratif
               (meme couche, ordre DOM). Un z-10 creerait un contexte d'empilement qui
               enfermerait toutes les pop-up des pages sous le header mobile (z-30). */}

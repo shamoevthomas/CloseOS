@@ -115,11 +115,12 @@ export function UnqualifiedReasonModal({ prospect, onClose, onConfirm }: Props) 
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-sm" onClick={() => !submitting && onClose()} />
-      <div className="relative w-full max-w-md max-h-[88vh] flex flex-col rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
+      <div className="relative w-full max-w-md max-h-[92dvh] sm:max-h-[88vh] flex flex-col rounded-t-3xl sm:rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
+        <div className="relative flex items-center justify-between px-4 sm:px-6 pt-5 pb-3 sm:py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
+          <div className="sm:hidden absolute left-1/2 top-1.5 h-1 w-10 -translate-x-1/2 rounded-full bg-stone-300 dark:bg-neutral-700" />
           <div className="flex items-center gap-2.5">
             <AlertTriangle className="h-5 w-5 text-amber-500" strokeWidth={1.5} />
             <h3 className="font-business-display font-extrabold text-stone-900 dark:text-white">
@@ -128,13 +129,14 @@ export function UnqualifiedReasonModal({ prospect, onClose, onConfirm }: Props) 
           </div>
           <button
             onClick={() => !submitting && onClose()}
-            className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors"
+            aria-label={fr ? 'Fermer' : 'Close'}
+            className="rounded-full p-2 bg-[#f5f3f2] sm:bg-transparent dark:bg-neutral-800 sm:dark:bg-transparent text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors"
           >
             <X className="h-4 w-4" strokeWidth={1.5} />
           </button>
         </div>
 
-        <div className="px-6 py-5 space-y-4 overflow-y-auto custom-scrollbar">
+        <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-4 overflow-y-auto overscroll-contain custom-scrollbar">
           <p className="text-xs text-stone-500 dark:text-neutral-400">
             {hasEmail && sendEmail
               ? (fr
@@ -233,17 +235,17 @@ export function UnqualifiedReasonModal({ prospect, onClose, onConfirm }: Props) 
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-[#c4c7c7]/10 dark:border-neutral-700">
+        <div className="flex items-center justify-end gap-2 px-4 sm:px-6 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:py-4 border-t border-[#c4c7c7]/10 dark:border-neutral-700">
           <button
             onClick={() => !submitting && onClose()}
-            className="rounded-full px-5 py-2.5 text-sm font-bold text-stone-500 dark:text-neutral-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors"
+            className="flex-1 sm:flex-none rounded-full px-5 py-3 sm:py-2.5 bg-[#f5f3f2] sm:bg-transparent dark:bg-neutral-800 sm:dark:bg-transparent text-sm font-bold text-stone-500 dark:text-neutral-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors"
           >
             {fr ? 'Annuler' : 'Cancel'}
           </button>
           <button
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className="rounded-full bg-stone-900 dark:bg-white px-6 py-2.5 text-sm font-bold text-white dark:text-stone-900 hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            className="flex-1 sm:flex-none rounded-full bg-stone-900 dark:bg-white px-6 py-3 sm:py-2.5 text-sm font-bold text-white dark:text-stone-900 hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
             {submitting ? (fr ? 'Validation…' : 'Saving…') : (fr ? 'Valider' : 'Confirm')}
           </button>

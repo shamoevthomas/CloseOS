@@ -226,48 +226,52 @@ export function CloserAppels() {
   }
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-5 sm:space-y-10">
       {/* Header */}
-      <header className="space-y-2">
-        <div className="flex items-center gap-4 text-[#006c49] mb-2">
-          <Phone className="h-6 w-6" strokeWidth={1.5} />
+      <header className="space-y-1 sm:space-y-2">
+        <div className="flex items-center gap-3 sm:gap-4 text-[#006c49] mb-1 sm:mb-2">
+          <Phone className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={1.5} />
           <span className="h-px w-10 bg-[#c4c7c7]/30" />
           <span className="text-[10px] uppercase tracking-[0.2em] font-bold">Workspace</span>
         </div>
         <h1 className="text-2xl md:text-4xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">{t.calls_title}</h1>
-        <p className="text-stone-500 dark:text-neutral-400 text-base max-w-2xl font-light italic opacity-80">{t.calls_subtitle}</p>
+        <p className="text-stone-500 dark:text-neutral-400 text-sm sm:text-base max-w-2xl font-light italic opacity-80">{t.calls_subtitle}</p>
       </header>
 
       {/* Toolbar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="relative flex-1 max-w-2xl group">
-          <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-stone-400" strokeWidth={1.5} />
+      {/* Mobile : recherche + boutons icône sur une ligne ; tablette : recherche pleine largeur puis boutons ; bureau : une ligne */}
+      <div className="flex flex-row items-center gap-2 sm:flex-col sm:items-stretch sm:gap-4 lg:flex-row lg:items-center justify-between lg:gap-6">
+        <div className="relative flex-1 min-w-0 lg:max-w-2xl group">
+          <Search className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-stone-400" strokeWidth={1.5} />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t.calls_search_placeholder}
-            className="w-full pl-14 pr-6 py-5 bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 rounded-[2rem] shadow-sm group-hover:shadow-md transition-shadow focus:ring-2 focus:ring-[#006c49]/10 focus:border-[#006c49] outline-none font-medium text-stone-900 dark:text-white dark:placeholder-neutral-500"
+            className="w-full pl-10 pr-4 py-2.5 text-sm sm:text-base sm:pl-14 sm:pr-6 sm:py-5 bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 rounded-full sm:rounded-[2rem] shadow-sm group-hover:shadow-md transition-shadow focus:ring-2 focus:ring-[#006c49]/10 focus:border-[#006c49] outline-none font-medium text-stone-900 dark:text-white dark:placeholder-neutral-500"
           />
         </div>
-        <div className="flex items-center gap-3 md:gap-4 flex-wrap">
+        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 shrink-0 sm:flex-wrap">
           <button
             onClick={() => setIsScriptModalOpen(true)}
-            className="px-4 md:px-8 py-3 md:py-5 bg-[#ffddb8] text-[#2a1700] rounded-full font-bold font-business-display tracking-tight hover:opacity-90 transition-all flex items-center gap-2 md:gap-3 shadow-lg shadow-[#ffddb8]/10"
+            aria-label="Script"
+            className="h-11 w-11 justify-center sm:h-auto sm:w-auto sm:justify-start sm:px-4 md:px-8 sm:py-3 md:py-5 active:scale-95 bg-[#ffddb8] text-[#2a1700] rounded-full font-bold font-business-display tracking-tight hover:opacity-90 transition-all flex items-center gap-2 md:gap-3 shadow-lg shadow-[#ffddb8]/10"
           >
             <FileText className="h-5 w-5" strokeWidth={1.5} />
             <span className="hidden sm:inline">Script</span>
           </button>
           <button
             onClick={handleQuickCall}
-            className="px-4 md:px-8 py-3 md:py-5 bg-[#006c49] text-white rounded-full font-bold font-business-display tracking-tight hover:opacity-90 transition-all flex items-center gap-2 md:gap-3 shadow-lg shadow-[#006c49]/10"
+            aria-label={t.calls_quick_call}
+            className="h-11 w-11 justify-center sm:h-auto sm:w-auto sm:justify-start sm:px-4 md:px-8 sm:py-3 md:py-5 active:scale-95 bg-[#006c49] text-white rounded-full font-bold font-business-display tracking-tight hover:opacity-90 transition-all flex items-center gap-2 md:gap-3 shadow-lg shadow-[#006c49]/10"
           >
             <Video className="h-5 w-5" strokeWidth={1.5} />
             <span className="hidden sm:inline">{t.calls_quick_call}</span>
           </button>
           <button
             onClick={() => setIsNewCallModalOpen(true)}
-            className="px-4 md:px-8 py-3 md:py-5 bg-stone-900 text-white rounded-full font-bold font-business-display tracking-tight hover:opacity-90 transition-all flex items-center gap-2 md:gap-3 shadow-lg shadow-stone-900/10"
+            aria-label={t.calls_new_call}
+            className="h-11 w-11 justify-center sm:h-auto sm:w-auto sm:justify-start sm:px-4 md:px-8 sm:py-3 md:py-5 active:scale-95 bg-stone-900 text-white rounded-full font-bold font-business-display tracking-tight hover:opacity-90 transition-all flex items-center gap-2 md:gap-3 shadow-lg shadow-stone-900/10"
           >
             <Phone className="h-5 w-5" strokeWidth={1.5} />
             <span className="hidden sm:inline">{t.calls_new_call}</span>
@@ -277,69 +281,73 @@ export function CloserAppels() {
 
       {/* Title bar */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">{t.calls_recent}</h2>
+        <h2 className="text-lg sm:text-2xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">{t.calls_recent}</h2>
       </div>
 
-      {/* Call Cards List */}
-      <div className="space-y-4">
+      {/* Call Cards List — mobile : une seule carte groupée avec séparateurs ; dès sm : cartes séparées */}
+      <div className={cn(
+        filteredHistory.length > 0 && 'rounded-2xl bg-white/70 dark:bg-white/5 ring-1 ring-[#c4c7c7]/10 dark:ring-white/10 shadow-sm divide-y divide-stone-200/60 dark:divide-white/5',
+        'sm:rounded-none sm:bg-transparent sm:dark:bg-transparent sm:ring-0 sm:shadow-none sm:divide-y-0 sm:space-y-4'
+      )}>
         {filteredHistory.map(call => (
           <div
             key={call.id}
             className={cn(
-              GLASS_PANEL,
-              'px-4 md:px-6 py-3 md:py-4 rounded-2xl group hover:border-[#006c49]/20 hover:shadow-md transition-all flex items-center justify-between'
+              'sm:bg-white/70 sm:dark:bg-white/5 sm:backdrop-blur-md sm:ring-1 sm:ring-[#c4c7c7]/5 sm:dark:ring-white/10 sm:shadow-sm',
+              'px-4 md:px-6 py-3 md:py-4 sm:rounded-2xl group hover:border-[#006c49]/20 sm:hover:shadow-md transition-all flex items-center justify-between gap-3'
             )}
           >
-            <div className="flex items-center gap-3 md:gap-6 min-w-0">
+            <div className="flex items-center gap-3 md:gap-6 min-w-0 flex-1">
               <div className="w-10 h-10 md:w-16 md:h-16 bg-[#eae8e7] dark:bg-white/5 rounded-xl flex items-center justify-center shadow-inner group-hover:bg-[#ffddb8] transition-colors shrink-0">
                 <Video className="h-5 w-5 md:h-7 md:w-7 text-stone-700 dark:text-neutral-200" strokeWidth={1.5} />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 {editingCallId === call.id ? (
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 min-w-0">
                     <input
                       type="text"
                       value={editingName}
                       onChange={(e) => setEditingName(e.target.value)}
-                      className="border border-[#006c49] rounded-lg px-3 py-1.5 text-sm font-bold text-stone-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#006c49]/20"
+                      className="min-w-0 flex-1 sm:flex-none border border-[#006c49] rounded-lg px-3 py-1.5 text-sm font-bold text-stone-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#006c49]/20"
                       autoFocus
                     />
                     <button onClick={saveCallName} className="p-1.5 text-[#006c49] hover:bg-[#006c49]/10 rounded-full transition-colors"><Check className="h-4 w-4" /></button>
                     <button onClick={() => setEditingCallId(null)} className="p-1.5 text-stone-400 hover:bg-stone-100 rounded-full transition-colors"><X className="h-4 w-4" /></button>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-business-display font-bold text-lg text-stone-900 dark:text-white">{call.contact_name}</h3>
+                  <div className="flex items-center gap-1 sm:gap-2 sm:mb-1 min-w-0">
+                    <h3 className="font-business-display font-bold text-[15px] sm:text-lg text-stone-900 dark:text-white truncate">{call.contact_name}</h3>
                     <button
                       onClick={() => { setEditingCallId(call.id); setEditingName(call.contact_name) }}
-                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-stone-100 rounded-full transition-all"
+                      className="shrink-0 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 p-1 hover:bg-stone-100 rounded-full transition-all"
                     >
                       <Pencil className="h-3.5 w-3.5 text-stone-400" strokeWidth={1.5} />
                     </button>
                   </div>
                 )}
-                <div className="flex items-center gap-4 text-sm text-stone-500 dark:text-neutral-400">
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <Clock className="h-4 w-4" strokeWidth={1.5} />
+                <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm text-stone-500 dark:text-neutral-400 min-w-0">
+                  <span className="flex items-center gap-1 sm:gap-1.5 font-medium whitespace-nowrap">
+                    <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={1.5} />
                     {formatTimeAgo(call.date)}
                   </span>
                   {call.duration && (
-                    <span className="flex items-center gap-1.5 font-medium">
-                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span className="flex items-center gap-1 sm:gap-1.5 font-medium whitespace-nowrap">
+                      <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                       {call.duration}
                     </span>
                   )}
-                  <span className="flex items-center gap-1.5 px-2.5 py-0.5 bg-[#006c49]/10 text-[#006c49] rounded-full text-xs font-bold">
+                  <span className="hidden sm:flex items-center gap-1.5 px-2.5 py-0.5 bg-[#006c49]/10 text-[#006c49] rounded-full text-xs font-bold whitespace-nowrap">
                     <span className="w-2 h-2 rounded-full bg-[#006c49]" />
                     {t.calls_finished}
                   </span>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 sm:gap-3 shrink-0">
               <button
                 onClick={() => navigate(`/business/appels/${call.id}?readonly=1`)}
-                className="flex items-center gap-2 px-3 md:px-6 py-2 md:py-3 bg-[#eae8e7] dark:bg-white/5 hover:bg-[#dbdad9] dark:hover:bg-white/10 text-stone-900 dark:text-white rounded-full font-bold text-sm transition-all"
+                aria-label={t.calls_details}
+                className="flex items-center justify-center gap-2 h-10 w-10 sm:h-auto sm:w-auto sm:px-3 md:px-6 sm:py-2 md:py-3 active:scale-95 bg-[#eae8e7] dark:bg-white/5 hover:bg-[#dbdad9] dark:hover:bg-white/10 text-stone-900 dark:text-white rounded-full font-bold text-sm transition-all"
               >
                 <Eye className="h-4 w-4" strokeWidth={1.5} />
                 <span className="hidden sm:inline">{t.calls_details}</span>
@@ -347,7 +355,7 @@ export function CloserAppels() {
               <div className="relative">
                 <button
                   onClick={(e) => { e.stopPropagation(); setOpenMenuCallId(openMenuCallId === call.id ? null : call.id) }}
-                  className="p-3 text-stone-400 hover:text-stone-700 dark:hover:text-white transition-colors"
+                  className="flex items-center justify-center h-10 w-8 sm:h-auto sm:w-auto sm:p-3 text-stone-400 hover:text-stone-700 dark:hover:text-white transition-colors"
                 >
                   <MoreVertical className="h-5 w-5" strokeWidth={1.5} />
                 </button>
@@ -377,8 +385,8 @@ export function CloserAppels() {
           </div>
         ))}
         {filteredHistory.length === 0 && (
-          <div className={cn(GLASS_PANEL, 'rounded-2xl py-16 text-center')}>
-            <Video className="h-12 w-12 mx-auto mb-4 text-stone-300 dark:text-neutral-600" strokeWidth={1} />
+          <div className={cn(GLASS_PANEL, 'rounded-2xl py-8 sm:py-16 text-center')}>
+            <Video className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-2 sm:mb-4 text-stone-300 dark:text-neutral-600" strokeWidth={1} />
             <p className="text-stone-400 dark:text-neutral-500 font-medium">{t.calls_no_calls}</p>
             <p className="text-stone-400/60 dark:text-neutral-500/60 text-sm mt-1">{t.calls_no_calls_desc}</p>
           </div>
@@ -387,11 +395,12 @@ export function CloserAppels() {
 
       {/* New Call Modal */}
       {isNewCallModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsNewCallModalOpen(false)} />
-          <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl p-8 animate-in zoom-in-95">
-            <button onClick={() => setIsNewCallModalOpen(false)} className="absolute top-5 right-5 text-stone-300 hover:text-stone-700 transition-colors"><X className="h-5 w-5" strokeWidth={1.5} /></button>
-            <h2 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white mb-6">{t.calls_select_prospect}</h2>
+          <div className="relative w-full sm:max-w-md max-h-[92dvh] sm:max-h-[90vh] overflow-y-auto overscroll-contain rounded-t-3xl sm:rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:p-8 animate-in zoom-in-95">
+            <div className="sm:hidden mx-auto mb-3 h-1 w-10 rounded-full bg-stone-300 dark:bg-neutral-700" />
+            <button onClick={() => setIsNewCallModalOpen(false)} aria-label={t.common_close} className="absolute top-4 right-4 sm:top-5 sm:right-5 p-1 sm:p-0 text-stone-300 hover:text-stone-700 transition-colors"><X className="h-5 w-5" strokeWidth={1.5} /></button>
+            <h2 className="text-xl sm:text-2xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white mb-4 sm:mb-6 pr-8 sm:pr-0">{t.calls_select_prospect}</h2>
             <div className="relative mb-4">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" strokeWidth={1.5} />
               <input
@@ -402,10 +411,10 @@ export function CloserAppels() {
                 className="w-full pl-11 pr-4 py-3.5 bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-2xl text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 outline-none"
               />
             </div>
-            <div className="max-h-48 overflow-y-auto space-y-1 mb-6">
+            <div className="max-h-[40dvh] sm:max-h-48 overflow-y-auto overscroll-contain space-y-1 mb-4 sm:mb-6">
               {myProspects.filter(p => !prospectSearch || p.contact.toLowerCase().includes(prospectSearch.toLowerCase())).map(p => (
                 <button key={p.id} onClick={() => setSelectedProspectId(p.id)}
-                  className={cn("w-full text-left p-3.5 rounded-2xl transition-all font-medium text-sm",
+                  className={cn("w-full text-left p-3.5 rounded-2xl transition-all font-medium text-sm truncate active:scale-[0.98]",
                     selectedProspectId === p.id ? "bg-[#006c49]/10 text-[#006c49] ring-1 ring-[#006c49]/20" : "hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 text-stone-700 dark:text-neutral-200")}>
                   {p.contact} {p.company && <span className="text-stone-400 ml-1">({p.company})</span>}
                 </button>
@@ -413,7 +422,7 @@ export function CloserAppels() {
               {myProspects.length === 0 && <p className="text-center text-stone-400 text-sm py-6">{t.calls_no_assigned_prospect}</p>}
             </div>
             <button onClick={() => prepareCall(selectedProspectId)} disabled={!selectedProspectId}
-              className="w-full rounded-full bg-stone-900 py-4 font-business-display font-extrabold text-white text-sm hover:opacity-90 disabled:opacity-50 transition-all">
+              className="w-full rounded-full bg-stone-900 py-3.5 sm:py-4 font-business-display font-extrabold text-white text-sm hover:opacity-90 disabled:opacity-50 transition-all active:scale-[0.98]">
               {t.calls_prepare_call}
             </button>
           </div>
@@ -422,20 +431,21 @@ export function CloserAppels() {
 
       {/* Meet Preparation Modal */}
       {isMeetModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsMeetModalOpen(false)} />
-          <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl p-8 animate-in zoom-in-95">
-            <button onClick={() => setIsMeetModalOpen(false)} className="absolute top-5 right-5 text-stone-300 hover:text-stone-700 transition-colors"><X className="h-5 w-5" strokeWidth={1.5} /></button>
-            <h3 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white mb-8">{t.calls_prepare_title}</h3>
-            <div className="space-y-5">
-              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-6">
+          <div className="relative w-full sm:max-w-lg max-h-[92dvh] sm:max-h-[90vh] overflow-y-auto overscroll-contain rounded-t-3xl sm:rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:p-8 animate-in zoom-in-95">
+            <div className="sm:hidden mx-auto mb-3 h-1 w-10 rounded-full bg-stone-300 dark:bg-neutral-700" />
+            <button onClick={() => setIsMeetModalOpen(false)} aria-label={t.common_close} className="absolute top-4 right-4 sm:top-5 sm:right-5 p-1 sm:p-0 text-stone-300 hover:text-stone-700 transition-colors"><X className="h-5 w-5" strokeWidth={1.5} /></button>
+            <h3 className="text-xl sm:text-2xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white mb-4 sm:mb-8 pr-8 sm:pr-0">{t.calls_prepare_title}</h3>
+            <div className="space-y-3 sm:space-y-5">
+              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-4 sm:p-6">
                 <p className="font-bold text-stone-900 dark:text-white mb-3 text-sm">{t.closer_appels_step1_open_meet}</p>
                 <button onClick={() => window.open('https://meet.google.com/new', '_blank')}
                   className="w-full flex items-center justify-center gap-2 rounded-full bg-[#006c49] px-4 py-3.5 text-sm font-bold text-white hover:opacity-90 transition-all">
                   <ExternalLink className="h-4 w-4" strokeWidth={1.5} /> {t.calls_open_meet}
                 </button>
               </div>
-              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-6">
+              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-4 sm:p-6">
                 <p className="font-bold text-stone-900 dark:text-white mb-3 text-sm">{t.closer_appels_step2_launch_cockpit}</p>
                 <div className="relative mb-3">
                   <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" strokeWidth={1.5} />
@@ -454,13 +464,14 @@ export function CloserAppels() {
 
       {/* Script Modal */}
       {isScriptModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsScriptModalOpen(false)} />
-          <div className="relative w-full max-w-4xl rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl flex flex-col h-[70vh] overflow-hidden">
-            <div className="p-6 border-b border-[#c4c7c7]/10 dark:border-neutral-700 flex justify-between items-center">
-              <div className="flex items-center gap-4 flex-1">
-                <FileText className="h-5 w-5 text-[#006c49]" strokeWidth={1.5} />
-                <div className="relative flex-1 max-w-xs">
+          <div className="relative w-full max-w-4xl rounded-t-3xl sm:rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl flex flex-col h-[92dvh] sm:h-[70vh] overflow-hidden">
+            <div className="sm:hidden mx-auto mt-2 h-1 w-10 rounded-full bg-stone-300 dark:bg-neutral-700 shrink-0" />
+            <div className="px-4 py-3 sm:p-6 border-b border-[#c4c7c7]/10 dark:border-neutral-700 flex justify-between items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+                <FileText className="h-5 w-5 text-[#006c49] shrink-0" strokeWidth={1.5} />
+                <div className="relative flex-1 min-w-0 max-w-xs">
                   <select value={selectedScriptId} onChange={(e) => handleScriptChange(e.target.value)}
                     className="w-full appearance-none bg-[#f5f3f2] dark:bg-neutral-800 border-none text-sm font-medium rounded-full px-5 py-2.5 pr-10 focus:outline-none focus:ring-2 focus:ring-[#006c49]/20 text-stone-900 dark:text-white">
                     <option value="new">{t.calls_new_script}</option>
@@ -474,19 +485,19 @@ export function CloserAppels() {
               </div>
               <button onClick={() => setIsScriptModalOpen(false)} className="text-stone-300 hover:text-stone-700 p-2 transition-colors"><X className="h-5 w-5" strokeWidth={1.5} /></button>
             </div>
-            <div className="px-8 pt-6">
+            <div className="px-4 pt-4 sm:px-8 sm:pt-6 shrink-0">
               <input type="text" value={scriptTitle} onChange={(e) => setScriptTitle(e.target.value)} placeholder={t.calls_script_title_placeholder}
-                className="w-full bg-transparent text-2xl font-business-display font-extrabold text-stone-900 dark:text-white placeholder-stone-300 dark:placeholder-neutral-600 focus:outline-none tracking-tight" />
+                className="w-full bg-transparent text-xl sm:text-2xl font-business-display font-extrabold text-stone-900 dark:text-white placeholder-stone-300 dark:placeholder-neutral-600 focus:outline-none tracking-tight" />
             </div>
-            <div className="flex-1 px-8 py-4">
+            <div className="flex-1 min-h-0 px-4 py-3 sm:px-8 sm:py-4">
               <textarea value={scriptContent} onChange={(e) => setScriptContent(e.target.value)}
-                className="w-full h-full rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border-none p-6 text-stone-700 dark:text-neutral-200 font-medium leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#006c49]/10 resize-none"
+                className="w-full h-full rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border-none p-4 sm:p-6 text-stone-700 dark:text-neutral-200 font-medium leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#006c49]/10 resize-none"
                 placeholder={t.calls_script_write_placeholder} />
             </div>
-            <div className="p-6 border-t border-[#c4c7c7]/10 dark:border-neutral-700 flex justify-end gap-4">
-              <button onClick={() => setIsScriptModalOpen(false)} className="px-6 py-3 rounded-full font-bold text-sm text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors">{t.common_close}</button>
+            <div className="px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-6 border-t border-[#c4c7c7]/10 dark:border-neutral-700 flex justify-end gap-2 sm:gap-4 shrink-0">
+              <button onClick={() => setIsScriptModalOpen(false)} className="flex-1 sm:flex-none px-6 py-3 rounded-full font-bold text-sm text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors">{t.common_close}</button>
               <button onClick={handleSaveScript} disabled={isSavingScript}
-                className="flex items-center gap-2 rounded-full bg-stone-900 px-8 py-3 text-sm font-bold text-white hover:opacity-90 transition-all">
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-full bg-stone-900 px-8 py-3 text-sm font-bold text-white hover:opacity-90 transition-all active:scale-[0.98]">
                 <Save className="h-4 w-4" strokeWidth={1.5} /> {isSavingScript ? t.calls_saving : t.common_save}
               </button>
             </div>

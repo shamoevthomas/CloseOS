@@ -48,19 +48,21 @@ export function BusinessExtrasModal({ isOpen, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-stone-900/40 dark:bg-black/60 backdrop-blur-md p-4" onClick={onClose}>
-      <div className="w-full max-w-md bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-stone-900/40 dark:bg-black/60 backdrop-blur-sm sm:backdrop-blur-md p-0 sm:p-4" onClick={onClose}>
+      <div className="w-full sm:max-w-md max-h-[92dvh] sm:max-h-none flex flex-col sm:block bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+        {/* Poignée de la feuille (mobile) */}
+        <div className="sm:hidden mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-stone-300 dark:bg-neutral-700" />
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-stone-200/60 dark:border-neutral-800">
-          <div>
+        <div className="flex shrink-0 items-center justify-between gap-3 sm:gap-0 pl-5 pr-3 pt-2 pb-3 sm:px-6 sm:pt-5 sm:pb-3 border-b border-stone-200/60 dark:border-neutral-800">
+          <div className="min-w-0">
             <h3 className="font-business-display text-lg font-extrabold text-stone-900 dark:text-white">{fr ? 'Extras & services' : 'Extras & services'}</h3>
             <p className="text-xs text-stone-500 dark:text-neutral-400">{fr ? "Prestation ponctuelle, débitée sur votre moyen de paiement." : 'One-time service, charged to your payment method.'}</p>
           </div>
-          <button onClick={onClose} className="rounded-lg p-2 text-stone-400 hover:bg-stone-100 dark:hover:bg-neutral-800 hover:text-stone-700 dark:hover:text-white transition-colors"><X className="h-5 w-5" /></button>
+          <button onClick={onClose} aria-label={fr ? 'Fermer' : 'Close'} className="flex h-10 w-10 sm:h-auto sm:w-auto shrink-0 items-center justify-center rounded-full sm:rounded-lg sm:p-2 text-stone-400 hover:bg-stone-100 dark:hover:bg-neutral-800 hover:text-stone-700 dark:hover:text-white transition-colors"><X className="h-5 w-5" /></button>
         </div>
 
         {done ? (
-          <div className="p-8 text-center">
+          <div className="px-6 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-8 text-center overflow-y-auto">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/15"><Check className="h-7 w-7 text-emerald-500" /></div>
             <h4 className="text-lg font-bold text-stone-900 dark:text-white">{fr ? 'Extra commandé !' : 'Extra ordered!'}</h4>
             <p className="mt-1.5 text-sm text-stone-500 dark:text-neutral-400">
@@ -70,19 +72,19 @@ export function BusinessExtrasModal({ isOpen, onClose }: Props) {
           </div>
         ) : (
           <>
-            <div className="p-5 space-y-2.5 max-h-[55vh] overflow-y-auto">
+            <div className="flex-1 min-h-0 p-4 sm:p-5 space-y-2 sm:space-y-2.5 sm:max-h-[55vh] overflow-y-auto overscroll-contain">
               {EXTRAS.map(ex => {
                 const on = selected === ex.key
                 return (
                   <button key={ex.key} onClick={() => setSelected(ex.key)}
-                    className={`flex w-full items-start gap-3 rounded-2xl border p-4 text-left transition-all ${on ? 'border-emerald-500 ring-2 ring-emerald-500/25 bg-emerald-500/5' : 'border-stone-200 dark:border-neutral-700 hover:border-stone-300'}`}>
+                    className={`flex w-full items-start gap-3 rounded-2xl border p-3.5 sm:p-4 text-left transition-all active:scale-[0.98] sm:active:scale-100 ${on ? 'border-emerald-500 ring-2 ring-emerald-500/25 bg-emerald-500/5' : 'border-stone-200 dark:border-neutral-700 hover:border-stone-300'}`}>
                     <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${on ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-stone-100 dark:bg-neutral-800 text-stone-500'}`}>
                       <ex.icon className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                         <p className="text-sm font-bold text-stone-900 dark:text-white">{ex.name}</p>
-                        {ex.saving && <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">{fr ? 'Économie' : 'Save'}</span>}
+                        {ex.saving && <span className="whitespace-nowrap rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">{fr ? 'Économie' : 'Save'}</span>}
                       </div>
                       <p className="mt-0.5 text-xs text-stone-500 dark:text-neutral-400 leading-relaxed">{ex.description}</p>
                     </div>
@@ -96,7 +98,7 @@ export function BusinessExtrasModal({ isOpen, onClose }: Props) {
               {error && <p className="text-xs text-red-500 px-1">{error}</p>}
             </div>
 
-            <div className="border-t border-stone-200/60 dark:border-neutral-800 p-5">
+            <div className="shrink-0 border-t border-stone-200/60 dark:border-neutral-800 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-5">
               <button onClick={handlePurchase} disabled={purchasing || !current}
                 className="flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 dark:bg-white dark:text-stone-900 py-3.5 text-sm font-bold text-white hover:bg-stone-800 dark:hover:bg-neutral-200 disabled:opacity-50 transition-all active:scale-95">
                 {purchasing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}

@@ -57,11 +57,13 @@ export function BusinessWhatsNewModal() {
   }
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-stone-900/40 backdrop-blur-md p-4 overflow-y-auto">
-      <div className="relative w-full max-w-2xl max-h-[88vh] flex flex-col rounded-2xl bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border border-stone-200/20 dark:border-neutral-700 shadow-[0_20px_60px_rgba(27,28,27,0.12)]">
+    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-stone-900/40 backdrop-blur-sm sm:backdrop-blur-md p-0 sm:p-4 overflow-y-auto">
+      <div className="relative w-full sm:max-w-2xl max-h-[92dvh] sm:max-h-[88vh] flex flex-col rounded-t-3xl sm:rounded-2xl bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border border-stone-200/20 dark:border-neutral-700 shadow-[0_20px_60px_rgba(27,28,27,0.12)]">
+        {/* Poignée de la feuille (mobile) */}
+        <div className="sm:hidden mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-stone-300 dark:bg-neutral-700" />
         {/* En-tête */}
-        <div className="flex items-center justify-between border-b border-stone-200/20 dark:border-neutral-700 px-6 py-4 flex-shrink-0">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-3 border-b border-stone-200/20 dark:border-neutral-700 pl-5 pr-3 py-2.5 sm:px-6 sm:py-4 flex-shrink-0">
+          <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#006c49]/10">
               <Sparkles className="h-4 w-4 text-[#006c49]" />
             </div>
@@ -74,47 +76,51 @@ export function BusinessWhatsNewModal() {
           </div>
           <button
             onClick={close}
-            className="rounded-lg p-2 text-stone-400 dark:text-neutral-500 hover:bg-stone-100 dark:hover:bg-neutral-800 hover:text-stone-900 dark:hover:text-white transition-colors"
+            aria-label={fr ? 'Fermer' : 'Close'}
+            className="flex h-10 w-10 sm:h-auto sm:w-auto shrink-0 items-center justify-center rounded-full sm:rounded-lg sm:p-2 text-stone-400 dark:text-neutral-500 hover:bg-stone-100 dark:hover:bg-neutral-800 hover:text-stone-900 dark:hover:text-white transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Onglets */}
-        <div className="flex gap-1 px-6 pt-4 flex-shrink-0 overflow-x-auto">
+        <div className="grid grid-cols-3 gap-1 mx-5 mt-3 p-1 rounded-full bg-stone-100/80 dark:bg-neutral-800/80 sm:flex sm:mx-0 sm:mt-0 sm:p-0 sm:px-6 sm:pt-4 sm:rounded-none sm:bg-transparent sm:dark:bg-transparent flex-shrink-0 overflow-x-auto no-scrollbar">
           {orderedTabs.map(p => (
             <button
               key={p}
               onClick={() => setActiveTab(p)}
               className={cn(
-                "px-4 py-2 rounded-full text-sm font-['Manrope'] font-bold whitespace-nowrap transition-colors",
+                "min-w-0 px-2 sm:px-4 py-2 rounded-full text-[13px] sm:text-sm font-['Manrope'] font-bold whitespace-nowrap truncate sm:overflow-visible transition-colors",
                 activeTab === p
-                  ? 'bg-[#006c49]/10 text-[#006c49]'
+                  ? 'bg-white dark:bg-neutral-900 shadow-sm sm:shadow-none sm:bg-[#006c49]/10 sm:dark:bg-[#006c49]/10 text-[#006c49]'
                   : 'text-stone-400 dark:text-neutral-500 hover:text-stone-700 dark:hover:text-neutral-300',
               )}
             >
-              {WHATS_NEW_V5[p].tabLabel}
+              {/* Libellé court sur mobile : « CloseOS » masqué */}
+              {WHATS_NEW_V5[p].tabLabel.startsWith('CloseOS ')
+                ? <><span className="hidden sm:inline">CloseOS </span>{WHATS_NEW_V5[p].tabLabel.slice(8)}</>
+                : WHATS_NEW_V5[p].tabLabel}
             </button>
           ))}
         </div>
 
         {/* Contenu */}
-        <div className="flex-1 overflow-y-auto px-6 py-6">
-          <h4 className="text-xl font-['Manrope'] font-extrabold text-stone-900 dark:text-white tracking-tight">{section.heading}</h4>
-          <p className="text-sm text-stone-500 dark:text-neutral-400 mt-1.5 mb-6">{section.subheading}</p>
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-4 sm:px-6 sm:py-6">
+          <h4 className="text-lg sm:text-xl font-['Manrope'] font-extrabold text-stone-900 dark:text-white tracking-tight">{section.heading}</h4>
+          <p className="text-sm text-stone-500 dark:text-neutral-400 mt-1 sm:mt-1.5 mb-4 sm:mb-6">{section.subheading}</p>
 
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             {section.items.map((item, i) => {
               const Icon = ICONS[item.icon]
               return (
                 <div
                   key={i}
-                  className="flex items-start gap-3.5 rounded-xl border border-stone-200/20 dark:border-neutral-700 bg-stone-50/60 dark:bg-neutral-800/60 p-4"
+                  className="flex items-start gap-3 sm:gap-3.5 rounded-xl border border-stone-200/20 dark:border-neutral-700 bg-stone-50/60 dark:bg-neutral-800/60 p-3.5 sm:p-4"
                 >
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#006c49]/10 flex-shrink-0 mt-0.5">
                     <Icon className="h-4 w-4 text-[#006c49]" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm font-bold text-stone-900 dark:text-white">{item.title}</p>
                     <p className="text-[13px] text-stone-500 dark:text-neutral-400 mt-0.5 leading-relaxed">{item.description}</p>
                   </div>
@@ -125,10 +131,10 @@ export function BusinessWhatsNewModal() {
         </div>
 
         {/* Pied */}
-        <div className="border-t border-stone-200/20 dark:border-neutral-700 px-6 py-4 flex-shrink-0">
+        <div className="border-t border-stone-200/20 dark:border-neutral-700 px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-4 flex-shrink-0">
           <button
             onClick={close}
-            className="w-full bg-stone-900 dark:bg-white text-white dark:text-stone-900 rounded-full py-3 text-sm font-['Manrope'] font-bold active:scale-[0.98] transition-transform"
+            className="w-full bg-stone-900 dark:bg-white text-white dark:text-stone-900 rounded-full py-3.5 sm:py-3 text-sm font-['Manrope'] font-bold active:scale-[0.98] transition-transform"
           >
             {fr ? 'Compris' : 'Got it'}
           </button>

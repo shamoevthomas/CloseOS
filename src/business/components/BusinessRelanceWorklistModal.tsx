@@ -55,20 +55,21 @@ export function BusinessRelanceWorklistModal({ isOpen, onClose, prospects, delay
   const openAndClose = (p: BusinessProspect) => { onOpen(p); onClose() }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center bg-stone-900/40 dark:bg-black/60 backdrop-blur-md p-4 pt-[8vh]" onClick={onClose}>
-      <div className="w-full max-w-lg bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-start justify-center bg-stone-900/40 dark:bg-black/60 backdrop-blur-md p-0 sm:p-4 sm:pt-[8vh]" onClick={onClose}>
+      <div className="w-full max-w-lg bg-white dark:bg-neutral-900 sm:bg-white/95 sm:dark:bg-neutral-900/95 sm:backdrop-blur-xl rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[88dvh] sm:max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-stone-200/60 dark:border-neutral-800">
-          <div>
+        <div className="relative flex items-center justify-between gap-3 px-4 sm:px-6 pt-5 pb-3 border-b border-stone-200/60 dark:border-neutral-800">
+          <div className="sm:hidden absolute left-1/2 top-1.5 h-1 w-10 -translate-x-1/2 rounded-full bg-stone-300 dark:bg-neutral-700" />
+          <div className="min-w-0">
             <h3 className="font-business-display text-lg font-extrabold text-stone-900 dark:text-white">{fr ? 'À relancer & à suivre' : 'To follow up & track'}</h3>
             <p className="text-xs text-stone-500 dark:text-neutral-400">{fr ? 'Qui relancer, et qui a répondu.' : 'Who to follow up, and who replied.'}</p>
           </div>
-          <button onClick={onClose} className="rounded-lg p-2 text-stone-400 hover:bg-stone-100 dark:hover:bg-neutral-800 hover:text-stone-700 dark:hover:text-white transition-colors"><X className="h-5 w-5" /></button>
+          <button onClick={onClose} aria-label={fr ? 'Fermer' : 'Close'} className="shrink-0 rounded-full sm:rounded-lg p-2 bg-stone-100 dark:bg-neutral-800 sm:bg-transparent sm:dark:bg-transparent text-stone-400 hover:bg-stone-100 dark:hover:bg-neutral-800 hover:text-stone-700 dark:hover:text-white transition-colors"><X className="h-5 w-5" /></button>
         </div>
 
         {/* Sélecteur de point de vue (owner / HOS / Admin) */}
         {canChooseMember && members.length > 0 && (
-          <div className="flex items-center gap-2 overflow-x-auto px-6 py-3 border-b border-stone-200/60 dark:border-neutral-800">
+          <div className="flex items-center gap-2 overflow-x-auto overscroll-x-contain no-scrollbar px-4 sm:px-6 py-3 border-b border-stone-200/60 dark:border-neutral-800">
             <span className="text-[11px] font-bold uppercase tracking-wider text-stone-400 shrink-0">{fr ? 'Vue' : 'View'}</span>
             <button
               onClick={() => setViewId(null)}
@@ -88,7 +89,7 @@ export function BusinessRelanceWorklistModal({ isOpen, onClose, prospects, delay
           </div>
         )}
 
-        <div className="overflow-y-auto p-5 space-y-6">
+        <div className="overflow-y-auto overscroll-contain p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5 space-y-5 sm:space-y-6">
           {/* À relancer */}
           <div>
             <div className="flex items-center gap-2 mb-2.5">
@@ -110,7 +111,7 @@ export function BusinessRelanceWorklistModal({ isOpen, onClose, prospects, delay
                     </button>
                     <button
                       onClick={() => onRelanceDone(p)}
-                      className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-[#006c49] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#005a3d] transition-colors"
+                      className="shrink-0 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-[#006c49] px-3 py-2 sm:py-1.5 text-xs font-bold text-white hover:bg-[#005a3d] transition-colors"
                     >
                       <Check className="h-3.5 w-3.5" strokeWidth={2.5} /> {fr ? 'Relance faite' : 'Done'}
                     </button>

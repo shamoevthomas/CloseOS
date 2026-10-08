@@ -67,6 +67,12 @@ interface TeamSetter {
 const formatCurrency = (n: number) => n.toLocaleString('fr-FR')
 const formatPercent = (n: number) => n.toFixed(1)
 
+// Tuiles KPI : compactes sur téléphone (classes max-sm: uniquement), inchangées à partir de sm.
+const TILE_HEAD = 'flex items-center gap-3 mb-3 max-sm:gap-2 max-sm:mb-2'
+const TILE_LABEL = 'min-w-0 text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 max-sm:text-[10px] max-sm:tracking-wide max-sm:leading-tight max-sm:line-clamp-2'
+const TILE_VALUE = 'text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tighter text-stone-900 dark:text-white max-sm:truncate'
+const TILE_SUB = 'text-xs text-stone-400 dark:text-neutral-500 mt-1 max-sm:text-[11px] max-sm:truncate'
+
 export function SetterKPI() {
   const { user, teamMember, ownerUserId, isTeamMember, isSolo } = useBusinessAuth()
   const { t, lang } = useBusinessLang()
@@ -623,53 +629,57 @@ export function SetterKPI() {
     : t.kpi_all_periods
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-100 dark:bg-white/5">
+      {/* Header — téléphone : titre compact + actions en boutons icône sur la même ligne */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="hidden sm:flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-stone-100 dark:bg-white/5">
             <TrendingUp className="h-5 w-5 text-stone-700 dark:text-neutral-200" />
           </div>
-          <div>
-            <p className="text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-1">{t.kpi_performance_setter.toUpperCase()}</p>
-            <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">{t.kpi_performance_setter}</h1>
-            <p className="text-sm text-stone-500 dark:text-neutral-400">{isOwnerView ? t.kpi_team_overview : t.kpi_your_performance}</p>
+          <div className="min-w-0">
+            <p className="hidden sm:block text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-1">{t.kpi_performance_setter.toUpperCase()}</p>
+            <h1 className="text-xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white max-sm:truncate">{t.kpi_performance_setter}</h1>
+            <p className="text-xs sm:text-sm text-stone-500 dark:text-neutral-400 truncate">{isOwnerView ? t.kpi_team_overview : t.kpi_your_performance}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => setIsConfigOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-white/10 transition-colors"
+            aria-label={t.kpi_configure}
+            className="flex items-center justify-center gap-2 h-10 w-10 rounded-full sm:h-auto sm:w-auto sm:px-4 sm:py-2 sm:rounded-xl border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-white/10 active:scale-95 transition"
           >
-            <Settings className="h-4 w-4" /> {t.kpi_configure}
+            <Settings className="h-4 w-4" /> <span className="hidden sm:inline">{t.kpi_configure}</span>
           </button>
           <button
             onClick={handleExportPdf}
             disabled={exporting}
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-stone-900 dark:bg-white text-sm font-bold text-white dark:text-stone-900 hover:opacity-90 transition-all disabled:opacity-50 active:scale-95"
+            aria-label={t.kpi_export_pdf}
+            className="flex items-center justify-center gap-2 h-10 w-10 sm:h-auto sm:w-auto sm:px-4 sm:py-2 rounded-full bg-stone-900 dark:bg-white text-sm font-bold text-white dark:text-stone-900 hover:opacity-90 transition-all disabled:opacity-50 active:scale-95"
           >
             {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            {t.kpi_export_pdf}
+            <span className="hidden sm:inline">{t.kpi_export_pdf}</span>
           </button>
         </div>
       </div>
 
       {/* Period selector */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <CalendarDays className="h-4 w-4 text-stone-400" />
-        <span className="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400">{t.kpi_period_label}</span>
+      {/* Période — téléphone : les deux dates se partagent la ligne */}
+      <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <CalendarDays className="h-4 w-4 shrink-0 text-stone-400" />
+        <span className="hidden sm:inline text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400">{t.kpi_period_label}</span>
         <input
           type="date"
           value={periodFrom}
           onChange={e => setPeriodFrom(e.target.value)}
-          className="rounded-full bg-stone-100 dark:bg-neutral-800 border-0 px-3 py-1.5 text-sm text-stone-900 dark:text-white font-medium focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+          className="min-w-0 flex-1 sm:flex-initial rounded-full bg-stone-100 dark:bg-neutral-800 border-0 px-3 py-1.5 text-sm text-stone-900 dark:text-white font-medium focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
         />
         <span className="text-stone-400">→</span>
         <input
           type="date"
           value={periodTo}
           onChange={e => setPeriodTo(e.target.value)}
-          className="rounded-full bg-stone-100 dark:bg-neutral-800 border-0 px-3 py-1.5 text-sm text-stone-900 dark:text-white font-medium focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+          className="min-w-0 flex-1 sm:flex-initial rounded-full bg-stone-100 dark:bg-neutral-800 border-0 px-3 py-1.5 text-sm text-stone-900 dark:text-white font-medium focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
         />
         {(periodFrom || periodTo) && (
           <button
@@ -682,14 +692,16 @@ export function SetterKPI() {
       </div>
 
       {/* Tabs + Global Member Selector */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex p-1.5 bg-stone-100 dark:bg-neutral-800 rounded-full w-fit flex-wrap">
+      {/* Sous xl : onglets en rangée défilante pleine largeur, sélecteur de membre dessous */}
+      <div className="flex flex-col items-stretch xl:flex-row xl:items-center justify-between gap-3">
+        <div className="-mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto no-scrollbar overscroll-x-contain xl:overflow-visible">
+        <div className="flex p-1 sm:p-1.5 bg-stone-100 dark:bg-neutral-800 rounded-full w-max xl:w-fit xl:flex-wrap">
           {tabs.map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={cn(
-                'px-8 py-2.5 rounded-full text-sm font-bold transition-all',
+                'shrink-0 whitespace-nowrap px-4 py-2 sm:px-5 sm:py-2.5 xl:px-8 rounded-full text-sm font-bold transition-all',
                 activeTab === tab.key
                   ? 'bg-white dark:bg-white/10 text-stone-900 dark:text-white shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
                   : 'text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white'
@@ -699,13 +711,14 @@ export function SetterKPI() {
             </button>
           ))}
         </div>
+        </div>
         {isOwnerView && !isSolo && teamSetters.length > 0 && (
-          <div className="flex items-center gap-2 bg-white dark:bg-white/5 rounded-full border border-stone-200 dark:border-white/10 pl-3 pr-1 py-1 shadow-sm">
+          <div className="flex items-center gap-2 w-full sm:w-auto sm:self-start xl:self-auto bg-white dark:bg-white/5 rounded-full border border-stone-200 dark:border-white/10 pl-3 pr-1 py-1 shadow-sm">
             <Users className="h-4 w-4 text-stone-400 shrink-0" />
             <select
               value={globalMemberId || ''}
               onChange={(e) => setGlobalMemberId(e.target.value || null)}
-              className="bg-transparent text-sm font-semibold text-stone-900 dark:text-white pr-6 py-1.5 focus:outline-none appearance-none cursor-pointer"
+              className="min-w-0 w-full sm:w-auto bg-transparent text-sm font-semibold text-stone-900 dark:text-white pr-6 py-1.5 focus:outline-none appearance-none cursor-pointer"
             >
               <option value="">{t.kpi_all_members}</option>
               {teamSetters.map(s => (
@@ -723,7 +736,7 @@ export function SetterKPI() {
             <select
               value={selectedOfferId || ''}
               onChange={(e) => setSelectedOfferId(e.target.value)}
-              className="rounded-lg border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-500 focus:outline-none"
+              className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-500 focus:outline-none"
             >
               {formulas.length === 0 && <option value="">{t.kpi_no_formula}</option>}
               {formulas.map(f => (
@@ -741,7 +754,7 @@ export function SetterKPI() {
             <select
               value={selectedCampaignId || ''}
               onChange={(e) => setSelectedCampaignId(e.target.value)}
-              className="rounded-lg border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-500 focus:outline-none"
+              className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-500 focus:outline-none"
             >
               {campaigns.length === 0 && <option value="">{t.kpi_no_campaign}</option>}
               {campaigns.map(c => (
@@ -759,7 +772,7 @@ export function SetterKPI() {
             <select
               value={selectedSource || ''}
               onChange={(e) => setSelectedSource(e.target.value)}
-              className="rounded-lg border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-500 focus:outline-none"
+              className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-500 focus:outline-none"
             >
               {uniqueSources.length === 0 && <option value="">{t.kpi_no_source}</option>}
               {uniqueSources.map(s => (
@@ -771,7 +784,7 @@ export function SetterKPI() {
       )}
 
       {/* PDF export content */}
-      <div ref={pdfRef} className="space-y-6">
+      <div ref={pdfRef} className="space-y-4 sm:space-y-6">
       {/* PDF header (hidden on screen, visible in PDF) */}
       <div className="hidden print:block mb-6">
         <h1 className="text-2xl font-extrabold text-stone-900">{t.kpi_performance_setter} — {periodLabel}</h1>
@@ -779,67 +792,69 @@ export function SetterKPI() {
       </div>
 
       {/* Setter-specific KPI Cards (personal or member tab) */}
+      {/* Tuiles en 2 colonnes sous lg : réponse + booking côte à côte, la tuile relances (avec son bouton) en pleine largeur dessous */}
       {showSetterCards && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-white dark:bg-white/5 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
-            <div className="flex items-center gap-3 mb-3">
-              <PhoneIncoming className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-              <span className="text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400">{t.kpi_response_rate}</span>
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+          <div className="bg-white dark:bg-white/5 rounded-2xl p-4 sm:p-6 lg:p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50 min-w-0">
+            <div className={TILE_HEAD}>
+              <PhoneIncoming className="h-4 w-4 max-sm:shrink-0 text-purple-600 dark:text-purple-400" />
+              <span className={TILE_LABEL}>{t.kpi_response_rate}</span>
             </div>
-            <p className="text-4xl font-extrabold tracking-tighter text-stone-900 dark:text-white">{formatPercent(setterDisplay.responseRate)}%</p>
-            <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">{t.kpi_responses_contacted.replace('{responses}', String(setterDisplay.responded.length)).replace('{contacted}', String(setterDisplay.contacted.length))}</p>
+            <p className={TILE_VALUE}>{formatPercent(setterDisplay.responseRate)}%</p>
+            <p className={TILE_SUB}>{t.kpi_responses_contacted.replace('{responses}', String(setterDisplay.responded.length)).replace('{contacted}', String(setterDisplay.contacted.length))}</p>
           </div>
-          <div className="bg-white dark:bg-white/5 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50 flex flex-col">
-            <div className="flex items-center gap-3 mb-3">
-              <Repeat className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-              <span className="text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400">{t.kpi_relance_rate}</span>
+          <div className="bg-white dark:bg-white/5 rounded-2xl p-4 sm:p-6 lg:p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50 min-w-0 flex flex-col max-lg:order-last max-lg:col-span-2">
+            <div className={TILE_HEAD}>
+              <Repeat className="h-4 w-4 max-sm:shrink-0 text-purple-600 dark:text-purple-400" />
+              <span className={TILE_LABEL}>{t.kpi_relance_rate}</span>
             </div>
-            <p className="text-4xl font-extrabold tracking-tighter text-stone-900 dark:text-white">{formatPercent(setterDisplay.relanceRate)}%</p>
-            <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">{t.kpi_relance_replied_relanced.replace('{replied}', String(setterDisplay.relanceReplied.length)).replace('{relanced}', String(setterDisplay.relanced.length))}</p>
+            <p className={TILE_VALUE}>{formatPercent(setterDisplay.relanceRate)}%</p>
+            <p className={TILE_SUB}>{t.kpi_relance_replied_relanced.replace('{replied}', String(setterDisplay.relanceReplied.length)).replace('{relanced}', String(setterDisplay.relanced.length))}</p>
             <button
               onClick={() => setIsRelanceDetailOpen(true)}
-              className="mt-4 self-start flex items-center gap-1 rounded-full border border-stone-200 dark:border-white/10 bg-stone-50 dark:bg-white/5 px-3 py-1.5 text-xs font-bold text-stone-600 dark:text-neutral-300 hover:bg-stone-100 dark:hover:bg-white/10 transition-colors"
+              className="mt-3 sm:mt-4 self-start active:scale-95 flex items-center gap-1 rounded-full border border-stone-200 dark:border-white/10 bg-stone-50 dark:bg-white/5 px-3 py-1.5 text-xs font-bold text-stone-600 dark:text-neutral-300 hover:bg-stone-100 dark:hover:bg-white/10 transition-colors"
             >
               {t.kpi_relance_detail_btn} <ChevronRight className="h-3.5 w-3.5" />
             </button>
           </div>
-          <div className="bg-white dark:bg-white/5 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
-            <div className="flex items-center gap-3 mb-3">
-              <CalendarCheck className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-              <span className="text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400">{t.kpi_booking_rate}</span>
+          <div className="bg-white dark:bg-white/5 rounded-2xl p-4 sm:p-6 lg:p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50 min-w-0">
+            <div className={TILE_HEAD}>
+              <CalendarCheck className="h-4 w-4 max-sm:shrink-0 text-purple-600 dark:text-purple-400" />
+              <span className={TILE_LABEL}>{t.kpi_booking_rate}</span>
             </div>
-            <p className="text-4xl font-extrabold tracking-tighter text-stone-900 dark:text-white">{formatPercent(setterDisplay.bookingRate)}%</p>
-            <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">{t.kpi_booked_contacted.replace('{booked}', String(setterDisplay.booked.length)).replace('{contacted}', String(setterDisplay.contacted.length))}</p>
+            <p className={TILE_VALUE}>{formatPercent(setterDisplay.bookingRate)}%</p>
+            <p className={TILE_SUB}>{t.kpi_booked_contacted.replace('{booked}', String(setterDisplay.booked.length)).replace('{contacted}', String(setterDisplay.contacted.length))}</p>
           </div>
         </div>
       )}
 
       {/* Taux de réponse par canal (écrit / vocal / mail) — canal du premier contact */}
       {showSetterCards && (
-        <div className="bg-white dark:bg-white/5 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
-          <div className="flex items-center gap-3 mb-1">
-            <MessageSquare className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-            <span className="text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400">{t.kpi_channel_rate}</span>
+        <div className="bg-white dark:bg-white/5 rounded-2xl p-4 sm:p-6 lg:p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50 min-w-0">
+          <div className="flex items-center gap-3 mb-1 max-sm:gap-2">
+            <MessageSquare className="h-4 w-4 max-sm:shrink-0 text-purple-600 dark:text-purple-400" />
+            <span className="text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 max-sm:tracking-wide">{t.kpi_channel_rate}</span>
           </div>
-          <p className="text-xs text-stone-400 dark:text-neutral-500 mb-5">{t.kpi_channel_sub}</p>
+          <p className="text-xs text-stone-400 dark:text-neutral-500 mb-3 sm:mb-5">{t.kpi_channel_sub}</p>
           {setterDisplay.channelStats.every((c: any) => c.sent === 0) ? (
             <p className="text-sm text-stone-400 dark:text-neutral-500 italic">{t.kpi_channel_empty}</p>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Téléphone : lignes à fleur de carte (pas de cartes dans la carte) */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-sm:gap-0 max-sm:divide-y max-sm:divide-stone-100 max-sm:dark:divide-white/5">
                 {setterDisplay.channelStats.map((c: any) => {
                   const meta = CONTACT_CHANNELS.find(x => x.key === c.key)!
                   return (
-                    <div key={c.key} className="rounded-xl border border-stone-100 dark:border-white/5 bg-stone-50/60 dark:bg-white/[0.02] p-4">
-                      <div className="flex items-center gap-2 mb-2">
+                    <div key={c.key} className="rounded-xl border border-stone-100 dark:border-white/5 bg-stone-50/60 dark:bg-white/[0.02] p-4 max-sm:rounded-none max-sm:border-x-0 max-sm:border-b-0 max-sm:first:border-t-0 max-sm:bg-transparent max-sm:dark:bg-transparent max-sm:px-0 max-sm:py-3 max-sm:first:pt-0 max-sm:last:pb-0 max-sm:grid max-sm:grid-cols-[minmax(0,1fr)_auto] max-sm:items-center max-sm:gap-x-3">
+                      <div className="flex items-center gap-2 mb-2 max-sm:mb-0 min-w-0">
                         <span className="text-base leading-none">{meta.emoji}</span>
                         <span className="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400">{lang === 'en' ? meta.en : meta.fr}</span>
                       </div>
-                      <p className="text-3xl font-extrabold tracking-tighter text-stone-900 dark:text-white">{formatPercent(c.rate)}%</p>
-                      <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">
+                      <p className="text-xl sm:text-3xl font-extrabold tracking-tighter text-stone-900 dark:text-white">{formatPercent(c.rate)}%</p>
+                      <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1 max-sm:mt-0 max-sm:col-span-2">
                         {t.kpi_relance_replied_relanced.replace('{replied}', String(c.replied)).replace('{relanced}', String(c.sent))}
                       </p>
-                      <div className="mt-3 h-1.5 rounded-full bg-stone-200/70 dark:bg-white/5 overflow-hidden">
+                      <div className="mt-3 max-sm:mt-2 max-sm:col-span-2 h-1.5 rounded-full bg-stone-200/70 dark:bg-white/5 overflow-hidden">
                         <div className="h-full rounded-full bg-purple-500 dark:bg-purple-400" style={{ width: `${Math.min(100, c.rate)}%` }} />
                       </div>
                     </div>
@@ -857,7 +872,7 @@ export function SetterKPI() {
       )}
 
       {/* Standard KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 [&>*:last-child:nth-child(odd)]:col-span-2 lg:[&>*:last-child:nth-child(odd)]:col-span-1">
         <KpiCard title={t.kpi_ca_generated} value={`${formatCurrency(v.revenue)} €`} icon={DollarSign} color="emerald" />
         <KpiCard title={t.kpi_total_sales} value={v.sales} icon={ShoppingCart} color="blue" />
         <KpiCard title={t.kpi_closing_rate} value={`${formatPercent(v.conversion)}%`} icon={Target} color="purple" subtitle={showSetterCards ? t.kpi_won_qualified.replace('{won}', String(setterDisplay.won.length)).replace('{qualified}', String(setterDisplay.qualifiedAll.length)) : undefined} />
@@ -869,10 +884,10 @@ export function SetterKPI() {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-white/5 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
-          <h3 className="text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-4">{t.kpi_closing_rate_chart}</h3>
-          <div className="h-56">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="bg-white dark:bg-white/5 rounded-2xl p-4 sm:p-6 lg:p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50 min-w-0">
+          <h3 className="text-xs sm:text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-3 sm:mb-4">{t.kpi_closing_rate_chart}</h3>
+          <div className="h-48 sm:h-56">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <defs>
@@ -892,9 +907,9 @@ export function SetterKPI() {
         </div>
 
         {!hideSetterCommission && !isSolo && (
-        <div className="bg-white dark:bg-white/5 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
-          <h3 className="text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-4">Historique Commissions</h3>
-          <div className="h-56">
+        <div className="bg-white dark:bg-white/5 rounded-2xl p-4 sm:p-6 lg:p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50 min-w-0">
+          <h3 className="text-xs sm:text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-3 sm:mb-4">Historique Commissions</h3>
+          <div className="h-48 sm:h-56">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <defs>
@@ -916,9 +931,9 @@ export function SetterKPI() {
       </div>
 
       {/* Pipeline Summary */}
-      <div className="bg-stone-900 text-white rounded-2xl p-6">
-        <h3 className="text-sm font-bold tracking-widest uppercase text-stone-400 mb-4">Résumé du Pipeline</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="bg-stone-900 text-white rounded-2xl p-4 sm:p-6">
+        <h3 className="text-xs sm:text-sm font-bold tracking-widest uppercase text-stone-400 mb-1 md:mb-4">Résumé du Pipeline</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-md:gap-0 max-md:divide-y max-md:divide-white/10">
           <SummaryItem label="Total Leads" value={v.leads} icon={Users} color="indigo" dark />
           <SummaryItem label="Deals en Cours" value={v.deals} icon={Briefcase} color="cyan" dark />
           {!hideSetterCommission && !isSolo && <SummaryItem label="Commission Moy." value={`${formatCurrency(avgCommission)} €`} icon={Award} color="stone" dark />}
@@ -931,16 +946,18 @@ export function SetterKPI() {
         const cfg = getConfigForKey(configTab)
         const cfgMode = cfg.mode || 'formulas'
         return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+        // Feuille du bas sur téléphone (en-tête et pied fixes, corps défilant), fenêtre centrée à partir de sm
+        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setIsConfigOpen(false)} />
-          <div className="relative w-full max-w-xl mx-4 bg-white dark:bg-[#1a1a1a] rounded-2xl border border-stone-200 dark:border-white/10 shadow-2xl overflow-hidden">
+          <div className="relative w-full sm:max-w-xl sm:mx-4 max-h-[92dvh] sm:max-h-none flex flex-col sm:block bg-white dark:bg-[#1a1a1a] rounded-t-3xl sm:rounded-2xl border border-stone-200 dark:border-white/10 shadow-2xl overflow-hidden">
+            <div className="sm:hidden mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-stone-300 dark:bg-white/20" />
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-stone-100 dark:border-white/5">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-stone-100 dark:bg-blue-600/20 rounded-lg border border-stone-200 dark:border-blue-500/30">
+            <div className="flex items-center justify-between gap-3 px-5 py-3 sm:p-6 shrink-0 border-b border-stone-100 dark:border-white/5">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 shrink-0 bg-stone-100 dark:bg-blue-600/20 rounded-lg border border-stone-200 dark:border-blue-500/30">
                   <Settings className="w-5 h-5 text-stone-600 dark:text-blue-400" />
                 </div>
-                <h2 className="text-xl font-bold text-stone-900 dark:text-white">{t.kpi_config_title}</h2>
+                <h2 className="text-lg sm:text-xl font-bold text-stone-900 dark:text-white truncate">{t.kpi_config_title}</h2>
               </div>
               <button onClick={() => setIsConfigOpen(false)} className="p-2 rounded-lg text-stone-400 hover:bg-stone-100 dark:hover:bg-white/5 hover:text-stone-600 dark:hover:text-white transition-colors">
                 <X className="w-5 h-5" />
@@ -948,14 +965,14 @@ export function SetterKPI() {
             </div>
 
             {/* Warning */}
-            <div className="mx-6 mt-4 flex items-center gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30">
+            <div className="mx-5 sm:mx-6 mt-3 sm:mt-4 shrink-0 flex items-center gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30">
               <AlertTriangle className="w-5 h-5 text-amber-500 dark:text-amber-400 flex-shrink-0" />
-              <p className="text-sm text-amber-700 dark:text-amber-300">{lang === 'fr' ? 'Renseignez ici vos KPI avant de rejoindre l\'organisation' : 'Enter your KPI from before joining the organization'}</p>
+              <p className="text-xs sm:text-sm text-amber-700 dark:text-amber-300">{lang === 'fr' ? 'Renseignez ici vos KPI avant de rejoindre l\'organisation' : 'Enter your KPI from before joining the organization'}</p>
             </div>
-            <p className="mx-6 mt-3 text-xs text-stone-400 dark:text-white/40 italic">{lang === 'fr' ? 'Ces données apparaîtront uniquement dans l\'onglet Personnel.' : 'This data will only appear in the Personal tab.'}</p>
+            <p className="mx-5 sm:mx-6 mt-2 sm:mt-3 shrink-0 text-xs text-stone-400 dark:text-white/40 italic">{lang === 'fr' ? 'Ces données apparaîtront uniquement dans l\'onglet Personnel.' : 'This data will only appear in the Personal tab.'}</p>
 
             {/* Form body */}
-            <div className="p-6 space-y-4 max-h-[50vh] overflow-y-auto">
+            <div className="p-5 sm:p-6 space-y-4 flex-1 min-h-0 sm:max-h-[50vh] overflow-y-auto overscroll-contain">
               {/* 3 setter-specific fields */}
               {[
                 { key: 'contacted', label: lang === 'fr' ? 'Combien de prospects contactés ?' : 'How many prospects contacted?', icon: '📞' },
@@ -1014,7 +1031,7 @@ export function SetterKPI() {
                           <input type="text" value={fm.name} onChange={e => updateFormula(configTab, idx, 'name', e.target.value)} placeholder="Ex: Formule Gold"
                             className="w-full rounded-lg border border-stone-200 dark:border-white/10 bg-stone-50 dark:bg-white/5 px-3 py-2 text-sm text-stone-900 dark:text-white focus:outline-none focus:border-stone-400 dark:focus:border-blue-500" />
                         </div>
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-3 gap-2 sm:gap-3">
                           <div>
                             <label className="text-xs text-stone-400 dark:text-white/40 mb-1 block">{lang === 'fr' ? 'Prix (€)' : 'Price (€)'}</label>
                             <input type="number" min={0} value={fm.price} onChange={e => updateFormula(configTab, idx, 'price', parseFloat(e.target.value) || 0)}
@@ -1060,12 +1077,12 @@ export function SetterKPI() {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 pb-6">
-              <button onClick={() => setIsConfigOpen(false)} className="px-4 py-2.5 rounded-xl text-sm font-medium text-stone-400 hover:text-stone-600 dark:hover:text-white transition-colors">
+            <div className="flex items-center justify-end gap-3 shrink-0 px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:pt-0 sm:pb-6 max-sm:border-t max-sm:border-stone-100 max-sm:dark:border-white/5">
+              <button onClick={() => setIsConfigOpen(false)} className="max-sm:flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-stone-400 hover:text-stone-600 dark:hover:text-white transition-colors">
                 {t.common_cancel}
               </button>
               <button onClick={saveConfig} disabled={savingConfig}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-stone-900 dark:bg-gradient-to-r dark:from-blue-600 dark:to-indigo-600 text-sm font-bold text-white hover:opacity-90 transition-all shadow-lg disabled:opacity-50">
+                className="max-sm:flex-1 flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-stone-900 dark:bg-gradient-to-r dark:from-blue-600 dark:to-indigo-600 text-sm font-bold text-white hover:opacity-90 transition-all shadow-lg disabled:opacity-50">
                 <Save className="w-4 h-4" />
                 {savingConfig ? '...' : t.common_save}
               </button>
@@ -1077,29 +1094,30 @@ export function SetterKPI() {
 
       {/* Détail des réponses par relance */}
       {isRelanceDetailOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setIsRelanceDetailOpen(false)} />
-          <div className="relative w-full max-w-2xl mx-4 bg-white dark:bg-[#1a1a1a] rounded-2xl border border-stone-200 dark:border-white/10 shadow-2xl overflow-hidden">
+          <div className="relative w-full sm:max-w-2xl sm:mx-4 max-h-[92dvh] sm:max-h-none flex flex-col sm:block bg-white dark:bg-[#1a1a1a] rounded-t-3xl sm:rounded-2xl border border-stone-200 dark:border-white/10 shadow-2xl overflow-hidden">
+            <div className="sm:hidden mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-stone-300 dark:bg-white/20" />
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-stone-100 dark:border-white/5">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-stone-100 dark:bg-purple-600/20 rounded-lg border border-stone-200 dark:border-purple-500/30">
+            <div className="flex items-center justify-between gap-3 px-5 py-3 sm:p-6 shrink-0 border-b border-stone-100 dark:border-white/5">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 shrink-0 bg-stone-100 dark:bg-purple-600/20 rounded-lg border border-stone-200 dark:border-purple-500/30">
                   <Repeat className="w-5 h-5 text-stone-600 dark:text-purple-400" />
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold text-stone-900 dark:text-white">{t.kpi_relance_detail_title}</h2>
+                <div className="min-w-0">
+                  <h2 className="text-lg sm:text-xl font-bold text-stone-900 dark:text-white truncate">{t.kpi_relance_detail_title}</h2>
                   <p className="text-xs text-stone-500 dark:text-neutral-400">{t.kpi_relance_detail_sub}</p>
                 </div>
               </div>
-              <button onClick={() => setIsRelanceDetailOpen(false)} className="p-2 rounded-lg text-stone-400 hover:bg-stone-100 dark:hover:bg-white/5 hover:text-stone-600 dark:hover:text-white transition-colors">
+              <button onClick={() => setIsRelanceDetailOpen(false)} className="shrink-0 p-2 rounded-lg text-stone-400 hover:bg-stone-100 dark:hover:bg-white/5 hover:text-stone-600 dark:hover:text-white transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6 space-y-5 max-h-[65vh] overflow-y-auto">
+            <div className="p-5 sm:p-6 space-y-5 flex-1 min-h-0 sm:max-h-[65vh] overflow-y-auto overscroll-contain pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:pb-6">
               {/* Global */}
-              <div className="flex items-center justify-between rounded-xl bg-stone-50 dark:bg-white/[0.03] border border-stone-200 dark:border-white/10 px-4 py-3">
-                <div>
+              <div className="flex items-center justify-between gap-3 rounded-xl bg-stone-50 dark:bg-white/[0.03] border border-stone-200 dark:border-white/10 px-4 py-3">
+                <div className="min-w-0">
                   <p className="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400">{t.kpi_relance_global}</p>
                   <p className="text-xs text-stone-400 dark:text-neutral-500 mt-0.5">
                     {t.kpi_relance_replied_relanced.replace('{replied}', String(setterDisplay.relanceReplied.length)).replace('{relanced}', String(setterDisplay.relanced.length))}
@@ -1109,12 +1127,12 @@ export function SetterKPI() {
               </div>
 
               {/* Répondu sans relance (référence) */}
-              <div className="flex items-center justify-between rounded-xl border border-dashed border-stone-200 dark:border-white/10 px-4 py-3">
-                <div>
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-stone-200 dark:border-white/10 px-4 py-3">
+                <div className="min-w-0">
                   <p className="text-sm font-bold text-stone-700 dark:text-neutral-200">{t.kpi_relance_no_relance}</p>
                   <p className="text-xs text-stone-400 dark:text-neutral-500 mt-0.5">{t.kpi_relance_no_relance_hint}</p>
                 </div>
-                <p className="text-sm font-bold text-stone-500 dark:text-neutral-400">
+                <p className="shrink-0 text-sm font-bold text-stone-500 dark:text-neutral-400">
                   {setterDisplay.neverRelancedReplied} / {setterDisplay.neverRelanced.length}
                 </p>
               </div>
@@ -1124,19 +1142,20 @@ export function SetterKPI() {
                 <p className="text-sm text-stone-400 dark:text-neutral-500 italic text-center py-6">{t.kpi_relance_empty}</p>
               ) : (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-[1fr_auto_auto_auto] gap-4 px-1 text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-neutral-500">
-                    <span>{t.kpi_relance_col_step}</span>
-                    <span className="w-16 text-right">{t.kpi_relance_col_relanced}</span>
-                    <span className="w-16 text-right">{t.kpi_relance_col_replied}</span>
-                    <span className="w-14 text-right">{t.kpi_relance_col_rate}</span>
+                  {/* Colonnes resserrées sur téléphone (le libellé de rang garde la place restante) */}
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] gap-2 sm:gap-4 px-3 sm:px-1 text-[10px] font-bold uppercase tracking-wide sm:tracking-widest text-stone-400 dark:text-neutral-500">
+                    <span className="truncate">{t.kpi_relance_col_step}</span>
+                    <span className="w-14 sm:w-16 text-right">{t.kpi_relance_col_relanced}</span>
+                    <span className="w-14 sm:w-16 text-right">{t.kpi_relance_col_replied}</span>
+                    <span className="w-12 sm:w-14 text-right">{t.kpi_relance_col_rate}</span>
                   </div>
                   {setterDisplay.relanceSteps.map((s: any) => (
-                    <div key={s.n} className="rounded-xl border border-stone-100 dark:border-white/5 bg-white dark:bg-white/[0.02] px-4 py-3">
-                      <div className="grid grid-cols-[1fr_auto_auto_auto] gap-4 items-center">
-                        <span className="text-sm font-semibold text-stone-900 dark:text-white">{relanceLabel(s.n, lang !== 'en')}</span>
-                        <span className="w-16 text-right text-sm text-stone-500 dark:text-neutral-400">{s.reached}</span>
-                        <span className="w-16 text-right text-sm text-stone-500 dark:text-neutral-400">{s.replied}</span>
-                        <span className="w-14 text-right text-sm font-bold text-stone-900 dark:text-white">{formatPercent(s.rate)}%</span>
+                    <div key={s.n} className="rounded-xl border border-stone-100 dark:border-white/5 bg-white dark:bg-white/[0.02] px-3 sm:px-4 py-3">
+                      <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] gap-2 sm:gap-4 items-center">
+                        <span className="text-sm font-semibold text-stone-900 dark:text-white truncate">{relanceLabel(s.n, lang !== 'en')}</span>
+                        <span className="w-14 sm:w-16 text-right text-sm text-stone-500 dark:text-neutral-400">{s.reached}</span>
+                        <span className="w-14 sm:w-16 text-right text-sm text-stone-500 dark:text-neutral-400">{s.replied}</span>
+                        <span className="w-12 sm:w-14 text-right text-sm font-bold text-stone-900 dark:text-white">{formatPercent(s.rate)}%</span>
                       </div>
                       <div className="mt-2 h-1.5 rounded-full bg-stone-100 dark:bg-white/5 overflow-hidden">
                         <div className="h-full rounded-full bg-purple-500 dark:bg-purple-400 transition-all" style={{ width: `${Math.min(100, s.rate)}%` }} />
@@ -1156,12 +1175,12 @@ export function SetterKPI() {
                       const meta = CONTACT_CHANNELS.find(x => x.key === c.key)!
                       return (
                         <div key={c.key} className="rounded-xl border border-stone-100 dark:border-white/5 bg-white dark:bg-white/[0.02] px-4 py-3">
-                          <div className="flex items-center justify-between gap-4">
-                            <span className="flex items-center gap-2 text-sm font-semibold text-stone-900 dark:text-white">
+                          <div className="flex items-center justify-between gap-3 sm:gap-4">
+                            <span className="flex items-center gap-2 min-w-0 text-sm font-semibold text-stone-900 dark:text-white">
                               <span className="text-base leading-none">{meta.emoji}</span>
                               {lang === 'en' ? meta.en : meta.fr}
                             </span>
-                            <span className="flex items-center gap-4">
+                            <span className="flex items-center gap-3 sm:gap-4 shrink-0">
                               <span className="text-sm text-stone-500 dark:text-neutral-400">{c.replied} / {c.sent}</span>
                               <span className="w-14 text-right text-sm font-bold text-stone-900 dark:text-white">{formatPercent(c.rate)}%</span>
                             </span>
@@ -1198,15 +1217,15 @@ const KpiCard = ({ title, value, icon: Icon, color, highlight, subtitle }: any) 
   const iconColor = colors[color] || colors.stone
   return (
     <div className={cn(
-      'bg-white dark:bg-white/5 rounded-2xl p-8 transition-all hover:shadow-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]',
+      'min-w-0 bg-white dark:bg-white/5 rounded-2xl p-4 sm:p-6 lg:p-8 transition-all hover:shadow-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]',
       highlight ? 'border border-stone-100/50 dark:border-neutral-700/50' : 'border border-stone-100/50 dark:border-neutral-700/50'
     )}>
-      <div className="flex items-center gap-3 mb-3">
-        <Icon className={cn('h-4 w-4', iconColor)} />
-        <span className="text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400">{title}</span>
+      <div className={TILE_HEAD}>
+        <Icon className={cn('h-4 w-4 max-sm:shrink-0', iconColor)} />
+        <span className={TILE_LABEL}>{title}</span>
       </div>
-      <p className="text-4xl font-extrabold tracking-tighter text-stone-900 dark:text-white">{value}</p>
-      {subtitle && <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">{subtitle}</p>}
+      <p className={TILE_VALUE}>{value}</p>
+      {subtitle && <p className={TILE_SUB}>{subtitle}</p>}
     </div>
   )
 }
@@ -1219,11 +1238,12 @@ const SummaryItem = ({ label, value, icon: Icon, color, dark }: any) => {
   }
   const iconColor = colors[color] || colors.stone
   return (
-    <div className={cn('flex items-center gap-6 p-3 rounded-xl transition-colors', dark ? 'hover:bg-stone-800' : 'hover:bg-stone-50 dark:hover:bg-neutral-800')}>
-      <Icon className={cn('h-5 w-5', iconColor)} />
-      <div>
-        <p className={cn('text-xs font-bold tracking-widest uppercase', dark ? 'text-stone-400' : 'text-stone-500')}>{label}</p>
-        <p className={cn('text-2xl font-extrabold tracking-tighter', dark ? 'text-white' : 'text-stone-900')}>{value}</p>
+    // Téléphone/tablette : ligne compacte (icône, libellé, valeur) dans une liste à filets
+    <div className={cn('flex items-center gap-6 p-3 rounded-xl transition-colors max-md:gap-3 max-md:px-0 max-md:py-2.5 max-md:rounded-none', dark ? 'hover:bg-stone-800 max-md:hover:bg-transparent' : 'hover:bg-stone-50 dark:hover:bg-neutral-800')}>
+      <Icon className={cn('h-5 w-5 shrink-0', iconColor)} />
+      <div className="max-md:flex max-md:flex-1 max-md:min-w-0 max-md:items-center max-md:justify-between max-md:gap-3">
+        <p className={cn('text-xs font-bold tracking-widest uppercase max-md:truncate max-md:tracking-wider', dark ? 'text-stone-400' : 'text-stone-500')}>{label}</p>
+        <p className={cn('text-2xl font-extrabold tracking-tighter max-md:text-lg max-md:shrink-0', dark ? 'text-white' : 'text-stone-900')}>{value}</p>
       </div>
     </div>
   )

@@ -130,35 +130,35 @@ export default function BusinessVerification({ userId, email, authMethod = 'clas
   );
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-[#f5f3f0] dark:bg-neutral-900" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
-      {/* Background */}
-      <div className="pointer-events-none absolute inset-0 -z-10">
+    <div className="min-h-screen min-h-dvh flex flex-col items-center justify-center relative overflow-hidden bg-[#f5f3f0] dark:bg-neutral-900 px-4 py-6 sm:py-0" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
+      {/* Background (masqué sur mobile : décor lourd) */}
+      <div className="pointer-events-none absolute inset-0 -z-10 hidden lg:block">
         <div className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full bg-indigo-400/10 blur-[120px]" />
         <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full bg-violet-300/10 blur-[120px]" />
       </div>
 
-      <div className="w-full max-w-md mx-4 bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 dark:border-neutral-800 p-10">
+      <div className="w-full max-w-md bg-white/70 dark:bg-white/5 lg:backdrop-blur-xl rounded-2xl sm:rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 dark:border-neutral-800 p-6 sm:p-10">
         {/* Brand */}
-        <div className="flex items-center justify-center mb-8">
-          <img src="/closeos-business-logo-ecrit.png" alt="CloseOS Business" className="h-10 w-auto dark:hidden" />
-          <img src="/closeos-business-logo-ecrit-dark.png" alt="CloseOS Business" className="h-10 w-auto hidden dark:block" />
+        <div className="flex items-center justify-center mb-6 sm:mb-8">
+          <img src="/closeos-business-logo-ecrit.png" alt="CloseOS Business" className="h-9 sm:h-10 w-auto dark:hidden" />
+          <img src="/closeos-business-logo-ecrit-dark.png" alt="CloseOS Business" className="h-9 sm:h-10 w-auto hidden dark:block" />
         </div>
 
         {/* Icon */}
-        <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-500/10 rounded-full flex items-center justify-center">
-            <ShieldCheck className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+        <div className="flex justify-center mb-4 sm:mb-6">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-indigo-50 dark:bg-indigo-500/10 rounded-full flex items-center justify-center">
+            <ShieldCheck className="h-7 w-7 sm:h-8 sm:w-8 text-indigo-600 dark:text-indigo-400" />
           </div>
         </div>
 
         {/* Title */}
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-2">
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-2">
             {t.verification_required}
           </h1>
           <p className="text-stone-500 dark:text-neutral-400 text-sm leading-relaxed">
             {codeSent
-              ? <>{t.verification_code_sent_to} <strong className="text-stone-700 dark:text-neutral-300">{maskedEmail}</strong></>
+              ? <>{t.verification_code_sent_to} <strong className="inline-block sm:inline max-w-full break-all sm:break-normal text-stone-700 dark:text-neutral-300">{maskedEmail}</strong></>
               : t.verification_sending
             }
           </p>
@@ -173,11 +173,11 @@ export default function BusinessVerification({ userId, email, authMethod = 'clas
         )}
 
         {/* Code inputs */}
-        <div className="flex justify-center gap-2.5 mb-8" onPaste={handlePaste}>
+        <div className="flex justify-center gap-2 sm:gap-2.5 mb-6 sm:mb-8" onPaste={handlePaste}>
           {code.map((digit, i) => (
-            <div key={i} className="relative">
+            <div key={i} className="relative flex-1 min-w-0 max-w-[3rem]">
               {i === 3 && (
-                <div className="absolute -left-2.5 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-stone-300 dark:bg-neutral-600" />
+                <div className="absolute -left-1.5 sm:-left-2.5 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-stone-300 dark:bg-neutral-600" />
               )}
               <input
                 ref={el => { inputRefs.current[i] = el; }}
@@ -188,7 +188,7 @@ export default function BusinessVerification({ userId, email, authMethod = 'clas
                 onChange={e => handleInput(i, e.target.value)}
                 onKeyDown={e => handleKeyDown(i, e)}
                 disabled={loading || sending}
-                className="w-12 h-14 text-center text-xl font-bold bg-stone-100/50 dark:bg-neutral-800 border border-stone-300 dark:border-neutral-600 rounded-xl text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition-all disabled:opacity-50"
+                className="w-full h-12 sm:h-14 text-center text-xl font-bold bg-stone-100/50 dark:bg-neutral-800 border border-stone-300 dark:border-neutral-600 rounded-xl text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition-all disabled:opacity-50"
               />
             </div>
           ))}
@@ -196,22 +196,22 @@ export default function BusinessVerification({ userId, email, authMethod = 'clas
 
         {/* Loading */}
         {(loading || sending) && (
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-4 sm:mb-6">
             <Loader2 className="h-5 w-5 animate-spin text-indigo-600" />
           </div>
         )}
 
         {/* Resend */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-2 sm:mb-6">
           {resendCountdown > 0 ? (
-            <p className="text-xs text-stone-400 dark:text-neutral-500">
+            <p className="py-2.5 sm:py-0 text-xs text-stone-400 dark:text-neutral-500">
               {t.verification_resend_in} {resendCountdown}s
             </p>
           ) : (
             <button
               onClick={sendCode}
               disabled={sending}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 py-2.5 sm:py-0 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline disabled:opacity-50"
             >
               <RotateCcw className="h-3 w-3" />
               {t.verification_resend}
@@ -222,14 +222,14 @@ export default function BusinessVerification({ userId, email, authMethod = 'clas
         {/* Cancel */}
         <button
           onClick={onCancel}
-          className="w-full text-center text-xs font-bold text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors"
+          className="w-full py-2.5 sm:py-0 text-center text-xs font-bold text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors"
         >
           {t.verification_back_login}
         </button>
       </div>
 
       {/* Footer */}
-      <div className="mt-8 flex flex-col items-center gap-3 pb-8">
+      <div className="mt-6 sm:mt-8 flex flex-col items-center gap-3 text-center pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-8">
         <div className="text-[0.65rem] text-stone-400/60 tracking-widest uppercase font-semibold">
           &copy; {new Date().getFullYear()} CloseOS Business
         </div>

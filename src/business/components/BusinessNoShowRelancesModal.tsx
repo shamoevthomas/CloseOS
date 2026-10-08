@@ -172,22 +172,23 @@ export function BusinessNoShowRelancesModal({ isOpen, onClose, ownerId }: Props)
     "w-full appearance-none bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl border-0 px-3 py-2 text-sm text-[#1b1c1b] dark:text-white font-medium focus:ring-1 focus:ring-[#006c49]/20 focus:outline-none"
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4">
       <div
-        className="w-full max-w-2xl max-h-[90vh] flex flex-col bg-white dark:bg-neutral-900 rounded-xl overflow-hidden"
+        className="w-full max-w-2xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-xl overflow-hidden"
         style={{ boxShadow: '0 40px 100px rgba(0,0,0,0.08)', border: '0.5px solid rgba(196,199,199,0.2)' }}
       >
         {/* En-tête */}
-        <div className="flex items-center justify-between px-8 py-5 flex-shrink-0 border-b border-[#c4c7c7]/10 dark:border-neutral-800">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-stone-100 dark:bg-neutral-800 flex items-center justify-center">
+        <div className="relative flex items-center justify-between gap-3 px-4 pt-5 pb-3 sm:px-8 sm:py-5 flex-shrink-0 border-b border-[#c4c7c7]/10 dark:border-neutral-800">
+          <div className="sm:hidden absolute left-1/2 top-1.5 h-1 w-10 -translate-x-1/2 rounded-full bg-stone-300 dark:bg-neutral-700" />
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-stone-100 dark:bg-neutral-800 flex items-center justify-center">
               <MailX className="h-5 w-5 text-stone-500" />
             </div>
             <div>
-              <h3 className="text-xl font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white">
+              <h3 className="text-lg sm:text-xl leading-tight font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white">
                 {fr ? 'Relances No Show' : 'No-show follow-ups'}
               </h3>
-              <p className="text-sm text-[#444748] dark:text-neutral-400">
+              <p className="text-xs sm:text-sm text-[#444748] dark:text-neutral-400">
                 {fr
                   ? `Emails envoyés au prospect (${rows.length}/${MAX_RELANCES})`
                   : `Emails sent to the prospect (${rows.length}/${MAX_RELANCES})`}
@@ -196,14 +197,15 @@ export function BusinessNoShowRelancesModal({ isOpen, onClose, ownerId }: Props)
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-full text-[#444748]/40 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors"
+            aria-label={fr ? 'Fermer' : 'Close'}
+            className="shrink-0 p-2 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 sm:bg-transparent sm:dark:bg-transparent text-[#444748]/40 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Corps */}
-        <div className="flex-1 overflow-y-auto p-8">
+        <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-8">
           {loading ? (
             <div className="flex justify-center py-16">
               <Loader2 className="h-7 w-7 animate-spin text-[#444748]/40" />
@@ -225,7 +227,7 @@ export function BusinessNoShowRelancesModal({ isOpen, onClose, ownerId }: Props)
               </button>
             </div>
           ) : (
-            <div className="space-y-5">
+            <div className="space-y-4 sm:space-y-5">
               {/* Avertissement booking ↔ CRM */}
               <div className="flex items-start gap-3 rounded-xl bg-[#ffb95f]/10 px-4 py-3">
                 <AlertTriangle className="h-4 w-4 text-[#b87500] flex-shrink-0 mt-0.5" />
@@ -258,7 +260,7 @@ export function BusinessNoShowRelancesModal({ isOpen, onClose, ownerId }: Props)
               {rows.map((row, idx) => (
                 <div
                   key={idx}
-                  className="rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 p-5 space-y-4"
+                  className="rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 p-4 sm:p-5 space-y-4"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-500">
@@ -266,7 +268,7 @@ export function BusinessNoShowRelancesModal({ isOpen, onClose, ownerId }: Props)
                     </span>
                     <button
                       onClick={() => removeRow(idx)}
-                      className="p-1.5 rounded-lg text-[#444748]/40 hover:text-[#ba1a1a] hover:bg-[#ffdad6]/30 transition-colors"
+                      className="-m-1 sm:m-0 p-2 sm:p-1.5 rounded-lg text-[#444748]/40 hover:text-[#ba1a1a] hover:bg-[#ffdad6]/30 transition-colors"
                       title={fr ? 'Supprimer' : 'Delete'}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -363,10 +365,10 @@ export function BusinessNoShowRelancesModal({ isOpen, onClose, ownerId }: Props)
         </div>
 
         {/* Pied */}
-        <div className="flex items-center justify-end gap-3 px-8 py-5 flex-shrink-0 border-t border-[#c4c7c7]/10 dark:border-neutral-800">
+        <div className="flex items-center justify-end gap-3 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-5 flex-shrink-0 border-t border-[#c4c7c7]/10 dark:border-neutral-800">
           <button
             onClick={onClose}
-            className="px-6 py-3 rounded-full text-sm font-['Manrope'] font-bold text-[#444748] dark:text-neutral-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors"
+            className="flex-1 sm:flex-none px-6 py-3 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 sm:bg-transparent sm:dark:bg-transparent text-sm font-['Manrope'] font-bold text-[#444748] dark:text-neutral-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors"
           >
             {fr ? 'Annuler' : 'Cancel'}
           </button>
@@ -374,7 +376,7 @@ export function BusinessNoShowRelancesModal({ isOpen, onClose, ownerId }: Props)
             onClick={handleSave}
             /* Enregistrer après un échec de chargement écraserait la config existante */
             disabled={saving || loading || !!loadError}
-            className="flex items-center gap-2 bg-black text-white px-7 py-3 rounded-full text-sm font-['Manrope'] font-bold hover:bg-[#1b1c1b] transition-colors active:scale-95 disabled:opacity-60"
+            className="flex flex-1 sm:flex-none justify-center items-center gap-2 bg-black text-white px-7 py-3 rounded-full text-sm font-['Manrope'] font-bold hover:bg-[#1b1c1b] transition-colors active:scale-95 disabled:opacity-60"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             {fr ? 'Enregistrer' : 'Save'}

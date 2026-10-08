@@ -153,9 +153,9 @@ function SectionEditor({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Add new section input */}
-      <div className="flex gap-3">
+      <div className="flex gap-2 sm:gap-3">
         <input
           type="text"
           value={newTitle}
@@ -164,21 +164,21 @@ function SectionEditor({
           className={`${stoneInputClass} flex-1 border border-[#c4c7c7]/20 dark:border-neutral-700 rounded-xl px-4 py-3 bg-white dark:bg-neutral-800`}
           placeholder={t.org_section_name_placeholder}
         />
-        <button type="button" onClick={addSection} className="px-6 py-3 rounded-full bg-[#000000] text-white font-['Manrope'] font-extrabold text-sm hover:bg-[#1b1c1b] transition-all active:scale-95 flex items-center gap-2 shrink-0">
+        <button type="button" onClick={addSection} aria-label={t.org_add_section} className="px-4 sm:px-6 py-3 rounded-full bg-[#000000] text-white font-['Manrope'] font-extrabold text-sm hover:bg-[#1b1c1b] transition-all active:scale-95 flex items-center gap-2 shrink-0">
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">{t.org_add_section}</span>
         </button>
       </div>
 
       {sections.map(section => (
-        <div key={section.id} className="rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
-          <div className="flex items-center gap-2 px-3 md:px-5 py-4 bg-[#f5f3f2]/60 dark:bg-neutral-800/60 min-h-[44px]">
+        <div key={section.id} className="rounded-xl overflow-hidden bg-white/70 dark:bg-neutral-900/60 backdrop-blur-md border-[0.5px] border-[rgba(196,199,199,0.2)] dark:border-neutral-700/50">
+          <div className="flex items-center gap-2 px-3 md:px-5 py-3 sm:py-4 bg-[#f5f3f2]/60 dark:bg-neutral-800/60 min-h-[44px]">
             <GripVertical className="h-4 w-4 text-[#c4c7c7] shrink-0" />
             <input
               type="text"
               value={section.title}
               onChange={(e) => updateTitle(section.id, e.target.value)}
-              className="flex-1 bg-transparent font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white outline-none focus:text-[#006c49] transition-colors text-sm"
+              className="flex-1 min-w-0 bg-transparent font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white outline-none focus:text-[#006c49] transition-colors text-sm"
             />
             <button onClick={() => toggleCollapse(section.id)} className="p-1.5 text-[#444748] hover:text-[#1b1c1b] transition-colors">
               {section.collapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
@@ -189,18 +189,18 @@ function SectionEditor({
           </div>
 
           {!section.collapsed && (
-            <div className="p-5 space-y-4">
+            <div className="p-3 sm:p-5 space-y-3 sm:space-y-4">
               {section.blocks.map(block => {
                 const colors = blockColors[block.type]
                 return (
-                  <div key={block.id} className={`rounded-xl p-5 flex items-start gap-5 border-l-4 ${colors.border}`} style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '0.5px solid rgba(196,199,199,0.2)', borderLeftWidth: '4px' }}>
-                    <div className={`w-10 h-10 rounded-lg ${colors.bg} flex items-center justify-center ${colors.text} shrink-0`}>
+                  <div key={block.id} className={`rounded-xl p-3 sm:p-5 flex items-start gap-2 sm:gap-5 bg-white/70 dark:bg-neutral-800/60 backdrop-blur-md border-[0.5px] border-[rgba(196,199,199,0.2)] dark:border-neutral-700/50 border-l-4 ${colors.border}`}>
+                    <div className={`hidden sm:flex w-10 h-10 rounded-lg ${colors.bg} items-center justify-center ${colors.text} shrink-0`}>
                       {block.type === 'text' && <Type className="h-4 w-4" />}
                       {block.type === 'video' && <Video className="h-4 w-4" />}
                       {block.type === 'link' && <ExternalLink className="h-4 w-4" />}
                       {block.type === 'pdf' && <FileText className="h-4 w-4" />}
                     </div>
-                    <div className="flex-1 space-y-2">
+                    <div className="flex-1 min-w-0 space-y-2">
                       {block.type === 'text' && (
                         <textarea
                           value={block.content}
@@ -267,7 +267,7 @@ function SectionEditor({
                         </div>
                       )}
                     </div>
-                    <button onClick={() => removeBlock(section.id, block.id)} className="p-2 text-[#444748] hover:text-[#ba1a1a] transition-colors shrink-0">
+                    <button onClick={() => removeBlock(section.id, block.id)} aria-label="Supprimer" className="p-1.5 sm:p-2 text-[#444748] hover:text-[#ba1a1a] transition-colors shrink-0">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
@@ -275,14 +275,14 @@ function SectionEditor({
               })}
 
               {/* Add block buttons */}
-              <div className="flex flex-wrap gap-3 pt-2">
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3 pt-1 sm:pt-2">
                 {[
                   { type: 'text' as const, label: t.org_text_block, Icon: Type, color: 'text-[#006c49]', hover: 'hover:border-[#006c49] hover:bg-[#006c49]/5' },
                   { type: 'video' as const, label: t.org_video_block, Icon: Video, color: 'text-[#b87500]', hover: 'hover:border-[#ffb95f] hover:bg-[#ffddb8]/20' },
                   { type: 'link' as const, label: t.org_link_block, Icon: ExternalLink, color: 'text-[#474646]', hover: 'hover:border-[#474646] hover:bg-[#e5e2e1]/30' },
                   { type: 'pdf' as const, label: t.org_pdf_block, Icon: FileText, color: 'text-[#ba1a1a]', hover: 'hover:border-[#ba1a1a] hover:bg-[#ba1a1a]/5' },
                 ].map(({ type, label, Icon, color, hover }) => (
-                  <button key={type} onClick={() => addBlock(section.id, type)} className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${color} border-2 border-dashed border-[#c4c7c7]/20 ${hover} transition-all`}>
+                  <button key={type} onClick={() => addBlock(section.id, type)} className={`flex items-center justify-center sm:justify-start gap-1.5 px-3 sm:px-4 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${color} border-2 border-dashed border-[#c4c7c7]/20 ${hover} transition-all`}>
                     <Icon className="h-3.5 w-3.5" /> {label}
                   </button>
                 ))}
@@ -293,11 +293,11 @@ function SectionEditor({
       ))}
 
       {sections.length === 0 && (
-        <div className="text-center py-16">
-          <div className="w-20 h-20 bg-[#efedec] dark:bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Plus className="h-8 w-8 text-[#444748]/30" />
+        <div className="text-center py-8 sm:py-16">
+          <div className="w-14 h-14 sm:w-20 sm:h-20 bg-[#efedec] dark:bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+            <Plus className="h-6 w-6 sm:h-8 sm:w-8 text-[#444748]/30" />
           </div>
-          <p className="font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white text-lg mb-1">{emptyLabel}</p>
+          <p className="font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white text-base sm:text-lg mb-1">{emptyLabel}</p>
           <p className="text-sm text-[#444748] dark:text-neutral-400">{emptyDesc}</p>
         </div>
       )}
@@ -314,26 +314,26 @@ function SectionViewer({ sections }: { sections: ContentSection[] }) {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3 sm:space-y-5">
       {sections.map(section => (
-        <div key={section.id} className="rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
-          <div className="px-5 py-4 bg-[#f5f3f2]/60 dark:bg-neutral-800/60">
+        <div key={section.id} className="rounded-xl overflow-hidden bg-white/70 dark:bg-neutral-900/60 backdrop-blur-md border-[0.5px] border-[rgba(196,199,199,0.2)] dark:border-neutral-700/50">
+          <div className="px-4 sm:px-5 py-3 sm:py-4 bg-[#f5f3f2]/60 dark:bg-neutral-800/60">
             <h4 className="font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white text-sm">{section.title}</h4>
           </div>
-          <div className="p-5 space-y-4">
+          <div className="p-3 sm:p-5 space-y-3 sm:space-y-4">
             {section.blocks.map(block => {
               const colors = blockColors[block.type]
               return (
-                <div key={block.id} className={`rounded-xl p-5 flex items-start gap-5 border-l-4 ${colors.border}`} style={{ background: 'rgba(255,255,255,0.5)', border: '0.5px solid rgba(196,199,199,0.15)', borderLeftWidth: '4px' }}>
-                  <div className={`w-10 h-10 rounded-lg ${colors.bg} flex items-center justify-center ${colors.text} shrink-0`}>
+                <div key={block.id} className={`rounded-xl p-3 sm:p-5 flex items-start gap-5 bg-white/50 dark:bg-neutral-800/50 border-[0.5px] border-[rgba(196,199,199,0.15)] dark:border-neutral-700/50 border-l-4 ${colors.border}`}>
+                  <div className={`hidden sm:flex w-10 h-10 rounded-lg ${colors.bg} items-center justify-center ${colors.text} shrink-0`}>
                     {block.type === 'text' && <Type className="h-4 w-4" />}
                     {block.type === 'video' && <Video className="h-4 w-4" />}
                     {block.type === 'link' && <ExternalLink className="h-4 w-4" />}
                     {block.type === 'pdf' && <FileText className="h-4 w-4" />}
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     {block.type === 'text' && (
-                      <p className="text-sm text-[#444748] whitespace-pre-wrap leading-relaxed">{block.content}</p>
+                      <p className="text-sm text-[#444748] dark:text-neutral-300 whitespace-pre-wrap leading-relaxed">{block.content}</p>
                     )}
                     {block.type === 'video' && block.content && (
                       <div className="rounded-xl overflow-hidden bg-black aspect-video">
@@ -353,7 +353,7 @@ function SectionViewer({ sections }: { sections: ContentSection[] }) {
                         className="flex items-center gap-2 text-sm text-[#006c49] hover:underline font-medium transition-colors"
                       >
                         <ExternalLink className="h-4 w-4 shrink-0" />
-                        {block.label || block.content}
+                        <span className="min-w-0 break-words">{block.label || block.content}</span>
                       </a>
                     )}
                     {block.type === 'pdf' && block.content && (
@@ -364,7 +364,7 @@ function SectionViewer({ sections }: { sections: ContentSection[] }) {
                         className="flex items-center gap-2 text-sm font-medium text-[#ba1a1a] hover:underline transition-colors"
                       >
                         <FileText className="h-4 w-4 shrink-0" />
-                        {block.label || t.org_view_pdf}
+                        <span className="min-w-0 break-all">{block.label || t.org_view_pdf}</span>
                       </a>
                     )}
                   </div>
@@ -426,18 +426,18 @@ function TeamMemberOrganizationView() {
   return (
     <div className="max-w-5xl mx-auto pb-12">
       {/* Header */}
-      <div className="mb-10">
+      <div className="mb-5 sm:mb-10">
         <h1 className="text-2xl md:text-4xl lg:text-5xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] dark:text-white leading-none">{t.org_title}</h1>
-        <p className="text-[#444748] dark:text-neutral-400 mt-3 leading-relaxed max-w-xl">{t.org_subtitle}</p>
+        <p className="text-sm sm:text-base text-[#444748] dark:text-neutral-400 mt-1.5 sm:mt-3 leading-relaxed sm:leading-relaxed max-w-xl">{t.org_subtitle}</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-6 md:gap-10 mb-10 border-b border-[#c4c7c7]/10 dark:border-neutral-800 overflow-x-auto whitespace-nowrap">
+      <div className="flex gap-6 md:gap-10 mb-5 sm:mb-10 border-b border-[#c4c7c7]/10 dark:border-neutral-800 overflow-x-auto no-scrollbar overscroll-x-contain whitespace-nowrap -mx-4 px-4 sm:mx-0 sm:px-0">
         {allTabs.map(tab => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`pb-4 font-['Manrope'] font-extrabold text-sm tracking-tight transition-colors shrink-0 ${
+            className={`pb-3 sm:pb-4 font-['Manrope'] font-extrabold text-sm tracking-tight transition-colors shrink-0 ${
               activeTab === tab.key
                 ? 'border-b-2 border-[#000000] text-[#000000]'
                 : 'text-[#444748] hover:text-[#1b1c1b]'
@@ -450,35 +450,35 @@ function TeamMemberOrganizationView() {
 
       {/* Organisation tab (read-only) */}
       {activeTab === 'organisation' && (
-        <div className="space-y-8 animate-in fade-in duration-300">
+        <div className="space-y-4 sm:space-y-8 animate-in fade-in duration-300">
           {/* Header card */}
-          <div className="bg-white dark:bg-neutral-800 rounded-xl p-8" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
-            <div className="flex flex-col sm:flex-row gap-6">
-              <div className="w-28 h-28 rounded-full overflow-hidden shrink-0" style={{ background: 'linear-gradient(135deg, #fbf9f8 0%, #f5f3f2 100%)', border: '2px dashed rgba(196,199,199,0.3)' }}>
+          <div className="bg-white dark:bg-neutral-800 rounded-xl p-4 sm:p-8" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
+            <div className="flex flex-row items-center sm:items-stretch gap-4 sm:gap-6">
+              <div className="w-16 h-16 sm:w-28 sm:h-28 rounded-full overflow-hidden shrink-0" style={{ background: 'linear-gradient(135deg, #fbf9f8 0%, #f5f3f2 100%)', border: '2px dashed rgba(196,199,199,0.3)' }}>
                 {settings.logo_url ? (
                   <img src={settings.logo_url} alt="Logo" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <Building2 className="h-10 w-10 text-[#747878]" />
+                    <Building2 className="h-7 w-7 sm:h-10 sm:w-10 text-[#747878]" />
                   </div>
                 )}
               </div>
-              <div className="flex-1 space-y-3">
-                <h2 className="text-3xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] dark:text-white">{settings.company_name || t.org_title}</h2>
-                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-[#444748]">
+              <div className="flex-1 min-w-0 space-y-2 sm:space-y-3">
+                <h2 className="text-xl sm:text-3xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] dark:text-white">{settings.company_name || t.org_title}</h2>
+                <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-6 gap-y-2 text-sm text-[#444748]">
                   {settings.website && (
-                    <a href={settings.website.startsWith('http') ? settings.website : `https://${settings.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[#006c49] hover:underline transition-colors">
-                      <Globe className="h-3.5 w-3.5" />
-                      {settings.website.replace(/^https?:\/\//, '')}
+                    <a href={settings.website.startsWith('http') ? settings.website : `https://${settings.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 min-w-0 max-w-full text-[#006c49] hover:underline transition-colors">
+                      <Globe className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{settings.website.replace(/^https?:\/\//, '')}</span>
                     </a>
                   )}
                   {settings.niche && (
-                    <span className="px-3 py-1 rounded-full bg-[#eae8e7] text-[10px] font-bold uppercase tracking-widest text-[#444748]">
+                    <span className="whitespace-nowrap px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-[#eae8e7] text-[10px] font-bold uppercase tracking-wider sm:tracking-widest text-[#444748]">
                       {settings.niche === 'Autre' ? (settings.niche_custom || 'Autre') : settings.niche}
                     </span>
                   )}
                   {settings.team_size && (
-                    <span className="px-3 py-1 rounded-full bg-[#eae8e7] text-[10px] font-bold uppercase tracking-widest text-[#444748]">
+                    <span className="whitespace-nowrap px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-[#eae8e7] text-[10px] font-bold uppercase tracking-wider sm:tracking-widest text-[#444748]">
                       {settings.team_size} {t.org_persons}
                     </span>
                   )}
@@ -488,8 +488,8 @@ function TeamMemberOrganizationView() {
           </div>
 
           {/* Details */}
-          <div className="bg-white dark:bg-neutral-800 rounded-xl p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
-            <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] dark:text-white">{t.org_info_title}</h3>
+          <div className="bg-white dark:bg-neutral-800 rounded-xl p-4 sm:p-8 space-y-4 sm:space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
+            <h3 className="font-['Manrope'] font-extrabold text-base sm:text-xl text-[#1b1c1b] dark:text-white">{t.org_info_title}</h3>
 
             {settings.description && (
               <div>
@@ -498,20 +498,20 @@ function TeamMemberOrganizationView() {
               </div>
             )}
 
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
               {settings.org_email && (
-                <div className="flex items-center gap-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-3">
+                <div className="flex items-center gap-3 min-w-0 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-3">
                   <Mail className="h-4 w-4 text-[#747878] shrink-0" />
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-[10px] uppercase tracking-widest font-bold text-[#444748]">{t.org_email_label}</p>
-                    <p className="text-sm font-medium text-[#1b1c1b] dark:text-white">{settings.org_email}</p>
+                    <p className="text-sm font-medium text-[#1b1c1b] dark:text-white truncate sm:whitespace-normal sm:overflow-visible">{settings.org_email}</p>
                   </div>
                 </div>
               )}
               {settings.org_phone && (
-                <div className="flex items-center gap-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-3">
+                <div className="flex items-center gap-3 min-w-0 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-3">
                   <Phone className="h-4 w-4 text-[#747878] shrink-0" />
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-[10px] uppercase tracking-widest font-bold text-[#444748]">{t.org_phone_info_label}</p>
                     <p className="text-sm font-medium text-[#1b1c1b] dark:text-white">{settings.org_phone}</p>
                   </div>
@@ -520,11 +520,11 @@ function TeamMemberOrganizationView() {
             </div>
 
             {settings.address && (
-              <div className="flex items-center gap-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-3">
+              <div className="flex items-center gap-3 min-w-0 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-3">
                 <MapPin className="h-4 w-4 text-[#747878] shrink-0" />
-                <div>
+                <div className="min-w-0">
                   <p className="text-[10px] uppercase tracking-widest font-bold text-[#444748]">{t.org_address_info_label}</p>
-                  <p className="text-sm font-medium text-[#1b1c1b] dark:text-white">{settings.address}</p>
+                  <p className="text-sm font-medium text-[#1b1c1b] dark:text-white break-words">{settings.address}</p>
                 </div>
               </div>
             )}
@@ -538,37 +538,37 @@ function TeamMemberOrganizationView() {
 
       {/* Onboarding tab (read-only) */}
       {activeTab === 'onboarding' && (
-        <div className="space-y-8 animate-in fade-in duration-300">
+        <div className="space-y-4 sm:space-y-8 animate-in fade-in duration-300">
           {/* Notion onboarding guide */}
           {ONBOARDING_NOTION_URLS[memberRole] && (
             <a
               href={ONBOARDING_NOTION_URLS[memberRole]}
               target="_blank"
               rel="noopener noreferrer"
-              className="block bg-[#000000] hover:bg-[#1b1c1b] rounded-2xl p-8 transition-all active:scale-[0.99] group"
+              className="block bg-[#000000] hover:bg-[#1b1c1b] rounded-2xl p-4 sm:p-8 transition-all active:scale-[0.99] group"
               style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.15)' }}
             >
-              <div className="flex items-center gap-5">
-                <div className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-                  <Rocket className="h-7 w-7 text-white" />
+              <div className="flex items-center gap-3 sm:gap-5">
+                <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+                  <Rocket className="h-5 w-5 sm:h-7 sm:w-7 text-white" />
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-['Manrope'] font-extrabold text-2xl text-white leading-tight">{t.org_onboarding_guide} — {memberRole}</h3>
-                  <p className="text-white/60 text-sm mt-1 font-medium">{t.org_onboarding_guide_desc}</p>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-['Manrope'] font-extrabold text-base sm:text-2xl text-white leading-tight sm:leading-tight">{t.org_onboarding_guide} — {memberRole}</h3>
+                  <p className="text-white/60 text-xs sm:text-sm mt-0.5 sm:mt-1 font-medium">{t.org_onboarding_guide_desc}</p>
                 </div>
-                <ExternalLink className="h-6 w-6 text-white/40 group-hover:text-white transition-colors shrink-0" />
+                <ExternalLink className="h-5 w-5 sm:h-6 sm:w-6 text-white/40 group-hover:text-white transition-colors shrink-0" />
               </div>
             </a>
           )}
 
           {/* General onboarding */}
-          <div className="bg-white dark:bg-neutral-800 rounded-xl p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-[#006c49]/10 flex items-center justify-center text-[#006c49]">
+          <div className="sm:bg-white sm:dark:bg-neutral-800 rounded-xl sm:p-8 space-y-4 sm:space-y-6 sm:shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-lg bg-[#006c49]/10 flex items-center justify-center text-[#006c49]">
                 <Rocket className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] dark:text-white">{t.org_onboarding_general}</h3>
+                <h3 className="font-['Manrope'] font-extrabold text-base sm:text-xl text-[#1b1c1b] dark:text-white">{t.org_onboarding_general}</h3>
                 <p className="text-xs text-[#444748] dark:text-neutral-400">{t.org_onboarding_general_desc}</p>
               </div>
             </div>
@@ -578,13 +578,13 @@ function TeamMemberOrganizationView() {
 
           {/* Role-specific onboarding */}
           {roleSections.length > 0 && (
-            <div className="bg-white dark:bg-neutral-800 rounded-xl p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-[#ffddb8]/30 flex items-center justify-center text-[#b87500]">
+            <div className="sm:bg-white sm:dark:bg-neutral-800 rounded-xl sm:p-8 space-y-4 sm:space-y-6 sm:shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-lg bg-[#ffddb8]/30 flex items-center justify-center text-[#b87500]">
                   <Rocket className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] dark:text-white">{t.org_onboarding_role} {memberRole}</h3>
+                  <h3 className="font-['Manrope'] font-extrabold text-base sm:text-xl text-[#1b1c1b] dark:text-white">{t.org_onboarding_role} {memberRole}</h3>
                   <p className="text-xs text-[#444748] dark:text-neutral-400">{t.org_onboarding_role_desc}</p>
                 </div>
               </div>
@@ -598,7 +598,7 @@ function TeamMemberOrganizationView() {
             <button
               onClick={handleAcknowledge}
               disabled={ackLoading}
-              className="w-full bg-[#000000] hover:bg-[#1b1c1b] text-white px-6 py-4 rounded-full font-['Manrope'] font-extrabold text-sm tracking-widest flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-50"
+              className="w-full bg-[#000000] hover:bg-[#1b1c1b] text-white px-5 sm:px-6 py-3.5 sm:py-4 rounded-full font-['Manrope'] font-extrabold text-xs sm:text-sm tracking-wide sm:tracking-widest flex items-center justify-center gap-2 sm:gap-3 transition-all active:scale-95 disabled:opacity-50"
             >
               {ackLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -620,14 +620,14 @@ function TeamMemberOrganizationView() {
 
       {/* Custom tabs (read-only) */}
       {activeCustomTab && (
-        <div className="space-y-8 animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-neutral-800 rounded-xl p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-[#e5e2e1]/50 flex items-center justify-center text-[#474646]">
+        <div className="space-y-4 sm:space-y-8 animate-in fade-in duration-300">
+          <div className="sm:bg-white sm:dark:bg-neutral-800 rounded-xl sm:p-8 space-y-4 sm:space-y-6 sm:shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-lg bg-[#e5e2e1]/50 flex items-center justify-center text-[#474646]">
                 <LayoutGrid className="h-5 w-5" />
               </div>
-              <div>
-                <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] dark:text-white">{activeCustomTab.name}</h3>
+              <div className="min-w-0">
+                <h3 className="font-['Manrope'] font-extrabold text-base sm:text-xl text-[#1b1c1b] dark:text-white truncate">{activeCustomTab.name}</h3>
               </div>
             </div>
 
@@ -872,15 +872,16 @@ export function BusinessOrganization() {
       )}
 
       {/* ─── Page Header ─── */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-5 sm:mb-10">
         <div>
           <h1 className="text-2xl md:text-4xl lg:text-5xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] dark:text-white leading-none">{t.org_title}</h1>
-          <p className="text-[#444748] dark:text-neutral-400 mt-3 leading-relaxed max-w-xl">{t.org_subtitle_owner}</p>
+          <p className="text-sm sm:text-base text-[#444748] dark:text-neutral-400 mt-1.5 sm:mt-3 leading-relaxed sm:leading-relaxed max-w-xl">{t.org_subtitle_owner}</p>
         </div>
+        {/* < lg : le bouton « Enregistrer » collé en bas de page prend le relais */}
         <button
           onClick={handleSave}
           disabled={loading}
-          className="bg-[#000000] text-white px-8 py-4 rounded-full font-['Manrope'] font-extrabold text-sm tracking-widest hover:bg-[#1b1c1b] transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
+          className="hidden lg:flex bg-[#000000] text-white px-8 py-4 rounded-full font-['Manrope'] font-extrabold text-sm tracking-widest hover:bg-[#1b1c1b] transition-all active:scale-95 disabled:opacity-50 items-center gap-2"
         >
           {loading ? <Loader2 className="animate-spin h-4 w-4" /> : <Save className="h-4 w-4" />}
           {t.org_save_button}
@@ -888,7 +889,7 @@ export function BusinessOrganization() {
       </div>
 
       {/* ─── Tabs ─── */}
-      <div className="flex gap-10 mb-10 border-b border-[#c4c7c7]/10 dark:border-neutral-800 overflow-x-auto">
+      <div className="flex gap-6 sm:gap-10 mb-5 sm:mb-10 border-b border-[#c4c7c7]/10 dark:border-neutral-800 overflow-x-auto no-scrollbar overscroll-x-contain -mx-4 px-4 sm:mx-0 sm:px-0">
         {/* Fixed tabs */}
         {[
           { key: 'organisation', label: t.org_tab_organisation },
@@ -897,7 +898,7 @@ export function BusinessOrganization() {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`pb-4 font-['Manrope'] font-extrabold text-sm tracking-tight transition-colors whitespace-nowrap shrink-0 ${
+            className={`pb-3 sm:pb-4 font-['Manrope'] font-extrabold text-sm tracking-tight transition-colors whitespace-nowrap shrink-0 ${
               activeTab === tab.key
                 ? 'border-b-2 border-[#000000] text-[#000000]'
                 : 'text-[#444748] hover:text-[#1b1c1b]'
@@ -924,14 +925,14 @@ export function BusinessOrganization() {
               <button
                 onClick={() => setActiveTab(tab.id)}
                 onDoubleClick={() => startRenaming(tab)}
-                className={`flex items-center gap-2 pb-4 font-['Manrope'] font-extrabold text-sm tracking-tight transition-colors whitespace-nowrap ${
+                className={`flex items-center gap-2 pb-3 sm:pb-4 font-['Manrope'] font-extrabold text-sm tracking-tight transition-colors whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'border-b-2 border-[#000000] text-[#000000]'
                     : 'text-[#444748] hover:text-[#1b1c1b]'
                 }`}
               >
                 {tab.name.toUpperCase()}
-                <span className="flex items-center gap-0.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="flex items-center gap-0.5 ml-1 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={(e) => { e.stopPropagation(); startRenaming(tab) }}
                     className="p-1 rounded-full hover:bg-[#f5f3f2] text-[#747878] transition-colors"
@@ -953,7 +954,7 @@ export function BusinessOrganization() {
         {/* Add tab button */}
         <button
           onClick={addCustomTab}
-          className="flex items-center gap-1.5 pb-4 font-['Manrope'] font-bold text-sm text-[#747878] hover:text-[#000000] transition-colors whitespace-nowrap shrink-0"
+          className="flex items-center gap-1.5 pb-3 sm:pb-4 font-['Manrope'] font-bold text-sm text-[#747878] hover:text-[#000000] transition-colors whitespace-nowrap shrink-0"
         >
           <Plus className="h-4 w-4" />
           ONGLET
@@ -964,35 +965,35 @@ export function BusinessOrganization() {
       {isHoS && activeTab === 'organisation' && (() => {
         const settings = businessSettings || {}
         return (
-          <div className="space-y-8 animate-in fade-in duration-300">
+          <div className="space-y-4 sm:space-y-8 animate-in fade-in duration-300">
             {/* Header card */}
-            <div className="bg-white dark:bg-neutral-800 rounded-xl p-8" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
-              <div className="flex flex-col sm:flex-row gap-6">
-                <div className="w-28 h-28 rounded-full overflow-hidden shrink-0" style={{ background: 'linear-gradient(135deg, #fbf9f8 0%, #f5f3f2 100%)', border: '2px dashed rgba(196,199,199,0.3)' }}>
+            <div className="bg-white dark:bg-neutral-800 rounded-xl p-4 sm:p-8" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
+              <div className="flex flex-row items-center sm:items-stretch gap-4 sm:gap-6">
+                <div className="w-16 h-16 sm:w-28 sm:h-28 rounded-full overflow-hidden shrink-0" style={{ background: 'linear-gradient(135deg, #fbf9f8 0%, #f5f3f2 100%)', border: '2px dashed rgba(196,199,199,0.3)' }}>
                   {settings.logo_url ? (
                     <img src={settings.logo_url} alt="Logo" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Building2 className="h-10 w-10 text-[#747878]" />
+                      <Building2 className="h-7 w-7 sm:h-10 sm:w-10 text-[#747878]" />
                     </div>
                   )}
                 </div>
-                <div className="flex-1 space-y-3">
-                  <h2 className="text-3xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] dark:text-white">{settings.company_name || 'Organisation'}</h2>
-                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-[#444748]">
+                <div className="flex-1 min-w-0 space-y-2 sm:space-y-3">
+                  <h2 className="text-xl sm:text-3xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] dark:text-white">{settings.company_name || 'Organisation'}</h2>
+                  <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-6 gap-y-2 text-sm text-[#444748]">
                     {settings.website && (
-                      <a href={settings.website.startsWith('http') ? settings.website : `https://${settings.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[#006c49] hover:underline transition-colors">
-                        <Globe className="h-3.5 w-3.5" />
-                        {settings.website.replace(/^https?:\/\//, '')}
+                      <a href={settings.website.startsWith('http') ? settings.website : `https://${settings.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 min-w-0 max-w-full text-[#006c49] hover:underline transition-colors">
+                        <Globe className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{settings.website.replace(/^https?:\/\//, '')}</span>
                       </a>
                     )}
                     {settings.niche && (
-                      <span className="px-3 py-1 rounded-full bg-[#eae8e7] text-[10px] font-bold uppercase tracking-widest text-[#444748]">
+                      <span className="whitespace-nowrap px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-[#eae8e7] text-[10px] font-bold uppercase tracking-wider sm:tracking-widest text-[#444748]">
                         {settings.niche === 'Autre' ? (settings.niche_custom || 'Autre') : settings.niche}
                       </span>
                     )}
                     {settings.team_size && (
-                      <span className="px-3 py-1 rounded-full bg-[#eae8e7] text-[10px] font-bold uppercase tracking-widest text-[#444748]">
+                      <span className="whitespace-nowrap px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-[#eae8e7] text-[10px] font-bold uppercase tracking-wider sm:tracking-widest text-[#444748]">
                         {settings.team_size} pers.
                       </span>
                     )}
@@ -1002,8 +1003,8 @@ export function BusinessOrganization() {
             </div>
 
             {/* Details */}
-            <div className="bg-white dark:bg-neutral-800 rounded-xl p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
-              <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] dark:text-white">Informations</h3>
+            <div className="bg-white dark:bg-neutral-800 rounded-xl p-4 sm:p-8 space-y-4 sm:space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
+              <h3 className="font-['Manrope'] font-extrabold text-base sm:text-xl text-[#1b1c1b] dark:text-white">Informations</h3>
 
               {settings.description && (
                 <div>
@@ -1012,20 +1013,20 @@ export function BusinessOrganization() {
                 </div>
               )}
 
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
                 {settings.org_email && (
-                  <div className="flex items-center gap-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-3">
+                  <div className="flex items-center gap-3 min-w-0 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-3">
                     <Mail className="h-4 w-4 text-[#747878] shrink-0" />
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-[10px] uppercase tracking-widest font-bold text-[#444748]">Email</p>
-                      <p className="text-sm font-medium text-[#1b1c1b] dark:text-white">{settings.org_email}</p>
+                      <p className="text-sm font-medium text-[#1b1c1b] dark:text-white truncate sm:whitespace-normal sm:overflow-visible">{settings.org_email}</p>
                     </div>
                   </div>
                 )}
                 {settings.org_phone && (
-                  <div className="flex items-center gap-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-3">
+                  <div className="flex items-center gap-3 min-w-0 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-3">
                     <Phone className="h-4 w-4 text-[#747878] shrink-0" />
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-[10px] uppercase tracking-widest font-bold text-[#444748]">Téléphone</p>
                       <p className="text-sm font-medium text-[#1b1c1b] dark:text-white">{settings.org_phone}</p>
                     </div>
@@ -1034,11 +1035,11 @@ export function BusinessOrganization() {
               </div>
 
               {settings.address && (
-                <div className="flex items-center gap-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-3">
+                <div className="flex items-center gap-3 min-w-0 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-3">
                   <MapPin className="h-4 w-4 text-[#747878] shrink-0" />
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-[10px] uppercase tracking-widest font-bold text-[#444748]">Adresse</p>
-                    <p className="text-sm font-medium text-[#1b1c1b] dark:text-white">{settings.address}</p>
+                    <p className="text-sm font-medium text-[#1b1c1b] dark:text-white break-words">{settings.address}</p>
                   </div>
                 </div>
               )}
@@ -1054,27 +1055,28 @@ export function BusinessOrganization() {
       {/* ═══════════════════ ORGANISATION TAB (Owner edit) ═══════════════════ */}
       {!isHoS && activeTab === 'organisation' && (
         <div className="animate-in fade-in duration-300">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-10">
             {/* Branding Card */}
             <div className="lg:col-span-4">
-              <div className="bg-white dark:bg-neutral-800 rounded-xl p-8 h-full" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
-                <h2 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] dark:text-white mb-8">Brand Identity</h2>
+              <div className="bg-white dark:bg-neutral-800 rounded-xl p-4 sm:p-8 h-full" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
+                <h2 className="font-['Manrope'] font-extrabold text-base sm:text-xl text-[#1b1c1b] dark:text-white mb-3 sm:mb-6 lg:mb-8">Brand Identity</h2>
 
-                <div className="flex flex-col items-center gap-6">
-                  <div className="relative group cursor-pointer" onClick={handleLogoClick}>
+                {/* < lg : logo compact à gauche + texte ; ≥ lg : colonne centrée */}
+                <div className="flex flex-row lg:flex-col items-center gap-4 lg:gap-6">
+                  <div className="relative group cursor-pointer shrink-0" onClick={handleLogoClick}>
                     <input type="file" ref={fileInputRef} onChange={onFileChange} className="hidden" accept="image/jpeg,image/png,image/webp" disabled={uploading} />
-                    <div className="w-48 h-48 rounded-full overflow-hidden flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #fbf9f8 0%, #f5f3f2 100%)', border: '2px dashed rgba(196,199,199,0.3)' }}>
+                    <div className="w-20 h-20 sm:w-28 sm:h-28 lg:w-48 lg:h-48 rounded-full overflow-hidden flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #fbf9f8 0%, #f5f3f2 100%)', border: '2px dashed rgba(196,199,199,0.3)' }}>
                       {formData.logo_url ? (
                         <img src={formData.logo_url} alt="Logo" className="w-full h-full object-cover" />
                       ) : (
-                        <Camera className="h-8 w-8 text-[#747878]" />
+                        <Camera className="h-6 w-6 lg:h-8 lg:w-8 text-[#747878]" />
                       )}
                     </div>
-                    <button className="absolute bottom-2 right-2 bg-[#000000] text-white p-3 rounded-full shadow-lg hover:bg-[#1b1c1b] transition-colors">
+                    <button aria-label="Modifier le logo" className="absolute -bottom-1 -right-1 lg:bottom-2 lg:right-2 bg-[#000000] text-white p-2 lg:p-3 rounded-full shadow-lg hover:bg-[#1b1c1b] transition-colors">
                       {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />}
                     </button>
                   </div>
-                  <div className="text-center">
+                  <div className="min-w-0 text-left lg:text-center">
                     <p className="text-sm font-semibold text-[#1b1c1b] dark:text-white mb-1">Logo de l'entreprise</p>
                     <p className="text-xs text-[#444748] dark:text-neutral-400">SVG, PNG, ou JPG. Max 5Mo.</p>
                   </div>
@@ -1084,8 +1086,8 @@ export function BusinessOrganization() {
 
             {/* Form Card */}
             <div className="lg:col-span-8">
-              <div className="bg-white dark:bg-neutral-800 rounded-xl p-8" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-8">
+              <div className="bg-white dark:bg-neutral-800 rounded-xl p-4 sm:p-8" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5 sm:gap-y-8">
                   <div className="col-span-1 sm:col-span-2">
                     <label className={stoneLabelClass}>Nom de l'entreprise</label>
                     <input
@@ -1127,18 +1129,18 @@ export function BusinessOrganization() {
 
             {/* Facturation — hidden for Solo */}
             {!isSolo && <div className="lg:col-span-12">
-              <div className="bg-white dark:bg-neutral-800 rounded-xl p-4 md:p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-lg bg-[#ffddb8]/30 flex items-center justify-center text-[#b87500]">
+              <div className="bg-white dark:bg-neutral-800 rounded-xl p-4 md:p-8 space-y-5 md:space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-lg bg-[#ffddb8]/30 flex items-center justify-center text-[#b87500]">
                     <Receipt className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] dark:text-white">Facturation</h3>
+                    <h3 className="font-['Manrope'] font-extrabold text-base sm:text-xl text-[#1b1c1b] dark:text-white">Facturation</h3>
                     <p className="text-xs text-[#444748] dark:text-neutral-400">Informations pour vos factures et documents officiels</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5 sm:gap-y-8">
                   <div className="col-span-1 sm:col-span-2">
                     <label className={stoneLabelClass}>Raison sociale</label>
                     <input type="text" value={formData.raison_sociale} onChange={(e) => setFormData({ ...formData, raison_sociale: e.target.value })} className={stoneInputClass} placeholder="Raison sociale de votre entreprise" />
@@ -1155,8 +1157,9 @@ export function BusinessOrganization() {
 
                 <div className="h-px bg-[#c4c7c7]/10 my-2" />
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-8">
-                  <div className="col-span-1 sm:col-span-2">
+                {/* Mobile : adresse pleine largeur, code postal + ville côte à côte, pays pleine largeur */}
+                <div className="grid grid-cols-2 gap-x-4 sm:gap-x-8 gap-y-5 sm:gap-y-8">
+                  <div className="col-span-2">
                     <label className={stoneLabelClass}>Adresse de facturation</label>
                     <input type="text" value={formData.billing_address} onChange={(e) => setFormData({ ...formData, billing_address: e.target.value })} className={stoneInputClass} placeholder="123 rue de la Facturation" />
                   </div>
@@ -1191,41 +1194,41 @@ export function BusinessOrganization() {
                 href={notionUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block bg-[#000000] hover:bg-[#1b1c1b] rounded-2xl p-8 mb-10 transition-all active:scale-[0.99] group"
+                className="block bg-[#000000] hover:bg-[#1b1c1b] rounded-2xl p-4 sm:p-8 mb-5 sm:mb-10 transition-all active:scale-[0.99] group"
                 style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.15)' }}
               >
-                <div className="flex items-center gap-5">
-                  <div className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-                    <Rocket className="h-7 w-7 text-white" />
+                <div className="flex items-center gap-3 sm:gap-5">
+                  <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+                    <Rocket className="h-5 w-5 sm:h-7 sm:w-7 text-white" />
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-['Manrope'] font-extrabold text-2xl text-white leading-tight">📖 Guide d'onboarding — {roleLabel}</h3>
-                    <p className="text-white/60 text-sm mt-1 font-medium">Lecture obligatoire avant de commencer. Cliquez pour ouvrir le guide complet.</p>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-['Manrope'] font-extrabold text-base sm:text-2xl text-white leading-tight sm:leading-tight">📖 Guide d'onboarding — {roleLabel}</h3>
+                    <p className="text-white/60 text-xs sm:text-sm mt-0.5 sm:mt-1 font-medium">Lecture obligatoire avant de commencer. Cliquez pour ouvrir le guide complet.</p>
                   </div>
-                  <ExternalLink className="h-6 w-6 text-white/40 group-hover:text-white transition-colors shrink-0" />
+                  <ExternalLink className="h-5 w-5 sm:h-6 sm:w-6 text-white/40 group-hover:text-white transition-colors shrink-0" />
                 </div>
               </a>
             ) : null
           })()}
 
-          <div className="flex flex-col lg:flex-row gap-10">
-            {/* Role Selector */}
-            <div className="w-full lg:w-1/3 space-y-4">
+          <div className="flex flex-col lg:flex-row gap-5 lg:gap-10">
+            {/* Role Selector — < lg : rangée de puces défilante ; ≥ lg : liste verticale */}
+            <div className="w-full lg:w-1/3 space-y-2 lg:space-y-4">
               <label className={stoneLabelClass}>Parcours actif</label>
-              <div className="flex flex-col gap-3">
+              <div className="flex lg:flex-col gap-2 lg:gap-3 overflow-x-auto lg:overflow-visible no-scrollbar overscroll-x-contain snap-x scroll-px-4 sm:scroll-px-0 -mx-4 px-4 sm:mx-0 sm:px-0">
                 {DEFAULT_ROLES.map(role => (
                   <button
                     key={role}
                     onClick={() => setSelectedOnboardingRole(role)}
-                    className={`flex items-center justify-between p-4 rounded-xl transition-all ${
+                    className={`shrink-0 snap-start flex items-center justify-between gap-2 px-4 py-2.5 lg:p-4 rounded-full lg:rounded-xl whitespace-nowrap active:scale-[0.98] transition-all ${
                       selectedOnboardingRole === role
                         ? 'bg-[#000000] text-white shadow-lg'
                         : 'bg-white dark:bg-neutral-800 text-[#1b1c1b] dark:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-700'
                     }`}
                     style={selectedOnboardingRole !== role ? { border: '0.5px solid rgba(196,199,199,0.2)' } : undefined}
                   >
-                    <span className="font-['Manrope'] font-bold">{role}</span>
-                    <ChevronDown className={`h-4 w-4 -rotate-90 ${selectedOnboardingRole === role ? 'text-white/60' : 'text-[#747878]'}`} />
+                    <span className="font-['Manrope'] font-bold text-sm lg:text-base">{role}</span>
+                    <ChevronDown className={`hidden lg:block h-4 w-4 -rotate-90 ${selectedOnboardingRole === role ? 'text-white/60' : 'text-[#747878]'}`} />
                   </button>
                 ))}
               </div>
@@ -1233,12 +1236,12 @@ export function BusinessOrganization() {
 
             {/* Section Editor */}
             <div className="w-full lg:w-2/3">
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-3 lg:mb-6">
                 <h3 className="text-[10px] font-extrabold uppercase tracking-widest text-[#444748]">Blocs du parcours</h3>
               </div>
 
-              <div className="p-4 rounded-xl bg-[#006c49]/5 text-[#006c49] mb-6">
-                <p className="text-sm font-medium">
+              <div className="p-3 sm:p-4 rounded-xl bg-[#006c49]/5 text-[#006c49] mb-4 lg:mb-6">
+                <p className="text-xs sm:text-sm font-medium">
                   {selectedOnboardingRole === 'Général'
                     ? 'Cet onboarding sera présenté à tous les nouveaux collaborateurs lors de leur intégration.'
                     : `Cet onboarding sera présenté uniquement aux membres avec le rôle "${selectedOnboardingRole}".`}
@@ -1271,13 +1274,13 @@ export function BusinessOrganization() {
       {/* ═══════════════════ CUSTOM TABS ═══════════════════ */}
       {activeCustomTab && (
         <div className="animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-neutral-800 rounded-xl p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-[#e5e2e1]/50 flex items-center justify-center text-[#474646]">
+          <div className="sm:bg-white sm:dark:bg-neutral-800 rounded-xl sm:p-8 space-y-4 sm:space-y-6 sm:shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-lg bg-[#e5e2e1]/50 flex items-center justify-center text-[#474646]">
                 <LayoutGrid className="h-5 w-5" />
               </div>
-              <div>
-                <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] dark:text-white">{activeCustomTab.name}</h3>
+              <div className="min-w-0">
+                <h3 className="font-['Manrope'] font-extrabold text-base sm:text-xl text-[#1b1c1b] dark:text-white truncate">{activeCustomTab.name}</h3>
                 <p className="text-xs text-[#444748] dark:text-neutral-400">Onglet personnalisé &mdash; double-cliquez sur le nom pour le renommer</p>
               </div>
             </div>
@@ -1293,11 +1296,11 @@ export function BusinessOrganization() {
       )}
 
       {/* ─── Sticky Save (mobile) ─── */}
-      <div className="sticky bottom-4 z-10 lg:hidden mt-8">
+      <div className="sticky bottom-[max(1rem,env(safe-area-inset-bottom))] z-10 lg:hidden mt-6 sm:mt-8">
         <button
           onClick={handleSave}
           disabled={loading}
-          className="w-full bg-[#000000] hover:bg-[#1b1c1b] text-white px-6 py-4 rounded-full font-['Manrope'] font-extrabold text-sm tracking-widest flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-50"
+          className="w-full h-12 shadow-lg shadow-black/20 bg-[#000000] hover:bg-[#1b1c1b] text-white px-6 py-0 rounded-full font-['Manrope'] font-extrabold text-sm tracking-widest flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-50"
         >
           {loading ? <Loader2 className="animate-spin h-5 w-5" /> : <Save className="h-5 w-5" />}
           ENREGISTRER

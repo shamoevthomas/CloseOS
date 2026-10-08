@@ -187,19 +187,19 @@ export function BusinessForms() {
     const isMissing = loadError === 'api_missing'
     return (
       <div className="max-w-[1200px] mx-auto pb-12">
-        <header className="mb-10">
-          <h2 className="text-5xl font-['Manrope'] font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">
+        <header className="mb-5 sm:mb-10">
+          <h2 className="text-2xl sm:text-5xl font-['Manrope'] font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">
             {t.title}
           </h2>
         </header>
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-20 h-20 bg-[#ffb95f]/10 rounded-full flex items-center justify-center mb-6">
-            <AlertTriangle className="h-8 w-8 text-[#b87500]" />
+        <div className="flex flex-col items-center justify-center py-8 sm:py-20 text-center">
+          <div className="w-14 h-14 sm:w-20 sm:h-20 bg-[#ffb95f]/10 rounded-full flex items-center justify-center mb-4 sm:mb-6">
+            <AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 text-[#b87500]" />
           </div>
-          <h3 className="text-2xl font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white mb-2">
+          <h3 className="text-lg sm:text-2xl font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white mb-1 sm:mb-2">
             {isMissing ? t.api_missing_title : t.load_error_title}
           </h3>
-          <p className="text-[#444748] dark:text-neutral-400 max-w-md mb-6 font-['Inter']">
+          <p className="text-sm sm:text-base text-[#444748] dark:text-neutral-400 max-w-md mb-5 sm:mb-6 font-['Inter']">
             {isMissing ? t.api_missing_desc : t.load_error_desc}
           </p>
           <button
@@ -229,34 +229,36 @@ export function BusinessForms() {
   }
 
   return (
-    <div className="max-w-[1200px] mx-auto space-y-10 pb-12">
-      <header className="flex justify-between items-end gap-6">
-        <div>
-          <h2 className="text-5xl font-['Manrope'] font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">
+    <div className="max-w-[1200px] mx-auto space-y-5 sm:space-y-10 pb-12">
+      {/* En-tête — mobile : titre compact + bouton rond « + » sur la même ligne */}
+      <header className="flex justify-between items-start sm:items-end gap-4 sm:gap-6">
+        <div className="min-w-0">
+          <h2 className="text-2xl sm:text-5xl font-['Manrope'] font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">
             {t.title}
           </h2>
-          <p className="text-[#444748] dark:text-neutral-400 mt-2 max-w-lg">{t.subtitle}</p>
+          <p className="text-sm sm:text-base text-[#444748] dark:text-neutral-400 mt-1 sm:mt-2 max-w-lg">{t.subtitle}</p>
         </div>
         <button
           onClick={createForm}
           disabled={creating}
-          className="bg-[#000000] text-white px-8 py-4 rounded-full font-['Manrope'] font-bold flex items-center gap-3 hover:bg-[#1b1c1b] transition-all active:scale-95 disabled:opacity-60 whitespace-nowrap"
+          aria-label={t.new_form}
+          className="shrink-0 bg-[#000000] text-white h-10 w-10 sm:h-auto sm:w-auto justify-center sm:px-8 sm:py-4 rounded-full font-['Manrope'] font-bold flex items-center gap-3 hover:bg-[#1b1c1b] transition-all active:scale-95 disabled:opacity-60 whitespace-nowrap"
           style={{ boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}
         >
           {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-          {t.new_form}
+          <span className="hidden sm:inline">{t.new_form}</span>
         </button>
       </header>
 
       {forms.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-24 h-24 bg-[#efedec] dark:bg-neutral-800 rounded-full flex items-center justify-center mb-6">
-            <FileText className="h-10 w-10 text-[#444748]/30" />
+        <div className="flex flex-col items-center justify-center py-10 sm:py-24 text-center">
+          <div className="w-14 h-14 sm:w-24 sm:h-24 bg-[#efedec] dark:bg-neutral-800 rounded-full flex items-center justify-center mb-4 sm:mb-6">
+            <FileText className="h-6 w-6 sm:h-10 sm:w-10 text-[#444748]/30" />
           </div>
-          <h3 className="text-2xl font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white mb-2">
+          <h3 className="text-lg sm:text-2xl font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white mb-1 sm:mb-2">
             {t.empty_title}
           </h3>
-          <p className="text-[#444748] dark:text-neutral-400 max-w-xs mb-6">{t.empty_desc}</p>
+          <p className="text-sm sm:text-base text-[#444748] dark:text-neutral-400 max-w-xs mb-5 sm:mb-6">{t.empty_desc}</p>
           <button
             onClick={createForm}
             disabled={creating}
@@ -266,31 +268,31 @@ export function BusinessForms() {
           </button>
         </div>
       ) : (
-        <div className="grid gap-8 xl:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:gap-8 xl:grid-cols-2">
           {forms.map(form => {
             const count = form.business_form_responses?.[0]?.count || 0
             const fieldCount = form.blocks.filter(b => isInputBlock(b.type)).length
             return (
               <div
                 key={form.id}
-                className="rounded-xl p-8 group hover:shadow-[0_30px_60px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_30px_60px_rgba(0,0,0,0.3)] transition-all duration-500 bg-white/70 dark:bg-neutral-800 backdrop-blur-xl border border-[#c4c7c7]/20 dark:border-neutral-700"
+                className="rounded-2xl sm:rounded-xl p-4 sm:p-8 group hover:shadow-[0_30px_60px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_30px_60px_rgba(0,0,0,0.3)] transition-all duration-500 bg-white/70 dark:bg-neutral-800 sm:backdrop-blur-xl border border-[#c4c7c7]/20 dark:border-neutral-700"
               >
-                <div className="flex justify-between items-start mb-6 gap-4">
-                  <div className="flex gap-4 items-center min-w-0">
+                <div className="flex justify-between items-center sm:items-start mb-3 sm:mb-6 gap-3 sm:gap-4">
+                  <div className="flex gap-3 sm:gap-4 items-center min-w-0">
                     <div
-                      className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
+                      className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0"
                       style={{
                         backgroundColor: `${form.settings.accent_color}1a`,
                         color: form.settings.accent_color,
                       }}
                     >
-                      <FileText className="h-6 w-6" />
+                      <FileText className="h-5 w-5 sm:h-6 sm:w-6" />
                     </div>
                     <div className="min-w-0">
-                      <h3 className="text-xl font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white truncate">
+                      <h3 className="text-base sm:text-xl font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white truncate">
                         {form.name || t.untitled}
                       </h3>
-                      <p className="text-sm text-[#444748] dark:text-neutral-400">
+                      <p className="text-xs sm:text-sm text-[#444748] dark:text-neutral-400 max-sm:truncate">
                         {fieldCount} {fieldCount > 1 ? 'champs' : 'champ'}
                         {form.crm_enabled && ' · CRM'}
                       </p>
@@ -306,25 +308,51 @@ export function BusinessForms() {
                 </div>
 
                 {form.description && (
-                  <p className="text-[#444748] dark:text-neutral-400 mb-6 line-clamp-2">{form.description}</p>
+                  <p className="text-sm sm:text-base text-[#444748] dark:text-neutral-400 mb-3 sm:mb-6 line-clamp-2">{form.description}</p>
                 )}
 
-                <div className="flex gap-3 mb-6">
+                <div className="flex items-center gap-3 mb-3 sm:mb-6">
                   <button
                     onClick={() => setResponsesFor(form)}
-                    className="bg-[#eae8e7] dark:bg-neutral-800 px-4 py-2 rounded-full flex items-center gap-2 hover:bg-[#e0dedd] dark:hover:bg-neutral-700 transition-colors"
+                    className="bg-[#eae8e7] dark:bg-neutral-800 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full flex items-center gap-2 whitespace-nowrap hover:bg-[#e0dedd] dark:hover:bg-neutral-700 active:scale-[0.98] transition-all"
                   >
                     <Inbox className="h-3.5 w-3.5 text-[#444748]" />
-                    <span className="text-xs font-bold text-[#444748] dark:text-neutral-300">
+                    <span className="text-[11px] sm:text-xs font-bold text-[#444748] dark:text-neutral-300">
                       {count} {count === 1 ? t.response_one : t.response_many}
                     </span>
                   </button>
+                  {/* Mobile : actions secondaires en icônes sur la ligne des réponses (même handlers que la barre du bas) */}
+                  <div className="ml-auto flex items-center gap-1 sm:hidden">
+                    <a
+                      href={`/f/${form.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={t.preview}
+                      className="p-2.5 text-[#444748] dark:text-neutral-400 active:bg-[#f5f3f2] dark:active:bg-neutral-700 rounded-xl transition-colors"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                    <button
+                      onClick={() => duplicateForm(form)}
+                      aria-label={t.duplicate}
+                      className="p-2.5 text-[#444748] dark:text-neutral-400 active:bg-[#f5f3f2] dark:active:bg-neutral-700 rounded-xl transition-colors"
+                    >
+                      <Files className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => deleteForm(form)}
+                      aria-label={t.delete}
+                      className="p-2.5 text-[#444748] hover:text-[#ba1a1a] active:bg-[#ffdad6]/30 rounded-xl transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2 pt-6 border-t border-[#c4c7c7]/10 dark:border-neutral-700/30">
+                <div className="flex items-center gap-2 pt-3 sm:pt-6 border-t border-[#c4c7c7]/10 dark:border-neutral-700/30">
                   <button
                     onClick={() => setEditingId(form.id)}
-                    className="flex-1 bg-[#000000] text-white py-3 rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#1b1c1b] transition-colors"
+                    className="flex-1 bg-[#000000] text-white py-3 rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#1b1c1b] active:scale-[0.98] transition-all"
                   >
                     {t.edit}
                   </button>
@@ -333,7 +361,7 @@ export function BusinessForms() {
                       navigator.clipboard.writeText(`${window.location.origin}/f/${form.slug}`)
                       toast.success(t.link_copied)
                     }}
-                    className="flex-1 bg-[#f5f3f2] dark:bg-neutral-800 text-[#1b1c1b] dark:text-white py-3 rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#eae8e7] dark:hover:bg-neutral-700 transition-colors"
+                    className="flex-1 bg-[#f5f3f2] dark:bg-neutral-800 text-[#1b1c1b] dark:text-white py-3 rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#eae8e7] dark:hover:bg-neutral-700 active:scale-[0.98] transition-all"
                   >
                     {t.copy_link}
                   </button>
@@ -341,21 +369,21 @@ export function BusinessForms() {
                     href={`/f/${form.slug}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-3 text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 rounded-xl transition-colors"
+                    className="hidden sm:block p-3 text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 rounded-xl transition-colors"
                     title={t.preview}
                   >
                     <ExternalLink className="h-4 w-4" />
                   </a>
                   <button
                     onClick={() => duplicateForm(form)}
-                    className="p-3 text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 rounded-xl transition-colors"
+                    className="hidden sm:block p-3 text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 rounded-xl transition-colors"
                     title={t.duplicate}
                   >
                     <Files className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => deleteForm(form)}
-                    className="p-3 text-[#444748] hover:text-[#ba1a1a] hover:bg-[#ffdad6]/30 rounded-xl transition-colors"
+                    className="hidden sm:block p-3 text-[#444748] hover:text-[#ba1a1a] hover:bg-[#ffdad6]/30 rounded-xl transition-colors"
                     title={t.delete}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -487,24 +515,25 @@ function FormEditorView({
 
   const labelCls = "block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-500 mb-3"
   const inputCls = "w-full bg-transparent border-b border-[#c4c7c7]/30 dark:border-neutral-700 py-2.5 text-sm text-[#1b1c1b] dark:text-white placeholder:text-[#444748]/40 dark:placeholder:text-neutral-500 focus:border-[#006c49] focus:ring-0 outline-none transition-all font-['Inter']"
-  const selectCls = "w-full appearance-none bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl border-0 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white font-medium focus:ring-1 focus:ring-[#006c49]/20 focus:outline-none"
+  // Mobile : fond blanc pour que les champs se détachent du fond de page (identique au bureau dès sm)
+  const selectCls = "w-full appearance-none bg-white sm:bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl border-0 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white font-medium focus:ring-1 focus:ring-[#006c49]/20 focus:outline-none"
 
   return (
     <div className="max-w-[1000px] mx-auto pb-24">
-      {/* Barre supérieure */}
-      <div className="flex items-center justify-between gap-4 mb-8">
+      {/* Barre supérieure — mobile : actions en icônes sur une seule ligne */}
+      <div className="flex items-center justify-between gap-2 sm:gap-4 mb-4 sm:mb-8">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-['Manrope'] font-bold text-[#444748] dark:text-neutral-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors"
+          className="shrink-0 -ml-2 sm:ml-0 flex items-center gap-2 px-2 sm:px-4 py-2.5 rounded-full text-sm font-['Manrope'] font-bold text-[#444748] dark:text-neutral-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" /> {t.back}
         </button>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <SaveIndicator state={saveState} t={t} />
           <button
             onClick={() => patch({ is_active: !draft.is_active })}
-            className="flex items-center gap-2"
+            className="shrink-0 flex items-center gap-2 py-2 sm:py-0"
             title={draft.is_active ? t.active : t.inactive}
           >
             <div
@@ -524,23 +553,25 @@ function FormEditorView({
           </button>
           <button
             onClick={onOpenResponses}
-            className="flex items-center gap-2 bg-[#f5f3f2] dark:bg-neutral-800 text-[#1b1c1b] dark:text-white px-4 py-2.5 rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#eae8e7] dark:hover:bg-neutral-700 transition-colors"
+            aria-label={t.responses}
+            className="shrink-0 flex items-center justify-center gap-2 bg-white sm:bg-[#f5f3f2] dark:bg-neutral-800 text-[#1b1c1b] dark:text-white h-10 w-10 sm:h-auto sm:w-auto sm:px-4 sm:py-2.5 rounded-full sm:rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#eae8e7] dark:hover:bg-neutral-700 transition-colors"
           >
-            <Inbox className="h-3.5 w-3.5" /> {t.responses}
+            <Inbox className="h-4 w-4 sm:h-3.5 sm:w-3.5" /> <span className="hidden sm:inline">{t.responses}</span>
           </button>
           <a
             href={`/f/${draft.slug}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 bg-black text-white px-4 py-2.5 rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#1b1c1b] transition-colors"
+            aria-label={t.preview}
+            className="shrink-0 flex items-center justify-center gap-2 bg-black text-white h-10 w-10 sm:h-auto sm:w-auto sm:px-4 sm:py-2.5 rounded-full sm:rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#1b1c1b] transition-colors"
           >
-            <ExternalLink className="h-3.5 w-3.5" /> {t.preview}
+            <ExternalLink className="h-4 w-4 sm:h-3.5 sm:w-3.5" /> <span className="hidden sm:inline">{t.preview}</span>
           </a>
         </div>
       </div>
 
-      {/* Onglets */}
-      <div className="flex gap-8 border-b border-[#c4c7c7]/20 dark:border-neutral-800 mb-10 overflow-x-auto">
+      {/* Onglets — mobile : barre pleine largeur à colonnes égales */}
+      <div className="grid grid-cols-4 sm:flex gap-0 sm:gap-8 border-b border-[#c4c7c7]/20 dark:border-neutral-800 mb-5 sm:mb-10 overflow-x-auto no-scrollbar">
         {([
           { key: 'content' as const, label: t.tab_content },
           { key: 'settings' as const, label: t.tab_settings },
@@ -550,7 +581,7 @@ function FormEditorView({
           <button
             key={item.key}
             onClick={() => setTab(item.key)}
-            className={`pb-4 text-sm font-['Manrope'] font-bold transition-colors whitespace-nowrap ${
+            className={`pb-3 sm:pb-4 text-sm font-['Manrope'] font-bold transition-colors whitespace-nowrap ${
               tab === item.key
                 ? 'border-b-2 border-[#000000] dark:border-white text-[#000000] dark:text-white'
                 : 'text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white'
@@ -563,25 +594,25 @@ function FormEditorView({
 
       {/* Contenu */}
       {tab === 'content' && (
-        <div className="space-y-8">
+        <div className="space-y-5 sm:space-y-8">
           <div>
             <input
               type="text"
               value={draft.name}
               onChange={e => patch({ name: e.target.value })}
               placeholder={t.form_name}
-              className="w-full bg-transparent border-0 p-0 text-4xl font-['Manrope'] font-extrabold tracking-tight text-[#1b1c1b] dark:text-white placeholder:text-[#444748]/25 focus:ring-0 outline-none"
+              className="w-full bg-transparent border-0 p-0 text-2xl sm:text-4xl font-['Manrope'] font-extrabold tracking-tight text-[#1b1c1b] dark:text-white placeholder:text-[#444748]/25 focus:ring-0 outline-none"
             />
             <input
               type="text"
               value={draft.description || ''}
               onChange={e => patch({ description: e.target.value })}
               placeholder={t.form_description}
-              className="w-full bg-transparent border-0 p-0 mt-3 text-base text-[#444748] dark:text-neutral-400 placeholder:text-[#444748]/30 focus:ring-0 outline-none font-['Inter']"
+              className="w-full bg-transparent border-0 p-0 mt-1.5 sm:mt-3 text-sm sm:text-base text-[#444748] dark:text-neutral-400 placeholder:text-[#444748]/30 focus:ring-0 outline-none font-['Inter']"
             />
           </div>
 
-          <div className="border-t border-[#c4c7c7]/20 dark:border-neutral-800 pt-8">
+          <div className="border-t border-[#c4c7c7]/20 dark:border-neutral-800 pt-4 sm:pt-8">
             <FormBlockEditor
               blocks={draft.blocks}
               onChange={blocks => patch({ blocks })}
@@ -593,7 +624,7 @@ function FormEditorView({
 
       {/* Réglages */}
       {tab === 'settings' && (
-        <div className="space-y-10 max-w-xl">
+        <div className="space-y-7 sm:space-y-10 max-w-xl">
           <section>
             <label className={labelCls}>{t.settings_submit_label}</label>
             <input
@@ -707,7 +738,7 @@ function FormEditorView({
 
       {/* CRM */}
       {tab === 'crm' && (
-        <div className="space-y-10 max-w-xl">
+        <div className="space-y-7 sm:space-y-10 max-w-xl">
           <Toggle
             checked={draft.crm_enabled}
             onChange={v => {
@@ -739,8 +770,8 @@ function FormEditorView({
                         { key: 'email' as const, label: t.crm_field_email },
                         { key: 'phone' as const, label: t.crm_field_phone },
                       ]).map(field => (
-                        <div key={field.key} className="flex items-center gap-4">
-                          <span className="w-32 text-sm font-bold text-[#1b1c1b] dark:text-white font-['Inter'] flex-shrink-0">
+                        <div key={field.key} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4">
+                          <span className="sm:w-32 text-sm font-bold text-[#1b1c1b] dark:text-white font-['Inter'] flex-shrink-0">
                             {field.label}
                           </span>
                           <select
@@ -809,7 +840,7 @@ function FormEditorView({
 
       {/* Partage */}
       {tab === 'share' && (
-        <div className="space-y-10 max-w-2xl">
+        <div className="space-y-7 sm:space-y-10 max-w-2xl">
           {!draft.is_active && (
             <div className="flex items-start gap-3 rounded-xl bg-[#ffb95f]/10 px-4 py-3">
               <AlertTriangle className="h-4 w-4 text-[#b87500] flex-shrink-0 mt-0.5" />
@@ -820,7 +851,7 @@ function FormEditorView({
           <section>
             <label className={labelCls}>{t.share_link}</label>
             <div className="flex items-center gap-2">
-              <code className="flex-1 bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl px-4 py-3 text-sm text-[#1b1c1b] dark:text-white font-mono truncate">
+              <code className="flex-1 min-w-0 bg-white sm:bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl px-3 sm:px-4 py-3 text-xs sm:text-sm text-[#1b1c1b] dark:text-white font-mono truncate">
                 {publicUrl}
               </code>
               <button
@@ -835,13 +866,14 @@ function FormEditorView({
 
           <section>
             <label className={labelCls}>{t.share_embed}</label>
-            <div className="flex items-start gap-2">
-              <code className="flex-1 bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl px-4 py-3 text-xs text-[#1b1c1b] dark:text-white font-mono break-all">
+            {/* Mobile : le code prend toute la largeur, le bouton passe dessous */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-2">
+              <code className="flex-1 min-w-0 bg-white sm:bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl px-3 sm:px-4 py-3 text-[11px] sm:text-xs text-[#1b1c1b] dark:text-white font-mono break-all">
                 {embedCode}
               </code>
               <button
                 onClick={() => copy(embedCode)}
-                className="flex items-center gap-2 bg-black text-white px-4 py-3 rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#1b1c1b] transition-colors whitespace-nowrap"
+                className="flex items-center justify-center gap-2 bg-black text-white px-4 py-3 rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#1b1c1b] transition-colors whitespace-nowrap"
               >
                 <Copy className="h-3.5 w-3.5" /> {t.copy}
               </button>
@@ -861,20 +893,20 @@ function SaveIndicator({ state, t }: { state: 'idle' | 'saving' | 'saved' | 'err
   if (state === 'saving') {
     return (
       <span className="flex items-center gap-1.5 text-xs text-[#444748]/60 dark:text-neutral-500 font-['Inter']">
-        <Loader2 className="h-3 w-3 animate-spin" /> {t.saving}
+        <Loader2 className="h-3 w-3 animate-spin" /> <span className="hidden sm:inline">{t.saving}</span>
       </span>
     )
   }
   if (state === 'error') {
     return (
-      <span className="flex items-center gap-1.5 text-xs text-[#ba1a1a] font-['Inter'] font-bold">
-        <AlertTriangle className="h-3 w-3" /> {t.save_error}
+      <span className="flex items-center gap-1.5 text-xs text-[#ba1a1a] font-['Inter'] font-bold min-w-0">
+        <AlertTriangle className="h-3 w-3 shrink-0" /> <span className="truncate">{t.save_error}</span>
       </span>
     )
   }
   return (
     <span className="flex items-center gap-1.5 text-xs text-[#006c49] font-['Inter']">
-      <Check className="h-3 w-3" /> {t.saved}
+      <Check className="h-3 w-3" /> <span className="hidden sm:inline">{t.saved}</span>
     </span>
   )
 }

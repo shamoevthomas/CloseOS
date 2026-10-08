@@ -90,27 +90,29 @@ export function SeatUpgradeModal({ isOpen, onClose, onPurchaseComplete }: Props)
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 dark:bg-black/60 backdrop-blur-md p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-stone-900/40 dark:bg-black/60 backdrop-blur-md p-0 sm:p-4" onClick={onClose}>
+      {/* Téléphone : feuille du bas */}
       <div
-        className="w-full max-w-md bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden"
+        className="w-full max-w-md max-sm:max-w-none max-h-[92dvh] sm:max-h-none max-sm:flex max-sm:flex-col bg-white/95 dark:bg-neutral-900/95 max-sm:bg-white max-sm:dark:bg-neutral-900 backdrop-blur-xl rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
+        <div className="sm:hidden mx-auto mt-2 h-1 w-10 rounded-full bg-stone-300 dark:bg-neutral-700 shrink-0" />
         {/* Header */}
-        <div className="flex items-center justify-between p-5 pb-0">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center">
+        <div className="flex items-center justify-between gap-3 p-5 pb-0 max-sm:pt-3 max-sm:shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
               <Users className="h-4.5 w-4.5 text-amber-600" />
             </div>
             <h2 className="text-lg font-extrabold text-stone-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
               {t.seat_add_seats}
             </h2>
           </div>
-          <button onClick={onClose} className="p-2 text-stone-400 hover:text-stone-600 dark:hover:text-white transition-colors rounded-full hover:bg-stone-100 dark:hover:bg-neutral-800">
+          <button onClick={onClose} aria-label={lang === 'en' ? 'Close' : 'Fermer'} className="shrink-0 max-sm:-mr-2 p-2 text-stone-400 hover:text-stone-600 dark:hover:text-white transition-colors rounded-full hover:bg-stone-100 dark:hover:bg-neutral-800">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="p-5 space-y-5">
+        <div className="p-5 space-y-5 max-sm:space-y-4 max-sm:overflow-y-auto max-sm:overscroll-contain max-sm:pb-[max(1.25rem,env(safe-area-inset-bottom))]">
           {loading ? (
             <div className="flex items-center justify-center py-10">
               <Loader2 className="h-6 w-6 animate-spin text-stone-400" />
@@ -131,17 +133,17 @@ export function SeatUpgradeModal({ isOpen, onClose, onPurchaseComplete }: Props)
                 {SEAT_TIERS.map(tier => {
                   const unitPrice = tier.prices[cycle as keyof typeof tier.prices]
                   return (
-                    <div key={tier.key} className="flex items-center justify-between rounded-xl bg-stone-50/80 dark:bg-neutral-800/60 p-4">
+                    <div key={tier.key} className="flex items-center justify-between max-sm:gap-3 rounded-xl bg-stone-50/80 dark:bg-neutral-800/60 p-4 max-sm:px-3.5 max-sm:py-3">
                       <div className="min-w-0">
-                        <p className="font-bold text-sm text-stone-900 dark:text-white">{tier.label}</p>
+                        <p className="font-bold text-sm text-stone-900 dark:text-white max-sm:truncate">{tier.label}</p>
                         <p className="text-xs text-stone-400 dark:text-neutral-500 mt-0.5">{unitPrice}€{CYCLE_LABELS[cycle]} {t.seat_per_seat}</p>
                       </div>
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-2.5 shrink-0">
                         <button
                           type="button"
                           onClick={() => updateCount(tier.key, -1)}
                           disabled={counts[tier.key] === 0}
-                          className="w-8 h-8 rounded-full bg-stone-200/80 dark:bg-neutral-700 flex items-center justify-center text-stone-600 dark:text-neutral-300 hover:bg-stone-300 dark:hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="w-8 h-8 max-sm:w-9 max-sm:h-9 rounded-full bg-stone-200/80 dark:bg-neutral-700 flex items-center justify-center text-stone-600 dark:text-neutral-300 hover:bg-stone-300 dark:hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           <Minus className="h-3.5 w-3.5" />
                         </button>
@@ -149,7 +151,7 @@ export function SeatUpgradeModal({ isOpen, onClose, onPurchaseComplete }: Props)
                         <button
                           type="button"
                           onClick={() => updateCount(tier.key, 1)}
-                          className="w-8 h-8 rounded-full bg-stone-200/80 dark:bg-neutral-700 flex items-center justify-center text-stone-600 dark:text-neutral-300 hover:bg-stone-300 dark:hover:bg-neutral-600 transition-colors"
+                          className="w-8 h-8 max-sm:w-9 max-sm:h-9 rounded-full bg-stone-200/80 dark:bg-neutral-700 flex items-center justify-center text-stone-600 dark:text-neutral-300 hover:bg-stone-300 dark:hover:bg-neutral-600 transition-colors"
                         >
                           <Plus className="h-3.5 w-3.5" />
                         </button>

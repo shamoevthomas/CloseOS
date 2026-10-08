@@ -154,18 +154,19 @@ export function BusinessCRMAutoAssignBlock({ provider, providerLabel }: Props) {
   const inputCls = 'w-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/30 dark:border-neutral-700 rounded-xl py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-[#006c49]/20 focus:border-[#006c49] text-[#1b1c1b] dark:text-white'
 
   return (
-    <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-      <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+    <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+      <h4 className="font-bold text-base md:text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
         Assignation automatique
       </h4>
-      <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">
+      <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4 md:mb-6">
         Est-ce que <strong>{providerLabel}</strong> gère déjà l'assignation automatique des prospects vers vos équipes ?
       </p>
 
-      <div className="flex gap-2 mb-6 flex-wrap">
+      {/* Mobile : réponses empilées pleine largeur */}
+      <div className="flex flex-col sm:flex-row gap-2 mb-4 md:mb-6 sm:flex-wrap">
         <button
           onClick={() => handleSetManaged(true)}
-          className={`px-5 py-2.5 rounded-full font-bold text-sm border transition-colors ${
+          className={`px-5 py-2.5 rounded-full font-bold text-sm border active:scale-[0.98] transition ${
             managedAnswer === 'yes'
               ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
               : 'bg-white dark:bg-neutral-900 text-[#1b1c1b] dark:text-white border-[#c4c7c7]/30 hover:bg-[#eae8e7]'
@@ -175,7 +176,7 @@ export function BusinessCRMAutoAssignBlock({ provider, providerLabel }: Props) {
         </button>
         <button
           onClick={() => handleSetManaged(false)}
-          className={`px-5 py-2.5 rounded-full font-bold text-sm border transition-colors ${
+          className={`px-5 py-2.5 rounded-full font-bold text-sm border active:scale-[0.98] transition ${
             managedAnswer === 'no'
               ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
               : 'bg-white dark:bg-neutral-900 text-[#1b1c1b] dark:text-white border-[#c4c7c7]/30 hover:bg-[#eae8e7]'
@@ -192,10 +193,10 @@ export function BusinessCRMAutoAssignBlock({ provider, providerLabel }: Props) {
       )}
 
       {managedAnswer === 'no' && (
-        <div className="space-y-6 border-t border-[#c4c7c7]/10 dark:border-neutral-700 pt-6">
+        <div className="space-y-4 md:space-y-6 border-t border-[#c4c7c7]/10 dark:border-neutral-700 pt-4 md:pt-6">
           {/* Switch */}
           <label className="flex items-center justify-between gap-4 cursor-pointer">
-            <div>
+            <div className="min-w-0">
               <p className="font-bold text-sm text-[#1b1c1b] dark:text-white">Activer l'assignation automatique</p>
               <p className="text-xs text-[#444748]/70 mt-1">À chaque prospect reçu de {providerLabel}, on l'assigne automatiquement.</p>
             </div>
@@ -249,7 +250,7 @@ export function BusinessCRMAutoAssignBlock({ provider, providerLabel }: Props) {
 
               {/* Members */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <label className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">
                     {mode === 'specific_one' ? 'Membre' : 'Membres éligibles'}
                   </label>
@@ -276,8 +277,8 @@ export function BusinessCRMAutoAssignBlock({ provider, providerLabel }: Props) {
                           onChange={() => toggleMember(m.user_id)}
                           className="h-4 w-4 accent-[#1b1c1b]"
                         />
-                        <span className="text-sm font-medium flex-1">{memberLabel(m)}</span>
-                        {m.role && <span className="text-[10px] uppercase font-bold text-[#444748]/50">{m.role}</span>}
+                        <span className="text-sm font-medium flex-1 min-w-0 truncate">{memberLabel(m)}</span>
+                        {m.role && <span className="text-[10px] uppercase font-bold text-[#444748]/50 shrink-0 whitespace-nowrap">{m.role}</span>}
                       </label>
                     ))}
                   </div>

@@ -208,7 +208,12 @@ export function BusinessRevenue() {
     try {
       const res = await fetch(`/api/business-revenue-summary?user_id=${user.id}&period=${selectedPeriod}`)
       const json = await res.json()
-      setData(json)
+      // L'API renvoie { error } en cas d'échec : sans ce garde-fou, la page plantait (écran blanc).
+      if (!res.ok || typeof json?.ca !== 'number') {
+        toast.error(t.revenue_load_error)
+      } else {
+        setData(json)
+      }
     } catch {
       toast.error(t.revenue_load_error)
     }
@@ -319,25 +324,25 @@ export function BusinessRevenue() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8">
 
       {/* ═══ Stripe not connected — only if subscription formulas exist ═══ */}
       {hasSubscriptionFormula && !stripeConnected && (
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#635BFF]/5 via-white to-[#006c49]/5 dark:from-[#635BFF]/10 dark:via-neutral-900 dark:to-[#006c49]/10 p-5 sm:p-8">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-[#635BFF]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#635BFF]/5 via-white to-[#006c49]/5 dark:from-[#635BFF]/10 dark:via-neutral-900 dark:to-[#006c49]/10 p-4 sm:p-8">
+          <div className="hidden lg:block absolute top-0 right-0 w-64 h-64 bg-[#635BFF]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
           <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6">
-            <div className="flex items-center gap-4 sm:gap-5">
-              <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-[#635BFF]/10 flex items-center justify-center shrink-0">
-                <CreditCard className="h-6 w-6 sm:h-7 sm:w-7 text-[#635BFF]" />
+            <div className="flex items-center gap-3 sm:gap-5">
+              <div className="h-10 w-10 sm:h-14 sm:w-14 rounded-xl sm:rounded-2xl bg-[#635BFF]/10 flex items-center justify-center shrink-0">
+                <CreditCard className="h-5 w-5 sm:h-7 sm:w-7 text-[#635BFF]" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h2 className="text-base sm:text-lg font-extrabold text-[#1b1c1b] dark:text-white font-['Manrope'] tracking-tight">{t.revenue_connect_stripe_title}</h2>
-                <p className="text-sm text-[#444748] dark:text-neutral-400 mt-0.5">{t.revenue_connect_stripe_desc}</p>
+                <p className="text-xs sm:text-sm text-[#444748] dark:text-neutral-400 mt-0.5">{t.revenue_connect_stripe_desc}</p>
               </div>
             </div>
             <button
               onClick={() => setStripeModalOpen(true)}
-              className="px-6 py-3 bg-[#635BFF] hover:bg-[#5349E0] text-white font-extrabold rounded-full transition-all shadow-lg shadow-[#635BFF]/20 hover:shadow-xl hover:shadow-[#635BFF]/30 shrink-0 w-full sm:w-auto text-center"
+              className="px-6 py-2.5 sm:py-3 bg-[#635BFF] hover:bg-[#5349E0] text-white text-sm sm:text-base font-extrabold rounded-full transition-all shadow-lg shadow-[#635BFF]/20 hover:shadow-xl hover:shadow-[#635BFF]/30 active:scale-[0.98] shrink-0 w-full sm:w-auto text-center"
             >
               {t.revenue_connect_btn}
             </button>
@@ -346,14 +351,14 @@ export function BusinessRevenue() {
       )}
 
       {/* ═══ Header: Period pills + Tab nav ═══ */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        {/* Period pills */}
-        <div className="flex items-center gap-1.5 bg-[#f5f3f2] dark:bg-neutral-800/50 rounded-full p-1 overflow-x-auto w-full sm:w-auto">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2 sm:gap-3 lg:gap-4">
+        {/* Period pills — contrôle segmenté pleine largeur sur mobile / iPad */}
+        <div className="flex items-center gap-0.5 sm:gap-1.5 bg-[#f5f3f2] dark:bg-neutral-800/50 rounded-full p-1 overflow-x-auto no-scrollbar w-full lg:w-auto">
           {PERIODS.map(p => (
             <button
               key={p.key}
               onClick={() => setSelectedPeriod(p.key)}
-              className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
+              className={`flex-1 lg:flex-none px-1.5 sm:px-4 py-2 rounded-full text-[11px] min-[400px]:text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
                 selectedPeriod === p.key
                   ? 'bg-white dark:bg-neutral-700 text-[#1b1c1b] dark:text-white shadow-[0_2px_8px_rgba(27,28,27,0.06)]'
                   : 'text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white'
@@ -365,12 +370,12 @@ export function BusinessRevenue() {
         </div>
 
         {/* Tab navigation */}
-        <div className="flex items-center gap-1.5 bg-[#f5f3f2] dark:bg-neutral-800/50 rounded-full p-1 overflow-x-auto w-full sm:w-auto">
+        <div className="flex items-center gap-1 sm:gap-1.5 bg-[#f5f3f2] dark:bg-neutral-800/50 rounded-full p-1 overflow-x-auto no-scrollbar w-full lg:w-auto">
           {(['revenue', 'charges', 'margin'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
+              className={`flex-1 lg:flex-none px-2 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
                 activeTab === tab
                   ? 'bg-white dark:bg-neutral-700 text-[#1b1c1b] dark:text-white shadow-[0_2px_8px_rgba(27,28,27,0.06)]'
                   : 'text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white'
@@ -383,16 +388,18 @@ export function BusinessRevenue() {
             <>
               <button
                 onClick={() => syncStripeData().then(ok => ok && fetchRevenue())}
-                className="p-2 rounded-full text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-white dark:hover:bg-neutral-700 transition-all"
+                className="shrink-0 p-2 rounded-full text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-white dark:hover:bg-neutral-700 transition-all"
                 title={t.revenue_resync_stripe}
+                aria-label={t.revenue_resync_stripe}
               >
                 <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
               </button>
               <button
                 onClick={disconnectStripe}
                 disabled={disconnecting}
-                className="p-2 rounded-full text-[#444748] dark:text-neutral-400 hover:text-[#ba1a1a] hover:bg-[#ba1a1a]/10 transition-all"
+                className="shrink-0 p-2 rounded-full text-[#444748] dark:text-neutral-400 hover:text-[#ba1a1a] hover:bg-[#ba1a1a]/10 transition-all"
                 title={t.revenue_disconnect_stripe}
+                aria-label={t.revenue_disconnect_stripe}
               >
                 <Unplug className="h-4 w-4" />
               </button>
@@ -403,21 +410,21 @@ export function BusinessRevenue() {
 
       {/* ═══ REVENUE TAB ═══ */}
       {activeTab === 'revenue' && data && (
-        <div className="space-y-8">
-          {/* Hero KPI row */}
-          <div className={`grid grid-cols-1 ${hasSubscriptionFormula ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-6`}>
+        <div className="space-y-4 sm:space-y-6 lg:space-y-8">
+          {/* Hero KPI row — mobile : MRR en pleine largeur, CA + marge en 2 tuiles */}
+          <div className={`grid grid-cols-2 ${hasSubscriptionFormula ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-3 sm:gap-4 lg:gap-6`}>
             {/* MRR - Hero card (subscription formulas only) */}
             {hasSubscriptionFormula && (
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#006c49] to-[#004d35] p-7 text-white">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3" />
+            <div className="col-span-2 md:col-span-1 relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#006c49] to-[#004d35] p-4 sm:p-5 lg:p-7 text-white">
+              <div className="hidden lg:block absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3" />
               <div className="relative">
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-2 mb-2 sm:mb-4">
                   <DollarSign className="h-5 w-5 opacity-70" />
-                  <span className="text-xs font-bold uppercase tracking-[0.15em] opacity-70">MRR</span>
+                  <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-[0.15em] opacity-70">MRR</span>
                 </div>
-                <p className="text-4xl font-extrabold font-['Manrope'] tracking-tight">{fmt(data.mrr)} <span className="text-lg opacity-60">EUR</span></p>
+                <p className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-['Manrope'] tracking-tight">{fmt(data.mrr)} <span className="text-sm sm:text-lg opacity-60">EUR</span></p>
                 {data.evolution !== 0 && (
-                  <div className={`mt-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${data.evolution >= 0 ? 'bg-white/15 text-white' : 'bg-red-400/20 text-red-200'}`}>
+                  <div className={`mt-2 sm:mt-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap ${data.evolution >= 0 ? 'bg-white/15 text-white' : 'bg-red-400/20 text-red-200'}`}>
                     {data.evolution >= 0 ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
                     {data.evolution >= 0 ? '+' : ''}{data.evolution}%
                   </div>
@@ -427,16 +434,16 @@ export function BusinessRevenue() {
             )}
 
             {/* CA */}
-            <div className="relative overflow-hidden rounded-3xl bg-white dark:bg-white/5 p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[#ffb95f]/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3" />
+            <div className="min-w-0 relative overflow-hidden rounded-2xl sm:rounded-3xl bg-white dark:bg-white/5 p-4 sm:p-5 lg:p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
+              <div className="hidden lg:block absolute top-0 right-0 w-32 h-32 bg-[#ffb95f]/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3" />
               <div className="relative">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="p-1.5 rounded-lg bg-[#1b1c1b]/5 dark:bg-white/10">
+                <div className="flex items-center gap-2 mb-2 sm:mb-4">
+                  <div className="shrink-0 p-1.5 rounded-lg bg-[#1b1c1b]/5 dark:bg-white/10">
                     <TrendingUp className="h-4 w-4 text-[#1b1c1b] dark:text-white" />
                   </div>
-                  <span className="text-xs font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400">{t.revenue_ca_label} {PERIODS.find(p => p.key === selectedPeriod)?.label}</span>
+                  <span className="min-w-0 truncate text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-[0.15em] text-[#444748] dark:text-neutral-400">{t.revenue_ca_label} {PERIODS.find(p => p.key === selectedPeriod)?.label}</span>
                 </div>
-                <p className="text-3xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] dark:text-white">{fmt(data.ca)} <span className="text-base text-[#444748]/40">EUR</span></p>
+                <p className="text-lg sm:text-2xl lg:text-3xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] dark:text-white">{fmt(data.ca)} <span className="text-xs sm:text-base text-[#444748]/40">EUR</span></p>
               </div>
             </div>
 
@@ -444,17 +451,17 @@ export function BusinessRevenue() {
             {(() => {
               const margin = data.ca - localTotalCharges - (data.commissions?.total || 0)
               return (
-              <div className="relative overflow-hidden rounded-3xl bg-white dark:bg-white/5 p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
-                <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3 ${margin >= 0 ? 'bg-[#006c49]/5' : 'bg-red-500/5'}`} />
+              <div className="min-w-0 relative overflow-hidden rounded-2xl sm:rounded-3xl bg-white dark:bg-white/5 p-4 sm:p-5 lg:p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
+                <div className={`hidden lg:block absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3 ${margin >= 0 ? 'bg-[#006c49]/5' : 'bg-red-500/5'}`} />
                 <div className="relative">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className={`p-1.5 rounded-lg ${margin >= 0 ? 'bg-[#006c49]/10' : 'bg-red-500/10'}`}>
+                  <div className="flex items-center gap-2 mb-2 sm:mb-4">
+                    <div className={`shrink-0 p-1.5 rounded-lg ${margin >= 0 ? 'bg-[#006c49]/10' : 'bg-red-500/10'}`}>
                       <Percent className={`h-4 w-4 ${margin >= 0 ? 'text-[#006c49]' : 'text-red-500'}`} />
                     </div>
-                    <span className="text-xs font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400">{t.revenue_net_margin}</span>
+                    <span className="min-w-0 truncate text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-[0.15em] text-[#444748] dark:text-neutral-400">{t.revenue_net_margin}</span>
                   </div>
-                  <p className={`text-3xl font-extrabold font-['Manrope'] tracking-tight ${margin >= 0 ? 'text-[#006c49]' : 'text-red-500'}`}>
-                    {margin >= 0 ? '+' : ''}{fmt(margin)} <span className="text-base opacity-40">EUR</span>
+                  <p className={`text-lg sm:text-2xl lg:text-3xl font-extrabold font-['Manrope'] tracking-tight ${margin >= 0 ? 'text-[#006c49]' : 'text-red-500'}`}>
+                    {margin >= 0 ? '+' : ''}{fmt(margin)} <span className="text-xs sm:text-base opacity-40">EUR</span>
                   </p>
                 </div>
               </div>
@@ -464,43 +471,43 @@ export function BusinessRevenue() {
 
           {/* Secondary KPIs — subscription metrics only */}
           {hasSubscriptionFormula && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-4 sm:p-5">
-              <div className="flex items-center gap-2 mb-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 [&>*:last-child:nth-child(odd)]:col-span-2 sm:[&>*:last-child:nth-child(odd)]:col-span-1">
+            <div className="min-w-0 rounded-2xl bg-white lg:bg-[#f5f3f2] dark:bg-white/5 lg:dark:bg-white/5 p-4 sm:p-5">
+              <div className="flex items-center gap-2 mb-2 sm:mb-3">
                 <Users className="h-4 w-4 text-blue-500" />
-                <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400">{t.revenue_new_clients}</span>
+                <span className="min-w-0 truncate text-[10px] sm:text-[11px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-[#444748] dark:text-neutral-400">{t.revenue_new_clients}</span>
               </div>
-              <p className="text-2xl font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">{data.newClients}</p>
+              <p className="text-xl sm:text-2xl font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">{data.newClients}</p>
             </div>
-            <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-4 sm:p-5">
-              <div className="flex items-center gap-2 mb-3">
+            <div className="min-w-0 rounded-2xl bg-white lg:bg-[#f5f3f2] dark:bg-white/5 lg:dark:bg-white/5 p-4 sm:p-5">
+              <div className="flex items-center gap-2 mb-2 sm:mb-3">
                 <UserMinus className="h-4 w-4 text-red-400" />
-                <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400">{t.revenue_cancellations}</span>
+                <span className="min-w-0 truncate text-[10px] sm:text-[11px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-[#444748] dark:text-neutral-400">{t.revenue_cancellations}</span>
               </div>
-              <p className="text-2xl font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">{data.canceledCount}</p>
+              <p className="text-xl sm:text-2xl font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">{data.canceledCount}</p>
             </div>
-            <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-4 sm:p-5">
-              <div className="flex items-center gap-2 mb-3">
+            <div className="min-w-0 rounded-2xl bg-white lg:bg-[#f5f3f2] dark:bg-white/5 lg:dark:bg-white/5 p-4 sm:p-5">
+              <div className="flex items-center gap-2 mb-2 sm:mb-3">
                 <Percent className="h-4 w-4 text-amber-500" />
-                <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400">Churn</span>
+                <span className="min-w-0 truncate text-[10px] sm:text-[11px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-[#444748] dark:text-neutral-400">Churn</span>
               </div>
-              <p className="text-2xl font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">{data.churnRate}%</p>
+              <p className="text-xl sm:text-2xl font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">{data.churnRate}%</p>
             </div>
           </div>
           )}
 
           {/* Active subscriptions — subscription formulas only */}
           {hasSubscriptionFormula && (
-          <div className="rounded-3xl bg-white dark:bg-white/5 p-4 sm:p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
-            <div className="flex items-center justify-between mb-6">
+          <div className="rounded-2xl sm:rounded-3xl bg-white dark:bg-white/5 p-4 sm:p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
+            <div className="flex items-center justify-between mb-2 sm:mb-6">
               <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#444748] dark:text-neutral-400">
                 {t.revenue_active_subscriptions} <span className="text-[#006c49] ml-1">{data.activeSubscriptions.length}</span>
               </h3>
             </div>
             {data.activeSubscriptions.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <div className="h-16 w-16 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center mb-4">
-                  <AlertCircle className="h-7 w-7 text-[#c4c7c7]" />
+              <div className="flex flex-col items-center justify-center py-8 sm:py-12">
+                <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center mb-3 sm:mb-4">
+                  <AlertCircle className="h-6 w-6 sm:h-7 sm:w-7 text-[#c4c7c7]" />
                 </div>
                 <p className="text-sm text-[#444748] dark:text-neutral-400">
                   {stripeConnected ? t.revenue_no_active_sub : t.revenue_connect_stripe_to_see}
@@ -509,25 +516,25 @@ export function BusinessRevenue() {
             ) : (
               <div className="space-y-1">
                 {data.activeSubscriptions.map(sub => (
-                  <div key={sub.id} className="flex flex-col sm:flex-row sm:items-center justify-between py-4 px-4 -mx-4 rounded-2xl hover:bg-[#f5f3f2] dark:hover:bg-white/5 transition-colors group gap-3 sm:gap-0">
-                    <div className="flex items-center gap-4 min-w-0">
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#006c49]/10 to-[#006c49]/5 flex items-center justify-center shrink-0">
+                  <div key={sub.id} className="flex items-center justify-between py-3 sm:py-4 px-4 -mx-4 rounded-2xl hover:bg-[#f5f3f2] dark:hover:bg-white/5 transition-colors group gap-3 sm:gap-0">
+                    <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                      <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-gradient-to-br from-[#006c49]/10 to-[#006c49]/5 flex items-center justify-center shrink-0">
                         <span className="text-sm font-extrabold text-[#006c49]">{sub.contact.charAt(0).toUpperCase()}</span>
                       </div>
                       <div className="min-w-0">
                         <p className="font-bold text-[#1b1c1b] dark:text-white text-sm truncate">{sub.contact}</p>
-                        <p className="text-xs text-[#444748] dark:text-neutral-500">{sub.email}</p>
+                        <p className="text-xs text-[#444748] dark:text-neutral-500 max-sm:truncate">{sub.email}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${sub.subscription_status === 'active' ? 'bg-[#006c49]/10 text-[#006c49]' : 'bg-blue-500/10 text-blue-500'}`}>
+                    <div className="flex shrink-0 items-center gap-4">
+                      <span className={`hidden sm:inline whitespace-nowrap text-[10px] font-bold px-2.5 py-1 rounded-full ${sub.subscription_status === 'active' ? 'bg-[#006c49]/10 text-[#006c49]' : 'bg-blue-500/10 text-blue-500'}`}>
                         {sub.subscription_status === 'active' ? t.revenue_sub_active : t.revenue_sub_trial}
                       </span>
                       <div className="text-right">
-                        <p className="font-extrabold text-[#1b1c1b] dark:text-white text-sm font-['Manrope']">
+                        <p className="whitespace-nowrap font-extrabold text-[#1b1c1b] dark:text-white text-sm font-['Manrope']">
                           {Number(sub.subscription_amount).toFixed(2)} EUR
                         </p>
-                        <p className="text-[10px] text-[#444748] dark:text-neutral-500">/ {intervalLabel(sub.subscription_interval, sub.subscription_interval_count)}</p>
+                        <p className="whitespace-nowrap text-[10px] text-[#444748] dark:text-neutral-500"><span className={`sm:hidden font-bold ${sub.subscription_status === 'active' ? 'text-[#006c49]' : 'text-blue-500'}`}>{sub.subscription_status === 'active' ? t.revenue_sub_active : t.revenue_sub_trial} · </span>/ {intervalLabel(sub.subscription_interval, sub.subscription_interval_count)}</p>
                       </div>
                     </div>
                   </div>
@@ -539,33 +546,33 @@ export function BusinessRevenue() {
 
           {/* Désabonnements / échecs de paiement */}
           {hasSubscriptionFormula && data.canceledSubscriptions && data.canceledSubscriptions.length > 0 && (
-          <div className="rounded-3xl bg-white dark:bg-white/5 p-4 sm:p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
-            <div className="flex items-center justify-between mb-6">
+          <div className="rounded-2xl sm:rounded-3xl bg-white dark:bg-white/5 p-4 sm:p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
+            <div className="flex items-center justify-between mb-2 sm:mb-6">
               <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#444748] dark:text-neutral-400">
                 {lang === 'en' ? 'Cancellations' : 'Désabonnements'} <span className="text-red-400 ml-1">{data.canceledSubscriptions.length}</span>
               </h3>
             </div>
             <div className="space-y-1">
               {data.canceledSubscriptions.map(sub => (
-                <div key={sub.id} className="flex flex-col sm:flex-row sm:items-center justify-between py-4 px-4 -mx-4 rounded-2xl hover:bg-[#f5f3f2] dark:hover:bg-white/5 transition-colors gap-3 sm:gap-0">
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-red-500/10 to-red-500/5 flex items-center justify-center shrink-0">
+                <div key={sub.id} className="flex items-center justify-between py-3 sm:py-4 px-4 -mx-4 rounded-2xl hover:bg-[#f5f3f2] dark:hover:bg-white/5 transition-colors gap-3 sm:gap-0">
+                  <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                    <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-gradient-to-br from-red-500/10 to-red-500/5 flex items-center justify-center shrink-0">
                       <span className="text-sm font-extrabold text-red-400">{sub.contact.charAt(0).toUpperCase()}</span>
                     </div>
                     <div className="min-w-0">
                       <p className="font-bold text-[#1b1c1b] dark:text-white text-sm truncate">{sub.contact}</p>
-                      <p className="text-xs text-[#444748] dark:text-neutral-500">{sub.email}</p>
+                      <p className="text-xs text-[#444748] dark:text-neutral-500 max-sm:truncate">{sub.email}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${sub.subscription_status === 'canceled' ? 'bg-red-500/10 text-red-500' : 'bg-amber-500/10 text-amber-500'}`}>
+                  <div className="flex shrink-0 items-center gap-4">
+                    <span className={`hidden sm:inline whitespace-nowrap text-[10px] font-bold px-2.5 py-1 rounded-full ${sub.subscription_status === 'canceled' ? 'bg-red-500/10 text-red-500' : 'bg-amber-500/10 text-amber-500'}`}>
                       {sub.subscription_status === 'canceled' ? (lang === 'en' ? 'Cancelled' : 'Désabonné') : (lang === 'en' ? 'Payment failed' : 'Paiement en échec')}
                     </span>
                     <div className="text-right">
-                      <p className="font-extrabold text-[#444748] dark:text-neutral-400 text-sm font-['Manrope'] line-through">
+                      <p className="whitespace-nowrap font-extrabold text-[#444748] dark:text-neutral-400 text-sm font-['Manrope'] line-through">
                         {Number(sub.subscription_amount).toFixed(2)} EUR
                       </p>
-                      <p className="text-[10px] text-[#444748] dark:text-neutral-500">/ {intervalLabel(sub.subscription_interval, sub.subscription_interval_count)}</p>
+                      <p className="whitespace-nowrap text-[10px] text-[#444748] dark:text-neutral-500"><span className={`sm:hidden font-bold ${sub.subscription_status === 'canceled' ? 'text-red-500' : 'text-amber-500'}`}>{sub.subscription_status === 'canceled' ? (lang === 'en' ? 'Cancelled' : 'Désabonné') : (lang === 'en' ? 'Payment failed' : 'Paiement en échec')} · </span>/ {intervalLabel(sub.subscription_interval, sub.subscription_interval_count)}</p>
                     </div>
                   </div>
                 </div>
@@ -578,30 +585,31 @@ export function BusinessRevenue() {
 
       {/* ═══ CHARGES TAB ═══ */}
       {activeTab === 'charges' && data && (
-        <div className="space-y-8">
+        <div className="space-y-4 sm:space-y-6 lg:space-y-8">
           {/* Commissions */}
-          <div className="rounded-3xl bg-white dark:bg-white/5 p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#444748] dark:text-neutral-400">{t.revenue_team_commissions}</h3>
-              <span className="text-sm font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">{fmt(data.commissions.total)} EUR</span>
+          <div className="rounded-2xl sm:rounded-3xl bg-white dark:bg-white/5 p-4 sm:p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
+            <div className="flex items-center justify-between gap-3 mb-2 sm:mb-6">
+              <h3 className="min-w-0 text-xs font-bold uppercase tracking-wider sm:tracking-[0.2em] text-[#444748] dark:text-neutral-400">{t.revenue_team_commissions}</h3>
+              <span className="shrink-0 whitespace-nowrap text-sm font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">{fmt(data.commissions.total)} EUR</span>
             </div>
             {data.commissions.details.length === 0 ? (
-              <p className="text-sm text-[#444748] dark:text-neutral-400 text-center py-6">{t.revenue_no_commission}</p>
+              <p className="text-sm text-[#444748] dark:text-neutral-400 text-center py-4 sm:py-6">{t.revenue_no_commission}</p>
             ) : (
               <div className="space-y-1">
                 {data.commissions.details.map(c => (
-                  <div key={c.id} className="flex items-center justify-between py-3.5 px-4 -mx-4 rounded-2xl hover:bg-[#f5f3f2] dark:hover:bg-white/5 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center">
+                  <div key={c.id} className="flex items-center justify-between gap-3 py-3 sm:py-3.5 px-4 -mx-4 rounded-2xl hover:bg-[#f5f3f2] dark:hover:bg-white/5 transition-colors">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="h-8 w-8 shrink-0 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center">
                         <span className="text-xs font-extrabold text-[#444748]">{c.name.charAt(0)}</span>
                       </div>
-                      <div>
-                        <span className="font-bold text-[#1b1c1b] dark:text-white text-sm">{c.name}</span>
-                        <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-[#444748] dark:text-neutral-500 bg-[#f5f3f2] dark:bg-neutral-800 px-2 py-0.5 rounded-full">{c.role}</span>
+                      {/* Mobile : nom tronqué puis rôle en dessous */}
+                      <div className="min-w-0 max-sm:flex max-sm:flex-col max-sm:items-start">
+                        <span className="font-bold text-[#1b1c1b] dark:text-white text-sm max-sm:max-w-full max-sm:truncate">{c.name}</span>
+                        <span className="ml-2 max-sm:ml-0 max-sm:mt-0.5 whitespace-nowrap text-[10px] font-bold uppercase tracking-wider text-[#444748] dark:text-neutral-500 bg-[#f5f3f2] dark:bg-neutral-800 px-2 py-0.5 rounded-full">{c.role}</span>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <span className="font-extrabold text-[#1b1c1b] dark:text-white text-sm font-['Manrope']">{fmt(c.amount)} EUR</span>
+                    <div className="shrink-0 text-right">
+                      <span className="whitespace-nowrap font-extrabold text-[#1b1c1b] dark:text-white text-sm font-['Manrope']">{fmt(c.amount)} EUR</span>
                       <span className="block text-[10px] text-[#444748] dark:text-neutral-500">{c.type === 'fixed' ? t.revenue_fixed_salary : t.revenue_commission_label}</span>
                     </div>
                   </div>
@@ -660,22 +668,22 @@ export function BusinessRevenue() {
 
       {/* ═══ MARGIN TAB ═══ */}
       {activeTab === 'margin' && data && (
-        <div className="space-y-8">
+        <div className="space-y-4 sm:space-y-6 lg:space-y-8">
           {/* Hero margin card */}
           {(() => {
             const margin = data.ca - localTotalCharges - (data.commissions?.total || 0)
             const totalAllCharges = localTotalCharges + (data.commissions?.total || 0)
             return (
-            <div className={`relative overflow-hidden rounded-3xl p-5 sm:p-8 ${margin >= 0 ? 'bg-gradient-to-br from-[#006c49] to-[#004d35]' : 'bg-gradient-to-br from-red-600 to-red-700'} text-white`}>
-              <div className="absolute top-0 right-0 w-56 h-56 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
-              <div className="relative flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-0">
+            <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl p-4 sm:p-8 ${margin >= 0 ? 'bg-gradient-to-br from-[#006c49] to-[#004d35]' : 'bg-gradient-to-br from-red-600 to-red-700'} text-white`}>
+              <div className="hidden lg:block absolute top-0 right-0 w-56 h-56 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
+              <div className="relative flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-0">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] opacity-60 mb-3">{t.revenue_net_margin} {PERIODS.find(p => p.key === selectedPeriod)?.label}</p>
+                  <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-[0.2em] opacity-60 mb-1.5 sm:mb-3">{t.revenue_net_margin} {PERIODS.find(p => p.key === selectedPeriod)?.label}</p>
                   <p className="text-3xl sm:text-5xl font-extrabold font-['Manrope'] tracking-tight">
                     {margin >= 0 ? '+' : ''}{fmt(margin)} <span className="text-base sm:text-xl opacity-40">EUR</span>
                   </p>
                 </div>
-                <div className="text-left sm:text-right space-y-2 opacity-80">
+                <div className="flex gap-4 sm:block text-left sm:text-right sm:space-y-2 opacity-80">
                   <p className="text-sm">{t.revenue_ca_label} <span className="font-extrabold">{fmt(data.ca)}</span></p>
                   <p className="text-sm">{t.revenue_tab_charges} <span className="font-extrabold">{fmt(totalAllCharges)}</span></p>
                 </div>
@@ -685,9 +693,9 @@ export function BusinessRevenue() {
           })()}
 
           {/* Chart */}
-          <div className="rounded-3xl bg-white dark:bg-white/5 p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
-            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#444748] dark:text-neutral-400 mb-6">{t.revenue_monthly_evolution}</h3>
-            <div className="h-72">
+          <div className="min-w-0 rounded-2xl sm:rounded-3xl bg-white dark:bg-white/5 p-4 sm:p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
+            <h3 className="text-xs font-bold uppercase tracking-wider sm:tracking-[0.2em] text-[#444748] dark:text-neutral-400 mb-3 sm:mb-6">{t.revenue_monthly_evolution}</h3>
+            <div className="h-56 sm:h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData}>
                   <defs>
@@ -704,7 +712,7 @@ export function BusinessRevenue() {
                       <stop offset="95%" stopColor="#635BFF" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="name" stroke="#c4c7c7" fontSize={11} tickLine={false} axisLine={false} />
+                  <XAxis dataKey="name" stroke="#c4c7c7" fontSize={11} tickLine={false} axisLine={false} interval="preserveStartEnd" />
                   <YAxis stroke="#c4c7c7" fontSize={11} tickLine={false} axisLine={false} width={50} />
                   <Tooltip
                     contentStyle={{ backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)', border: 'none', borderRadius: '16px', boxShadow: '0 20px 40px rgba(27,28,27,0.08)', color: '#1b1c1b' }}
@@ -720,18 +728,18 @@ export function BusinessRevenue() {
           </div>
 
           {/* Breakdown */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-6">
-              <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400 mb-3">{t.revenue_commissions_breakdown}</p>
-              <p className="text-xl font-extrabold text-[#1b1c1b] dark:text-white font-['Manrope']">{fmt(data.commissions.total)} EUR</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 [&>*:last-child:nth-child(odd)]:col-span-2 md:[&>*:last-child:nth-child(odd)]:col-span-1">
+            <div className="min-w-0 rounded-2xl bg-white lg:bg-[#f5f3f2] dark:bg-white/5 lg:dark:bg-white/5 p-4 sm:p-6">
+              <p className="truncate text-[10px] sm:text-[11px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-[#444748] dark:text-neutral-400 mb-1.5 sm:mb-3">{t.revenue_commissions_breakdown}</p>
+              <p className="text-lg sm:text-xl font-extrabold text-[#1b1c1b] dark:text-white font-['Manrope']">{fmt(data.commissions.total)} EUR</p>
             </div>
-            <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-6">
-              <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400 mb-3">{t.revenue_fixed_charges}</p>
-              <p className="text-xl font-extrabold text-[#1b1c1b] dark:text-white font-['Manrope']">{fmt(data.charges.totalFixed)} EUR</p>
+            <div className="min-w-0 rounded-2xl bg-white lg:bg-[#f5f3f2] dark:bg-white/5 lg:dark:bg-white/5 p-4 sm:p-6">
+              <p className="truncate text-[10px] sm:text-[11px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-[#444748] dark:text-neutral-400 mb-1.5 sm:mb-3">{t.revenue_fixed_charges}</p>
+              <p className="text-lg sm:text-xl font-extrabold text-[#1b1c1b] dark:text-white font-['Manrope']">{fmt(data.charges.totalFixed)} EUR</p>
             </div>
-            <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-6">
-              <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400 mb-3">{t.revenue_variable_charges}</p>
-              <p className="text-xl font-extrabold text-[#1b1c1b] dark:text-white font-['Manrope']">{fmt(data.charges.totalVariable)} EUR</p>
+            <div className="min-w-0 rounded-2xl bg-white lg:bg-[#f5f3f2] dark:bg-white/5 lg:dark:bg-white/5 p-4 sm:p-6">
+              <p className="truncate text-[10px] sm:text-[11px] font-bold uppercase tracking-wider sm:tracking-[0.15em] text-[#444748] dark:text-neutral-400 mb-1.5 sm:mb-3">{t.revenue_variable_charges}</p>
+              <p className="text-lg sm:text-xl font-extrabold text-[#1b1c1b] dark:text-white font-['Manrope']">{fmt(data.charges.totalVariable)} EUR</p>
             </div>
           </div>
         </div>
@@ -783,14 +791,15 @@ function ChargesSection({
   const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
   return (
-    <div className="rounded-3xl bg-white dark:bg-white/5 p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#444748] dark:text-neutral-400">{title}</h3>
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">{fmt(total)} EUR</span>
+    <div className="rounded-2xl sm:rounded-3xl bg-white dark:bg-white/5 p-4 sm:p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
+      <div className="flex items-center justify-between gap-3 mb-2 sm:mb-6">
+        <h3 className="min-w-0 text-xs font-bold uppercase tracking-wider sm:tracking-[0.2em] text-[#444748] dark:text-neutral-400">{title}</h3>
+        <div className="flex shrink-0 items-center gap-3">
+          <span className="whitespace-nowrap text-sm font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">{fmt(total)} EUR</span>
           <button
             onClick={() => { setAddingCharge(type); setNewLabel(''); setNewAmount('') }}
-            className="h-8 w-8 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 hover:bg-[#eae8e7] dark:hover:bg-neutral-700 flex items-center justify-center text-[#444748] dark:text-neutral-400 transition-colors"
+            aria-label={title}
+            className="h-9 w-9 sm:h-8 sm:w-8 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 hover:bg-[#eae8e7] dark:hover:bg-neutral-700 flex items-center justify-center text-[#444748] dark:text-neutral-400 transition-colors"
           >
             <Plus className="h-4 w-4" />
           </button>
@@ -798,26 +807,26 @@ function ChargesSection({
       </div>
 
       {charges.length === 0 && addingCharge !== type && (
-        <p className="text-sm text-[#444748] dark:text-neutral-400 text-center py-8">{type === 'fixed' ? t.revenue_no_fixed_charge : t.revenue_no_variable_charge}</p>
+        <p className="text-sm text-[#444748] dark:text-neutral-400 text-center py-6 sm:py-8">{type === 'fixed' ? t.revenue_no_fixed_charge : t.revenue_no_variable_charge}</p>
       )}
 
       <div className="space-y-1">
         {charges.map(c => (
-          <div key={c.id} className="flex items-center justify-between py-3.5 px-4 -mx-4 rounded-2xl hover:bg-[#f5f3f2] dark:hover:bg-white/5 transition-colors group">
+          <div key={c.id} className="flex items-center justify-between gap-3 py-3 sm:py-3.5 px-4 -mx-4 rounded-2xl hover:bg-[#f5f3f2] dark:hover:bg-white/5 transition-colors group">
             {editingCharge === c.id ? (
-              <div className="flex items-center gap-2 flex-1">
-                <input value={editLabel} onChange={e => setEditLabel(e.target.value)} className="flex-1 px-3 py-2 bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl text-sm text-[#1b1c1b] dark:text-white border-none outline-none focus:ring-2 focus:ring-[#006c49]/20" />
-                <input value={editAmount} onChange={e => setEditAmount(e.target.value)} type="number" className="w-24 px-3 py-2 bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl text-sm text-[#1b1c1b] dark:text-white border-none outline-none focus:ring-2 focus:ring-[#006c49]/20" />
-                <button onClick={() => updateCharge(c.id)} className="p-2 text-[#006c49] hover:bg-[#006c49]/10 rounded-full transition-colors"><Check className="h-4 w-4" /></button>
-                <button onClick={() => setEditingCharge(null)} className="p-2 text-[#444748] hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 rounded-full transition-colors"><X className="h-4 w-4" /></button>
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <input value={editLabel} onChange={e => setEditLabel(e.target.value)} className="min-w-0 flex-1 px-3 py-2 bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl text-sm text-[#1b1c1b] dark:text-white border-none outline-none focus:ring-2 focus:ring-[#006c49]/20" />
+                <input value={editAmount} onChange={e => setEditAmount(e.target.value)} type="number" className="w-20 sm:w-24 shrink-0 px-3 py-2 bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl text-sm text-[#1b1c1b] dark:text-white border-none outline-none focus:ring-2 focus:ring-[#006c49]/20" />
+                <button onClick={() => updateCharge(c.id)} className="shrink-0 p-2 text-[#006c49] hover:bg-[#006c49]/10 rounded-full transition-colors"><Check className="h-4 w-4" /></button>
+                <button onClick={() => setEditingCharge(null)} className="shrink-0 p-2 text-[#444748] hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 rounded-full transition-colors"><X className="h-4 w-4" /></button>
               </div>
             ) : (
               <>
-                <span className="text-sm font-medium text-[#1b1c1b] dark:text-white">{c.label}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-extrabold text-[#1b1c1b] dark:text-white font-['Manrope']">{fmt(Number(c.amount))} EUR</span>
-                  <button onClick={() => { setEditingCharge(c.id); setEditLabel(c.label); setEditAmount(String(c.amount)) }} className="p-1.5 text-[#c4c7c7] opacity-0 group-hover:opacity-100 hover:text-[#1b1c1b] dark:hover:text-white rounded-full transition-all"><Pencil className="h-3.5 w-3.5" /></button>
-                  <button onClick={() => deleteCharge(c.id)} className="p-1.5 text-[#c4c7c7] opacity-0 group-hover:opacity-100 hover:text-red-500 rounded-full transition-all"><Trash2 className="h-3.5 w-3.5" /></button>
+                <span className="min-w-0 max-sm:truncate text-sm font-medium text-[#1b1c1b] dark:text-white">{c.label}</span>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className="whitespace-nowrap text-sm font-extrabold text-[#1b1c1b] dark:text-white font-['Manrope']">{fmt(Number(c.amount))} EUR</span>
+                  <button onClick={() => { setEditingCharge(c.id); setEditLabel(c.label); setEditAmount(String(c.amount)) }} className="p-1.5 text-[#c4c7c7] opacity-0 group-hover:opacity-100 hover:text-[#1b1c1b] dark:hover:text-white rounded-full transition-all [@media(hover:none)]:opacity-100"><Pencil className="h-3.5 w-3.5" /></button>
+                  <button onClick={() => deleteCharge(c.id)} className="p-1.5 text-[#c4c7c7] opacity-0 group-hover:opacity-100 hover:text-red-500 rounded-full transition-all [@media(hover:none)]:opacity-100"><Trash2 className="h-3.5 w-3.5" /></button>
                 </div>
               </>
             )}
@@ -826,10 +835,10 @@ function ChargesSection({
 
         {addingCharge === type && (
           <div className="flex items-center gap-2 pt-3">
-            <input value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder={t.revenue_label_placeholder} className="flex-1 px-4 py-2.5 bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl text-sm text-[#1b1c1b] dark:text-white border-none outline-none focus:ring-2 focus:ring-[#006c49]/20 placeholder:text-[#c4c7c7]" />
-            <input value={newAmount} onChange={e => setNewAmount(e.target.value)} type="number" placeholder={t.revenue_amount_placeholder} className="w-28 px-4 py-2.5 bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl text-sm text-[#1b1c1b] dark:text-white border-none outline-none focus:ring-2 focus:ring-[#006c49]/20 placeholder:text-[#c4c7c7]" />
-            <button onClick={() => addCharge(type)} className="p-2.5 bg-[#1b1c1b] dark:bg-white text-white dark:text-[#1b1c1b] rounded-full hover:opacity-80 transition-opacity"><Check className="h-4 w-4" /></button>
-            <button onClick={() => setAddingCharge(null)} className="p-2.5 text-[#444748] hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 rounded-full transition-colors"><X className="h-4 w-4" /></button>
+            <input value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder={t.revenue_label_placeholder} className="min-w-0 flex-1 px-3 sm:px-4 py-2.5 bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl text-sm text-[#1b1c1b] dark:text-white border-none outline-none focus:ring-2 focus:ring-[#006c49]/20 placeholder:text-[#c4c7c7]" />
+            <input value={newAmount} onChange={e => setNewAmount(e.target.value)} type="number" placeholder={t.revenue_amount_placeholder} className="w-24 sm:w-28 shrink-0 px-3 sm:px-4 py-2.5 bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl text-sm text-[#1b1c1b] dark:text-white border-none outline-none focus:ring-2 focus:ring-[#006c49]/20 placeholder:text-[#c4c7c7]" />
+            <button onClick={() => addCharge(type)} className="shrink-0 p-2.5 bg-[#1b1c1b] dark:bg-white text-white dark:text-[#1b1c1b] rounded-full hover:opacity-80 transition-opacity"><Check className="h-4 w-4" /></button>
+            <button onClick={() => setAddingCharge(null)} className="shrink-0 p-2.5 text-[#444748] hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 rounded-full transition-colors"><X className="h-4 w-4" /></button>
           </div>
         )}
       </div>

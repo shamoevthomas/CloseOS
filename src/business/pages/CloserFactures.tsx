@@ -15,7 +15,7 @@ import { BusinessPaymentMethodsModal } from '../components/BusinessPaymentMethod
 import { BusinessStripeConnectModal } from '../components/BusinessStripeConnectModal'
 import { BusinessInvoiceGeneratorModal } from '../components/BusinessInvoiceGeneratorModal'
 
-const formatCurrency = (amount: number) =>
+const formatCurrency = (amount: number, lang: string) =>
   new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR' }).format(amount)
 
 const STATUS_OPTIONS = [
@@ -346,40 +346,43 @@ export function CloserFactures() {
   }
 
   return (
-    <div className="space-y-10">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+    <div className="space-y-4 sm:space-y-10">
+      {/* Header — mobile : titre puis une ligne d'actions (bouton principal + icônes) */}
+      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between sm:flex-wrap sm:gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {isFixedComp ? t.invoices_fixed_salary_title : isFixedPlusComm ? t.invoices_fixed_plus_commission_title : t.invoices_commission_title}
           </h1>
-          <p className="text-stone-500 dark:text-neutral-400 mt-2">{isFixedComp ? t.invoices_fixed_salary_subtitle : isFixedPlusComm ? t.invoices_fixed_plus_commission_subtitle : t.invoices_commission_subtitle}</p>
+          <p className="text-sm sm:text-base text-stone-500 dark:text-neutral-400 mt-1 sm:mt-2">{isFixedComp ? t.invoices_fixed_salary_subtitle : isFixedPlusComm ? t.invoices_fixed_plus_commission_subtitle : t.invoices_commission_subtitle}</p>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2 sm:gap-3 sm:flex-wrap">
           <button
             onClick={() => setIsStripeConnectOpen(true)}
-            className="flex items-center gap-2 rounded-full bg-[#635BFF] px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#5349E0] hover:shadow-lg hover:shadow-[#635BFF]/20 active:scale-95"
+            aria-label={t.invoices_connect_stripe}
+            className="flex items-center justify-center gap-2 rounded-full bg-[#635BFF] h-10 w-10 shrink-0 sm:h-auto sm:w-auto sm:px-5 sm:py-2.5 text-sm font-bold text-white transition-all hover:bg-[#5349E0] hover:shadow-lg hover:shadow-[#635BFF]/20 active:scale-95"
           >
             <CreditCard className="h-4 w-4" />
-            {t.invoices_connect_stripe}
+            <span className="hidden sm:inline">{t.invoices_connect_stripe}</span>
           </button>
           <button
             onClick={() => setIsIssuerModalOpen(true)}
-            className="flex items-center gap-2 rounded-full border border-stone-200 dark:border-neutral-700 px-5 py-2.5 text-sm font-semibold text-stone-700 dark:text-neutral-200 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors"
+            aria-label={t.invoices_issuer_info}
+            className="flex items-center justify-center gap-2 rounded-full border border-stone-200 dark:border-neutral-700 h-10 w-10 shrink-0 sm:h-auto sm:w-auto sm:px-5 sm:py-2.5 bg-white dark:bg-transparent sm:bg-transparent text-sm font-semibold text-stone-700 dark:text-neutral-200 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors"
           >
             <Building2 className="h-4 w-4" />
-            {t.invoices_issuer_info}
+            <span className="hidden sm:inline">{t.invoices_issuer_info}</span>
           </button>
           <button
             onClick={() => setIsPaymentMethodsOpen(true)}
-            className="flex items-center gap-2 rounded-full border border-stone-200 dark:border-neutral-700 px-5 py-2.5 text-sm font-semibold text-stone-700 dark:text-neutral-200 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors"
+            aria-label={t.invoices_payment_methods}
+            className="flex items-center justify-center gap-2 rounded-full border border-stone-200 dark:border-neutral-700 h-10 w-10 shrink-0 sm:h-auto sm:w-auto sm:px-5 sm:py-2.5 bg-white dark:bg-transparent sm:bg-transparent text-sm font-semibold text-stone-700 dark:text-neutral-200 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors"
           >
             <Wallet className="h-4 w-4" />
-            {t.invoices_payment_methods}
+            <span className="hidden sm:inline">{t.invoices_payment_methods}</span>
           </button>
           <button
             onClick={() => setIsGenModalOpen(true)}
-            className="flex items-center gap-2 rounded-full bg-stone-900 dark:bg-white px-5 py-2.5 text-sm font-semibold text-white dark:text-neutral-900 hover:bg-stone-800 dark:hover:bg-neutral-200 transition-colors"
+            className="order-first sm:order-none flex-1 sm:flex-none min-w-0 flex items-center justify-center sm:justify-start gap-2 rounded-full bg-stone-900 dark:bg-white h-10 sm:h-auto px-4 sm:px-5 sm:py-2.5 whitespace-nowrap active:scale-[0.98] text-sm font-semibold text-white dark:text-neutral-900 hover:bg-stone-800 dark:hover:bg-neutral-200 transition-colors"
           >
             <Plus className="h-4 w-4" /> {t.invoices_generate_invoice}
           </button>
@@ -387,10 +390,10 @@ export function CloserFactures() {
       </div>
 
       {/* Filter Bar — Glass pill */}
-      <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl md:rounded-full p-3 px-6 flex flex-col md:flex-row flex-wrap items-start md:items-center gap-4 md:gap-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-white/40 dark:border-white/10">
-        <div className="flex items-center gap-3 border-r border-stone-200/40 dark:border-white/10 pr-6">
-          <span className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest">{t.invoices_period}</span>
-          <div className="flex items-center gap-2">
+      <div className="bg-white dark:bg-white/5 sm:bg-white/70 sm:backdrop-blur-xl rounded-2xl md:rounded-full px-4 py-3 sm:p-3 sm:px-6 flex flex-col md:flex-row flex-nowrap md:flex-wrap items-stretch sm:items-start md:items-center gap-4 md:gap-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 sm:border-white/40 dark:border-white/10">
+        <div className="flex items-center gap-3 min-w-0 sm:border-r border-stone-200/40 dark:border-white/10 sm:pr-6">
+          <span className="text-[10px] sm:text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider sm:tracking-widest shrink-0">{t.invoices_period}</span>
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1 sm:flex-none">
             <input
               type="date"
               value={startDate}
@@ -408,9 +411,9 @@ export function CloserFactures() {
                 }
                 setStartDate(newStart)
               }}
-              className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 w-28 text-stone-900 dark:text-white"
+              className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 min-w-0 w-full flex-1 sm:flex-none sm:w-28 text-stone-900 dark:text-white"
             />
-            <span className="text-stone-400">-</span>
+            <span className="text-stone-400 shrink-0">-</span>
             <input
               type="date"
               value={endDate}
@@ -428,170 +431,188 @@ export function CloserFactures() {
                 }
                 setEndDate(newEnd)
               }}
-              className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 w-28 text-stone-900 dark:text-white"
+              className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 min-w-0 w-full flex-1 sm:flex-none sm:w-28 text-stone-900 dark:text-white"
             />
           </div>
         </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid gap-6 grid-cols-2 lg:grid-cols-4">
+      {/* Mobile : 2 colonnes, la tuile impaire finale prend toute la largeur */}
+      <div className="grid gap-3 sm:gap-6 grid-cols-2 lg:grid-cols-4 [&>*:last-child:nth-child(odd)]:col-span-2 lg:[&>*:last-child:nth-child(odd)]:col-span-1">
 
         {/* Salaire Fixe — shown for fixed and fixed+commission */}
         {(isFixedComp || isFixedPlusComm) && (
-        <div className="bg-white dark:bg-white/5 rounded-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
-          <div className="flex justify-between items-start mb-4">
-            <span className="p-3 rounded-xl bg-emerald-50 text-emerald-600">
-              <Wallet className="h-5 w-5" />
+        <div className="min-w-0 bg-white dark:bg-white/5 rounded-xl p-4 sm:p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
+          <div className="hidden xl:block absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
+          <div className="flex justify-between items-center sm:items-start gap-2 mb-1.5 sm:mb-4">
+            <span className="shrink-0 p-1.5 sm:p-3 rounded-lg sm:rounded-xl bg-emerald-50 text-emerald-600">
+              <Wallet className="h-4 w-4 sm:h-5 sm:w-5" />
             </span>
-            <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{t.invoices_monthly}</span>
+            <span className="sm:hidden flex-1 min-w-0 truncate text-xs font-medium text-stone-500 dark:text-neutral-400">{t.invoices_fixed_salary}</span>
+            <span className="hidden sm:inline text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{t.invoices_monthly}</span>
           </div>
-          <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">{t.invoices_fixed_salary}</p>
-          <p className="text-2xl font-extrabold mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {fixedSalary.toLocaleString('fr-FR')} <span className="text-base">€</span>
+          <p className="hidden sm:block text-stone-500 dark:text-neutral-400 text-sm font-medium">{t.invoices_fixed_salary}</p>
+          <p className="text-xl sm:text-2xl font-extrabold sm:mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {fixedSalary.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} <span className="text-sm sm:text-base">€</span>
           </p>
+          <p className="sm:hidden mt-0.5 text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-wider uppercase truncate">{t.invoices_monthly}</p>
         </div>
         )}
 
         {/* Ma Commission — split for Setter-Closer, single for others */}
         {!isFixedComp && !isSetterCloser && (
-        <div className="bg-white dark:bg-white/5 rounded-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-stone-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
-          <div className="flex justify-between items-start mb-4">
-            <span className="p-3 rounded-xl bg-stone-100 dark:bg-white/10 text-stone-600 dark:text-neutral-300">
-              <DollarSign className="h-5 w-5" />
+        <div className="min-w-0 bg-white dark:bg-white/5 rounded-xl p-4 sm:p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
+          <div className="hidden xl:block absolute top-0 right-0 w-24 h-24 bg-stone-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
+          <div className="flex justify-between items-center sm:items-start gap-2 mb-1.5 sm:mb-4">
+            <span className="shrink-0 p-1.5 sm:p-3 rounded-lg sm:rounded-xl bg-stone-100 dark:bg-white/10 text-stone-600 dark:text-neutral-300">
+              <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
             </span>
-            <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{teamMember?.commission_rate || 10}% CA</span>
+            <span className="sm:hidden flex-1 min-w-0 truncate text-xs font-medium text-stone-500 dark:text-neutral-400">{t.invoices_my_commission}</span>
+            <span className="hidden sm:inline text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{teamMember?.commission_rate || 10}% CA</span>
           </div>
-          <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">{t.invoices_my_commission}</p>
-          <p className="text-2xl font-extrabold mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {commissionEstimee.toLocaleString('fr-FR')} <span className="text-base">€</span>
+          <p className="hidden sm:block text-stone-500 dark:text-neutral-400 text-sm font-medium">{t.invoices_my_commission}</p>
+          <p className="text-xl sm:text-2xl font-extrabold sm:mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {commissionEstimee.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} <span className="text-sm sm:text-base">€</span>
           </p>
+          <p className="sm:hidden mt-0.5 text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-wider uppercase truncate">{teamMember?.commission_rate || 10}% CA</p>
         </div>
         )}
 
         {!isFixedComp && isSetterCloser && (
         <>
-        <div className="bg-white dark:bg-white/5 rounded-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
-          <div className="flex justify-between items-start mb-4">
-            <span className="p-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
-              <DollarSign className="h-5 w-5" />
+        <div className="min-w-0 bg-white dark:bg-white/5 rounded-xl p-4 sm:p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
+          <div className="hidden xl:block absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
+          <div className="flex justify-between items-center sm:items-start gap-2 mb-1.5 sm:mb-4">
+            <span className="shrink-0 p-1.5 sm:p-3 rounded-lg sm:rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
+              <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
             </span>
-            <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{myCloserDeals.length} deal{myCloserDeals.length !== 1 ? 's' : ''}</span>
+            <span className="sm:hidden flex-1 min-w-0 truncate text-xs font-medium text-stone-500 dark:text-neutral-400">{t.invoices_commission_closer}</span>
+            <span className="hidden sm:inline text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{myCloserDeals.length} deal{myCloserDeals.length !== 1 ? 's' : ''}</span>
           </div>
-          <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">{t.invoices_commission_closer}</p>
-          <p className="text-2xl font-extrabold mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {commissionCloser.toLocaleString('fr-FR')} <span className="text-base">€</span>
+          <p className="hidden sm:block text-stone-500 dark:text-neutral-400 text-sm font-medium">{t.invoices_commission_closer}</p>
+          <p className="text-xl sm:text-2xl font-extrabold sm:mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {commissionCloser.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} <span className="text-sm sm:text-base">€</span>
           </p>
+          <p className="sm:hidden mt-0.5 text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-wider uppercase truncate">{myCloserDeals.length} deal{myCloserDeals.length !== 1 ? 's' : ''}</p>
         </div>
-        <div className="bg-white dark:bg-white/5 rounded-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
-          <div className="flex justify-between items-start mb-4">
-            <span className="p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400">
-              <DollarSign className="h-5 w-5" />
+        <div className="min-w-0 bg-white dark:bg-white/5 rounded-xl p-4 sm:p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
+          <div className="hidden xl:block absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
+          <div className="flex justify-between items-center sm:items-start gap-2 mb-1.5 sm:mb-4">
+            <span className="shrink-0 p-1.5 sm:p-3 rounded-lg sm:rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400">
+              <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
             </span>
-            <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{mySetterDeals.length} deal{mySetterDeals.length !== 1 ? 's' : ''}</span>
+            <span className="sm:hidden flex-1 min-w-0 truncate text-xs font-medium text-stone-500 dark:text-neutral-400">Commission Setter</span>
+            <span className="hidden sm:inline text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{mySetterDeals.length} deal{mySetterDeals.length !== 1 ? 's' : ''}</span>
           </div>
-          <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">Commission Setter</p>
-          <p className="text-2xl font-extrabold mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {commissionSetter.toLocaleString('fr-FR')} <span className="text-base">€</span>
+          <p className="hidden sm:block text-stone-500 dark:text-neutral-400 text-sm font-medium">Commission Setter</p>
+          <p className="text-xl sm:text-2xl font-extrabold sm:mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {commissionSetter.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} <span className="text-sm sm:text-base">€</span>
           </p>
+          <p className="sm:hidden mt-0.5 text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-wider uppercase truncate">{mySetterDeals.length} deal{mySetterDeals.length !== 1 ? 's' : ''}</p>
         </div>
         </>
         )}
 
         {/* CA Généré — shown for fixed (read-only) */}
         {isFixedComp && (
-        <div className="bg-white dark:bg-white/5 rounded-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-stone-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
-          <div className="flex justify-between items-start mb-4">
-            <span className="p-3 rounded-xl bg-stone-100 dark:bg-white/10 text-stone-600 dark:text-neutral-300">
-              <TrendingUp className="h-5 w-5" />
+        <div className="min-w-0 bg-white dark:bg-white/5 rounded-xl p-4 sm:p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
+          <div className="hidden xl:block absolute top-0 right-0 w-24 h-24 bg-stone-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
+          <div className="flex justify-between items-center sm:items-start gap-2 mb-1.5 sm:mb-4">
+            <span className="shrink-0 p-1.5 sm:p-3 rounded-lg sm:rounded-xl bg-stone-100 dark:bg-white/10 text-stone-600 dark:text-neutral-300">
+              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
             </span>
-            <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{myWonProspects.length} deal{myWonProspects.length !== 1 ? 's' : ''}</span>
+            <span className="sm:hidden flex-1 min-w-0 truncate text-xs font-medium text-stone-500 dark:text-neutral-400">CA Généré</span>
+            <span className="hidden sm:inline text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{myWonProspects.length} deal{myWonProspects.length !== 1 ? 's' : ''}</span>
           </div>
-          <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">CA Généré</p>
-          <p className="text-2xl font-extrabold mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {totalRevenue.toLocaleString('fr-FR')} <span className="text-base">€</span>
+          <p className="hidden sm:block text-stone-500 dark:text-neutral-400 text-sm font-medium">CA Généré</p>
+          <p className="text-xl sm:text-2xl font-extrabold sm:mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {totalRevenue.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} <span className="text-sm sm:text-base">€</span>
           </p>
+          <p className="sm:hidden mt-0.5 text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-wider uppercase truncate">{myWonProspects.length} deal{myWonProspects.length !== 1 ? 's' : ''}</p>
         </div>
         )}
 
         {/* CA Généré — shown for commission and fixed+commission */}
         {!isFixedComp && (
-        <div className="bg-white dark:bg-white/5 rounded-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
-          <div className="flex justify-between items-start mb-4">
-            <span className="p-3 rounded-xl bg-emerald-50 text-emerald-600">
-              <TrendingUp className="h-5 w-5" />
+        <div className="min-w-0 bg-white dark:bg-white/5 rounded-xl p-4 sm:p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
+          <div className="hidden xl:block absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
+          <div className="flex justify-between items-center sm:items-start gap-2 mb-1.5 sm:mb-4">
+            <span className="shrink-0 p-1.5 sm:p-3 rounded-lg sm:rounded-xl bg-emerald-50 text-emerald-600">
+              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
             </span>
-            <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{myWonProspects.length} deal{myWonProspects.length !== 1 ? 's' : ''}</span>
+            <span className="sm:hidden flex-1 min-w-0 truncate text-xs font-medium text-stone-500 dark:text-neutral-400">CA Généré</span>
+            <span className="hidden sm:inline text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{myWonProspects.length} deal{myWonProspects.length !== 1 ? 's' : ''}</span>
           </div>
-          <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">CA Généré</p>
-          <p className="text-2xl font-extrabold mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {totalRevenue.toLocaleString('fr-FR')} <span className="text-base">€</span>
+          <p className="hidden sm:block text-stone-500 dark:text-neutral-400 text-sm font-medium">CA Généré</p>
+          <p className="text-xl sm:text-2xl font-extrabold sm:mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {totalRevenue.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} <span className="text-sm sm:text-base">€</span>
           </p>
+          <p className="sm:hidden mt-0.5 text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-wider uppercase truncate">{myWonProspects.length} deal{myWonProspects.length !== 1 ? 's' : ''}</p>
         </div>
         )}
 
         {/* Fixe RDV bookés — distinct des commissions, respecte la période */}
         {isSetterRole && perBookingAmount > 0 && (
-        <div className="bg-white dark:bg-white/5 rounded-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
-          <div className="flex justify-between items-start mb-4">
-            <span className="p-3 rounded-xl bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400">
-              <CalendarCheck className="h-5 w-5" />
+        <div className="min-w-0 bg-white dark:bg-white/5 rounded-xl p-4 sm:p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
+          <div className="hidden xl:block absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
+          <div className="flex justify-between items-center sm:items-start gap-2 mb-1.5 sm:mb-4">
+            <span className="shrink-0 p-1.5 sm:p-3 rounded-lg sm:rounded-xl bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400">
+              <CalendarCheck className="h-4 w-4 sm:h-5 sm:w-5" />
             </span>
-            <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{mySetterBookedDeals.length} RDV × {perBookingAmount}€</span>
+            <span className="sm:hidden flex-1 min-w-0 truncate text-xs font-medium text-stone-500 dark:text-neutral-400">{lang === 'en' ? 'Booking fee' : 'Fixe RDV bookés'}</span>
+            <span className="hidden sm:inline text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{mySetterBookedDeals.length} RDV × {perBookingAmount}€</span>
           </div>
-          <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">{lang === 'en' ? 'Booking fee' : 'Fixe RDV bookés'}</p>
-          <p className="text-2xl font-extrabold mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {rdvGain.toLocaleString('fr-FR')} <span className="text-base">€</span>
+          <p className="hidden sm:block text-stone-500 dark:text-neutral-400 text-sm font-medium">{lang === 'en' ? 'Booking fee' : 'Fixe RDV bookés'}</p>
+          <p className="text-xl sm:text-2xl font-extrabold sm:mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {rdvGain.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} <span className="text-sm sm:text-base">€</span>
           </p>
+          <p className="sm:hidden mt-0.5 text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-wider uppercase truncate">{mySetterBookedDeals.length} RDV × {perBookingAmount}€</p>
         </div>
         )}
 
         {/* Payé */}
-        <div className="bg-white dark:bg-white/5 rounded-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
-          <div className="flex justify-between items-start mb-4">
-            <span className="p-3 rounded-xl bg-emerald-50 text-emerald-600">
-              <CreditCard className="h-5 w-5" />
+        <div className="min-w-0 bg-white dark:bg-white/5 rounded-xl p-4 sm:p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
+          <div className="hidden xl:block absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
+          <div className="flex justify-between items-center sm:items-start gap-2 mb-1.5 sm:mb-4">
+            <span className="shrink-0 p-1.5 sm:p-3 rounded-lg sm:rounded-xl bg-emerald-50 text-emerald-600">
+              <CreditCard className="h-4 w-4 sm:h-5 sm:w-5" />
             </span>
+            <span className="sm:hidden flex-1 min-w-0 truncate text-xs font-medium text-stone-500 dark:text-neutral-400">Payé</span>
           </div>
-          <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">Payé</p>
-          <p className="text-2xl font-extrabold mt-1 text-emerald-600" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {paidAmount.toLocaleString('fr-FR')} <span className="text-base">€</span>
+          <p className="hidden sm:block text-stone-500 dark:text-neutral-400 text-sm font-medium">Payé</p>
+          <p className="text-xl sm:text-2xl font-extrabold sm:mt-1 text-emerald-600" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {paidAmount.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} <span className="text-sm sm:text-base">€</span>
           </p>
         </div>
 
         {/* En attente */}
-        <div className="bg-white dark:bg-white/5 rounded-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
-          <div className="flex justify-between items-start mb-4">
-            <span className="p-3 rounded-xl bg-red-50 text-red-500">
-              <Clock className="h-5 w-5" />
+        <div className="min-w-0 bg-white dark:bg-white/5 rounded-xl p-4 sm:p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
+          <div className="hidden xl:block absolute top-0 right-0 w-24 h-24 bg-red-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
+          <div className="flex justify-between items-center sm:items-start gap-2 mb-1.5 sm:mb-4">
+            <span className="shrink-0 p-1.5 sm:p-3 rounded-lg sm:rounded-xl bg-red-50 text-red-500">
+              <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
             </span>
-            <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{pendingInvoices.length} facture{pendingInvoices.length !== 1 ? 's' : ''}</span>
+            <span className="sm:hidden flex-1 min-w-0 truncate text-xs font-medium text-stone-500 dark:text-neutral-400">En attente</span>
+            <span className="hidden sm:inline text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{pendingInvoices.length} facture{pendingInvoices.length !== 1 ? 's' : ''}</span>
           </div>
-          <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">En attente</p>
-          <p className="text-2xl font-extrabold mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {pendingAmount.toLocaleString('fr-FR')} <span className="text-base">€</span>
+          <p className="hidden sm:block text-stone-500 dark:text-neutral-400 text-sm font-medium">En attente</p>
+          <p className="text-xl sm:text-2xl font-extrabold sm:mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {pendingAmount.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} <span className="text-sm sm:text-base">€</span>
           </p>
+          <p className="sm:hidden mt-0.5 text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-wider uppercase truncate">{pendingInvoices.length} facture{pendingInvoices.length !== 1 ? 's' : ''}</p>
         </div>
       </div>
 
       {/* Détails comptant / échelonné — hidden for fixed compensation */}
       {!isFixedComp && (
-      <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-6">
-        <h3 className="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 mb-5 flex items-center gap-2">
+      <div className="bg-white dark:bg-white/5 sm:bg-white/70 sm:backdrop-blur-xl rounded-xl border border-stone-100/50 sm:border-white/40 dark:border-white/10 shadow-sm p-4 sm:p-6">
+        <h3 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest text-stone-500 dark:text-neutral-400 mb-1 sm:mb-5 flex items-center gap-2">
           <Info className="h-4 w-4" />
           Détails de la période
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="p-5 rounded-xl bg-white dark:bg-white/5 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-6 max-md:divide-y max-md:divide-stone-100 max-md:dark:divide-white/10">
+          <div className="py-3 md:p-5 md:rounded-xl md:bg-white md:dark:bg-white/5 md:shadow-[0_20px_40px_rgba(27,28,27,0.04)] md:border border-stone-100/50 dark:border-white/10">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
@@ -613,12 +634,12 @@ export function CloserFactures() {
             </div>
             <p className="text-xs text-stone-500 dark:text-neutral-400 mt-2 text-right">
               Total : <span className="font-bold text-emerald-600">
-                {formatCurrency(myWonProspects.filter(p => !p.installments || p.installments <= 1).reduce((s, p) => s + (p.value || 0), 0))}
+                {formatCurrency(myWonProspects.filter(p => !p.installments || p.installments <= 1).reduce((s, p) => s + (p.value || 0), 0), lang)}
               </span>
             </p>
           </div>
 
-          <div className="p-5 rounded-xl bg-white dark:bg-white/5 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10">
+          <div className="py-3 md:p-5 md:rounded-xl md:bg-white md:dark:bg-white/5 md:shadow-[0_20px_40px_rgba(27,28,27,0.04)] md:border border-stone-100/50 dark:border-white/10">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className="h-2.5 w-2.5 rounded-full bg-blue-500" />
@@ -640,7 +661,7 @@ export function CloserFactures() {
             </div>
             <p className="text-xs text-stone-500 dark:text-neutral-400 mt-2 text-right">
               Total : <span className="font-bold text-blue-600">
-                {formatCurrency(myWonProspects.filter(p => p.installments && p.installments > 1).reduce((s, p) => s + (p.value || 0), 0))}
+                {formatCurrency(myWonProspects.filter(p => p.installments && p.installments > 1).reduce((s, p) => s + (p.value || 0), 0), lang)}
               </span>
             </p>
           </div>
@@ -650,7 +671,95 @@ export function CloserFactures() {
 
       {/* Historique des factures */}
       <div className="bg-white dark:bg-white/5 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Vue liste (mobile + tablette) : une ligne par facture, mêmes actions que le tableau */}
+        <div className="xl:hidden divide-y divide-stone-100 dark:divide-white/10">
+          {filteredInvoices.map((inv) => {
+            const config = getStatusConfig(inv.status)
+            const isOverdue = inv.due_date && new Date(inv.due_date) < new Date() && inv.status !== 'payé'
+            return (
+              <div key={inv.id} className="px-4 sm:px-6 py-3.5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-sm text-stone-900 dark:text-white truncate" style={{ fontFamily: 'Manrope, sans-serif' }}>{inv.client_name}</p>
+                    {inv.offer_name && <p className="text-xs text-stone-500 dark:text-neutral-400 truncate">{inv.offer_name}</p>}
+                    <p className="mt-0.5 text-[11px] text-stone-400 dark:text-neutral-500 truncate">
+                      <span className="font-mono font-bold text-stone-600 dark:text-neutral-300">{inv.invoice_number}</span>
+                      <span className="mx-1">·</span>{new Date(inv.created_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-sm font-extrabold text-stone-900 dark:text-white whitespace-nowrap">{formatCurrency(inv.amount_ttc || 0, lang)}</p>
+                    {inv.due_date && (
+                      <p className={cn('text-[11px] font-semibold whitespace-nowrap', isOverdue ? 'text-red-500' : 'text-stone-500 dark:text-neutral-400')}>
+                        Échéance {new Date(inv.due_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })}
+                        {isOverdue && <span className="ml-1 text-[9px] uppercase font-black">Retard</span>}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-2.5 flex items-center gap-2">
+                  <select
+                    value={inv.status || ''}
+                    onChange={e => handleStatusChange(inv.id, e.target.value)}
+                    className={cn(
+                      'shrink-0 rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-widest border cursor-pointer appearance-none focus:outline-none focus:ring-2 focus:ring-stone-900/10',
+                      config.bg, config.text, config.border
+                    )}
+                  >
+                    {STATUS_OPTIONS.map(s => (
+                      <option key={s.value} value={s.value}>{t[s.key]}</option>
+                    ))}
+                    {!STATUS_OPTIONS.find(s => s.value === inv.status) && inv.status && (
+                      <option value={inv.status}>{t[getStatusConfig(inv.status).key]}</option>
+                    )}
+                  </select>
+                  <div className="ml-auto flex items-center gap-1 shrink-0">
+                    {inv.stripe_payment_link && (
+                      <button
+                        onClick={() => copyStripeLink(inv.stripe_payment_link)}
+                        className="h-8 w-8 rounded-full bg-stone-900 dark:bg-white/10 text-white inline-flex items-center justify-center active:scale-95 transition-transform"
+                        title="Copier le lien de paiement"
+                        aria-label="Copier le lien de paiement"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    {inv.stripe_payment_link && (
+                      <a
+                        href={inv.stripe_payment_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="h-8 bg-[#635BFF] text-white px-3 rounded-full text-[10px] font-black uppercase tracking-widest inline-flex items-center gap-1 active:scale-95 transition-transform"
+                      >
+                        Payer
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                    {inv.pdf_url && (
+                      <>
+                        <a href={inv.pdf_url} target="_blank" rel="noreferrer" className="h-8 w-8 inline-flex items-center justify-center rounded-full bg-stone-100 dark:bg-white/10 text-stone-500 dark:text-neutral-300" title="Voir" aria-label="Voir">
+                          <Eye className="h-4 w-4" />
+                        </a>
+                        <a href={inv.pdf_url} download className="h-8 w-8 inline-flex items-center justify-center rounded-full bg-stone-100 dark:bg-white/10 text-stone-500 dark:text-neutral-300" title="Télécharger" aria-label="Télécharger">
+                          <Download className="h-4 w-4" />
+                        </a>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+          {filteredInvoices.length === 0 && (
+            <div className="px-4 py-8 text-center">
+              <FileText className="h-6 w-6 mx-auto mb-2 text-stone-300 dark:text-neutral-600" />
+              <p className="text-sm font-bold text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Aucune facture</p>
+              <p className="text-xs text-stone-500 dark:text-neutral-400">Aucune facture sur cette période</p>
+            </div>
+          )}
+        </div>
+
+        <div className="hidden xl:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-stone-50/50 dark:bg-white/5">
@@ -684,7 +793,7 @@ export function CloserFactures() {
                         {inv.offer_name && <span className="text-[10px] text-stone-500 dark:text-neutral-400 font-medium">{inv.offer_name}</span>}
                       </div>
                     </td>
-                    <td className="px-4 md:px-8 py-4 md:py-6 text-sm font-extrabold text-stone-900 dark:text-white whitespace-nowrap">{formatCurrency(inv.amount_ttc || 0)}</td>
+                    <td className="px-4 md:px-8 py-4 md:py-6 text-sm font-extrabold text-stone-900 dark:text-white whitespace-nowrap">{formatCurrency(inv.amount_ttc || 0, lang)}</td>
                     <td className="hidden md:table-cell px-8 py-6">
                       {inv.due_date ? (
                         <span className={cn("text-xs font-semibold", isOverdue ? "text-red-500" : "text-stone-500 dark:text-neutral-400")}>
@@ -738,7 +847,7 @@ export function CloserFactures() {
                           </a>
                         )}
                         {inv.pdf_url && (
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex gap-1 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity">
                             <a
                               href={inv.pdf_url}
                               target="_blank"

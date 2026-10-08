@@ -533,6 +533,14 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
     return () => clearTimeout(t)
   }, [deleteResendCountdown])
 
+  // Mobile : garde la puce de l'onglet actif visible dans la rangée défilante
+  const mobileTabsRef = useRef<HTMLElement>(null)
+  useEffect(() => {
+    const nav = mobileTabsRef.current
+    const el = nav?.querySelector<HTMLElement>('[data-active="true"]')
+    if (nav && el) nav.scrollTo({ left: Math.max(0, el.offsetLeft - 16), behavior: 'smooth' })
+  }, [activeTab, isOpen])
+
   if (!isOpen) return null
 
   const isGoogleUser = user?.app_metadata?.provider === 'google'
@@ -905,7 +913,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
     <button
       onClick={() => setActiveTab(tab)}
       className={cn(
-        'flex items-center gap-4 px-6 py-4 rounded-full font-business-display font-bold text-sm tracking-wide transition-all duration-300 w-full',
+        'flex items-center gap-3 px-4 py-3 lg:gap-4 lg:px-6 lg:py-4 rounded-full font-business-display font-bold text-sm tracking-wide transition-all duration-300 w-full',
         activeTab === tab
           ? 'bg-white dark:bg-neutral-800 shadow-[0_4px_12px_rgba(0,0,0,0.03),0_0_0_0.5px_rgba(196,199,199,0.2)] text-stone-900 dark:text-white'
           : 'text-stone-400 dark:text-neutral-500 hover:translate-x-1'
@@ -916,13 +924,31 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
     </button>
   )
 
+  // Liste des onglets (partagée entre la colonne latérale ≥ md et la rangée de puces mobile)
+  const tabList: { key: typeof activeTab; Icon: any; label: string }[] = [
+    { key: 'profile', Icon: User, label: 'Profile' },
+    { key: 'interface', Icon: Monitor, label: 'Interface' },
+    { key: 'security', Icon: Shield, label: 'Security' },
+    { key: 'devices', Icon: Smartphone, label: 'Appareils' },
+    { key: 'organisation', Icon: Building2, label: 'Organisation' },
+    ...(!isTeamMember ? [{ key: 'mcp' as const, Icon: Bot, label: 'Assistant IA' }] : []),
+    ...(!isTeamMember ? [{ key: 'delete_account' as const, Icon: Trash2, label: 'Delete Account' }] : []),
+    { key: 'support', Icon: Headphones, label: 'Support' },
+  ]
+
+  const planLabel =
+    businessSettings?.subscription_plan === 'business_acquisition' ? 'CloseOS Business + Acquisition'
+    : businessSettings?.subscription_plan === 'enterprise' ? 'CloseOS Enterprise'
+    : isSolo ? 'CloseOS Solo'
+    : 'CloseOS Business'
+
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 lg:p-12 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[150] flex items-end md:items-center justify-center p-0 md:p-4 lg:p-12 animate-in fade-in duration-200">
       {/* Background blurs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
-        <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-[#006c49]/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] left-[-5%] w-[40%] h-[40%] bg-[#ffddb8]/20 rounded-full blur-[120px]" />
+        <div className="absolute inset-0 bg-black/40 md:bg-black/20 backdrop-blur-sm" />
+        <div className="hidden lg:block absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-[#006c49]/10 rounded-full blur-[120px]" />
+        <div className="hidden lg:block absolute bottom-[-10%] left-[-5%] w-[40%] h-[40%] bg-[#ffddb8]/20 rounded-full blur-[120px]" />
       </div>
       {/* Click outside to close */}
       <div className="fixed inset-0 z-0" onClick={onClose} />
@@ -977,48 +1003,75 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
       )}
 
       {/* Modal Container */}
-      <div className="relative z-10 w-full max-w-6xl max-h-[85vh] bg-white dark:bg-neutral-900 rounded-[2rem] shadow-[0_40px_80px_rgba(27,28,27,0.08)] flex overflow-hidden">
+      {/* Mobile (< md) : feuille du bas quasi plein écran ; ≥ md : modale centrée avec colonne d'onglets */}
+      <div className="relative z-10 w-full max-w-6xl h-[94dvh] md:h-auto md:max-h-[85vh] bg-white dark:bg-neutral-900 rounded-t-3xl md:rounded-[2rem] shadow-[0_40px_80px_rgba(27,28,27,0.08)] flex flex-col md:flex-row overflow-hidden">
+
+        {/* ─── En-tête mobile : poignée, titre, fermer + rangée d'onglets défilante ─── */}
+        <div className="md:hidden shrink-0 bg-white dark:bg-neutral-900 border-b border-stone-200/70 dark:border-neutral-800">
+          <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-stone-300 dark:bg-neutral-700" />
+          <div className="flex items-center justify-between gap-3 px-4 pt-2.5 pb-3">
+            <div className="min-w-0">
+              <h2 className="font-business-display font-extrabold text-xl tracking-tight text-stone-900 dark:text-white leading-tight">Paramètres</h2>
+              <p className="text-xs text-stone-500 dark:text-neutral-400 truncate">{planLabel}</p>
+            </div>
+            <button
+              onClick={onClose}
+              aria-label="Fermer"
+              className="h-10 w-10 shrink-0 rounded-full bg-stone-100 dark:bg-neutral-800 flex items-center justify-center text-stone-500 dark:text-neutral-400 active:scale-95 transition"
+            >
+              <X className="h-5 w-5" strokeWidth={1.75} />
+            </button>
+          </div>
+          <nav ref={mobileTabsRef} className="relative flex gap-2 overflow-x-auto no-scrollbar overscroll-x-contain snap-x px-4 pb-3 scroll-px-4">
+            {tabList.map(({ key, Icon, label }) => (
+              <button
+                key={key}
+                data-active={activeTab === key}
+                onClick={() => setActiveTab(key)}
+                className={cn(
+                  'shrink-0 snap-start inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-bold whitespace-nowrap transition active:scale-95',
+                  activeTab === key
+                    ? 'bg-stone-900 text-white dark:bg-white dark:text-stone-900'
+                    : 'bg-stone-100 text-stone-600 dark:bg-neutral-800 dark:text-neutral-300'
+                )}
+              >
+                <Icon className="h-4 w-4" strokeWidth={1.75} />
+                {label}
+              </button>
+            ))}
+          </nav>
+        </div>
 
         {/* ─── Sidebar ─── */}
-        <aside className="hidden md:flex flex-col w-80 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl border-r border-[#c4c7c7]/10 dark:border-neutral-700 py-12 px-6">
-          <div className="mb-6 px-4">
+        <aside className="hidden md:flex flex-col md:w-60 lg:w-80 shrink-0 overflow-y-auto no-scrollbar bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl border-r border-[#c4c7c7]/10 dark:border-neutral-700 md:py-8 md:px-3 lg:py-12 lg:px-6">
+          <div className="mb-6 px-3 lg:px-4">
             <h2 className="font-business-display font-extrabold text-2xl tracking-tighter text-stone-900 dark:text-white">Paramètres</h2>
             <p className="text-stone-500 dark:text-neutral-400 text-sm mt-1">Gérez votre espace de travail</p>
           </div>
 
           <nav className="flex-1 space-y-0.5">
-            {sidebarTab('profile', <User className="h-5 w-5" strokeWidth={1.5} />, 'Profile')}
-            {sidebarTab('interface', <Monitor className="h-5 w-5" strokeWidth={1.5} />, 'Interface')}
-            {sidebarTab('security', <Shield className="h-5 w-5" strokeWidth={1.5} />, 'Security')}
-            {sidebarTab('devices', <Smartphone className="h-5 w-5" strokeWidth={1.5} />, 'Appareils')}
-            {sidebarTab('organisation', <Building2 className="h-5 w-5" strokeWidth={1.5} />, 'Organisation')}
-            {!isTeamMember && sidebarTab('mcp', <Bot className="h-5 w-5" strokeWidth={1.5} />, 'Assistant IA')}
-            {!isTeamMember && sidebarTab('delete_account', <Trash2 className="h-5 w-5" strokeWidth={1.5} />, 'Delete Account')}
-            {sidebarTab('support', <Headphones className="h-5 w-5" strokeWidth={1.5} />, 'Support')}
+            {tabList.map(({ key, Icon, label }) => (
+              <div key={key}>{sidebarTab(key, <Icon className="h-5 w-5" strokeWidth={1.5} />, label)}</div>
+            ))}
           </nav>
 
           {/* Footer */}
-          <div className="mt-auto px-4 pt-8">
-            <div className="p-6 bg-[#f5f3f2] dark:bg-neutral-800 rounded-2xl">
+          <div className="mt-auto px-1 pt-6 lg:px-4 lg:pt-8">
+            <div className="p-4 lg:p-6 bg-[#f5f3f2] dark:bg-neutral-800 rounded-2xl">
               <p className="text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 mb-2">Workspace Plan</p>
-              <p className="font-business-display font-extrabold text-sm text-stone-900 dark:text-white">{
-                businessSettings?.subscription_plan === 'business_acquisition' ? 'CloseOS Business + Acquisition'
-                : businessSettings?.subscription_plan === 'enterprise' ? 'CloseOS Enterprise'
-                : isSolo ? 'CloseOS Solo'
-                : 'CloseOS Business'
-              }</p>
+              <p className="font-business-display font-extrabold text-sm text-stone-900 dark:text-white">{planLabel}</p>
             </div>
           </div>
         </aside>
 
         {/* ─── Main Content ─── */}
-        <main className="flex-1 overflow-y-auto bg-[#fbf9f8] dark:bg-neutral-950 py-12 px-8 lg:px-16">
+        <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-[#fbf9f8] dark:bg-neutral-950 px-4 pt-5 pb-8 sm:px-6 md:py-12 md:px-8 lg:px-16">
           <div className="max-w-3xl">
 
             {/* Message */}
             {message.text && (
               <div className={cn(
-                'mb-8 flex items-center gap-3 p-5 rounded-2xl border',
+                'mb-5 md:mb-8 flex items-center gap-3 p-4 md:p-5 rounded-2xl border',
                 message.type === 'success'
                   ? 'bg-[#006c49]/5 border-[#006c49]/10 text-[#006c49]'
                   : 'bg-red-50 border-red-200 text-red-600'
@@ -1031,27 +1084,27 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
             {/* ─── PROFILE TAB ─── */}
             {activeTab === 'profile' && (
               <form onSubmit={handleUpdateProfile} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h3 className="font-business-display font-extrabold text-3xl text-stone-900 dark:text-white mb-8 tracking-tight">Mon Profil</h3>
+                <h3 className="font-business-display font-extrabold text-xl md:text-3xl text-stone-900 dark:text-white mb-4 md:mb-8 tracking-tight">Mon Profil</h3>
 
                 {/* Extras & services — owner uniquement */}
                 {!isTeamMember && (
-                  <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-[#c4c7c7]/20 dark:border-neutral-800 bg-gradient-to-br from-[#ffddb8]/20 to-transparent dark:from-amber-500/5 p-5">
-                    <div className="flex items-center gap-3">
+                  <div className="mb-5 md:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-[#c4c7c7]/20 dark:border-neutral-800 bg-gradient-to-br from-[#ffddb8]/20 to-transparent dark:from-amber-500/5 p-4 md:p-5">
+                    <div className="flex items-center gap-3 min-w-0">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#ffb95f]/20"><Sparkles className="h-5 w-5 text-[#d97706]" strokeWidth={1.8} /></div>
                       <div>
                         <p className="text-sm font-bold text-stone-900 dark:text-white">Extras & services</p>
                         <p className="text-xs text-stone-500 dark:text-neutral-400">Setup, intégration technique — mise en place par notre équipe.</p>
                       </div>
                     </div>
-                    <button type="button" onClick={() => setShowExtras(true)} className="shrink-0 rounded-full bg-stone-900 dark:bg-white dark:text-stone-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-stone-800 dark:hover:bg-neutral-200 transition-all">
+                    <button type="button" onClick={() => setShowExtras(true)} className="shrink-0 h-10 sm:h-auto rounded-full bg-stone-900 dark:bg-white dark:text-stone-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-stone-800 dark:hover:bg-neutral-200 active:scale-[0.98] transition-all">
                       Réserver un extra
                     </button>
                   </div>
                 )}
 
-                <div className="flex flex-col md:flex-row gap-12 items-start">
+                <div className="flex flex-col xl:flex-row gap-5 sm:gap-8 xl:gap-12 items-start">
                   {/* Avatar */}
-                  <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
+                  <div className="relative group cursor-pointer self-center sm:self-start" onClick={handleAvatarClick}>
                     <input
                       type="file"
                       ref={fileInputRef}
@@ -1060,25 +1113,26 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                       accept="image/jpeg, image/png, image/webp"
                       disabled={uploading}
                     />
-                    <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-lg bg-[#eae8e7] flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
+                    <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-white shadow-lg bg-[#eae8e7] flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
                       {formData.avatar_url ? (
                         <img src={formData.avatar_url} alt="Profil" className="w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-[#ffddb8] to-[#ffb95f] flex items-center justify-center text-4xl font-business-display font-extrabold text-[#2a1700]">
+                        <div className="w-full h-full bg-gradient-to-br from-[#ffddb8] to-[#ffb95f] flex items-center justify-center text-3xl sm:text-4xl font-business-display font-extrabold text-[#2a1700]">
                           {formData.full_name?.[0] || 'U'}
                         </div>
                       )}
                     </div>
                     <button
                       type="button"
-                      className="absolute bottom-0 right-0 bg-stone-900 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-xl border-4 border-[#fbf9f8] hover:scale-110 transition-all"
+                      aria-label="Changer la photo"
+                      className="absolute bottom-0 right-0 bg-stone-900 text-white w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shadow-xl border-4 border-[#fbf9f8] hover:scale-110 transition-all"
                     >
                       {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" strokeWidth={1.5} />}
                     </button>
                   </div>
 
                   {/* Form fields */}
-                  <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                     {/* Full name */}
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 ml-1">Nom complet</label>
@@ -1086,7 +1140,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                         type="text"
                         disabled
                         value={formData.full_name}
-                        className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-5 py-4 text-stone-400 dark:text-neutral-500 cursor-not-allowed outline-none transition-all font-medium"
+                        className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-4 py-3 md:px-5 md:py-4 text-stone-400 dark:text-neutral-500 cursor-not-allowed outline-none transition-all font-medium"
                       />
                       <div className="flex items-start gap-2 mt-1 px-1">
                         <AlertCircle className="h-3.5 w-3.5 text-[#006c49] mt-0.5 shrink-0" strokeWidth={1.5} />
@@ -1101,7 +1155,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                         type="email"
                         disabled
                         value={user?.email || ''}
-                        className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-5 py-4 text-stone-400 dark:text-neutral-500 cursor-not-allowed outline-none font-medium"
+                        className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-4 py-3 md:px-5 md:py-4 text-stone-400 dark:text-neutral-500 cursor-not-allowed outline-none font-medium"
                       />
                     </div>
 
@@ -1123,7 +1177,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                         type="text"
                         disabled
                         value={formData.role}
-                        className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-5 py-4 text-stone-400 dark:text-neutral-500 cursor-not-allowed outline-none font-medium"
+                        className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-4 py-3 md:px-5 md:py-4 text-stone-400 dark:text-neutral-500 cursor-not-allowed outline-none font-medium"
                       />
                     </div>
                   </div>
@@ -1133,13 +1187,13 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                 {!isSolo && (!isTeamMember || teamMember?.role === 'Head of Sales') && (<>
                 <div
                   onClick={() => setFormData(prev => ({ ...prev, owner_assignable: !prev.owner_assignable }))}
-                  className="mt-8 flex items-center justify-between p-6 rounded-2xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                  className="mt-5 md:mt-8 flex items-center justify-between gap-3 md:gap-0 p-4 md:p-6 rounded-2xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm hover:shadow-md active:scale-[0.99] transition-all cursor-pointer group"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="p-2.5 rounded-xl bg-[#006c49]/10 text-[#006c49] group-hover:bg-[#006c49]/15 transition-colors">
+                  <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                    <div className="p-2.5 rounded-xl bg-[#006c49]/10 text-[#006c49] group-hover:bg-[#006c49]/15 transition-colors shrink-0">
                       <UserPlus className="h-5 w-5" strokeWidth={1.5} />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <h4 className="font-bold text-stone-900 dark:text-white text-sm">Apparaitre dans les assignations</h4>
                       <p className="text-xs text-stone-500 dark:text-neutral-400 mt-0.5">Vous serez selectionnable comme Closer/Setter dans les menus d'assignation</p>
                     </div>
@@ -1152,7 +1206,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
 
                 {/* Role selection when owner_assignable is on */}
                 {formData.owner_assignable && (
-                  <div className="mt-3 ml-2 p-5 rounded-2xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm">
+                  <div className="mt-3 md:ml-2 p-4 md:p-5 rounded-2xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm">
                     <p className="text-xs font-semibold text-stone-600 dark:text-neutral-400 mb-3">Assignable automatiquement en tant que :</p>
                     <div className="flex gap-2">
                       {['Setter', 'Closer'].map(role => {
@@ -1183,17 +1237,17 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                 </>)}
 
                 {/* Security section inline */}
-                <section className="mt-16 mb-12">
-                  <div className="flex items-baseline justify-between mb-8">
-                    <h3 className="font-business-display font-extrabold text-3xl text-stone-900 dark:text-white tracking-tight">Securite & Connexion</h3>
-                    <span className="text-xs font-bold text-[#006c49] uppercase tracking-widest bg-[#006c49]/5 px-3 py-1 rounded-full">Proteger</span>
+                <section className="mt-8 mb-6 md:mt-16 md:mb-12">
+                  <div className="flex items-center md:items-baseline justify-between gap-3 mb-4 md:mb-8">
+                    <h3 className="font-business-display font-extrabold text-lg md:text-3xl text-stone-900 dark:text-white tracking-tight min-w-0">Securite & Connexion</h3>
+                    <span className="shrink-0 whitespace-nowrap text-[10px] md:text-xs font-bold text-[#006c49] uppercase tracking-wider md:tracking-widest bg-[#006c49]/5 px-2 md:px-3 py-0.5 md:py-1 rounded-full">Proteger</span>
                   </div>
 
                   {/* Google Auth Banner */}
                   {isGoogleUser && (
-                    <div className="mb-8 p-6 rounded-2xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-[#eae8e7] rounded-full flex items-center justify-center">
+                    <div className="mb-5 md:mb-8 p-4 md:p-6 rounded-2xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm flex items-center justify-between gap-3 md:gap-0">
+                      <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                        <div className="w-10 h-10 md:w-12 md:h-12 bg-[#eae8e7] rounded-full flex items-center justify-center shrink-0">
                           <svg className="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -1201,25 +1255,25 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                             <path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                           </svg>
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <p className="font-business-display font-bold text-sm text-stone-900 dark:text-white">Authentification Google active</p>
-                          <p className="text-xs text-stone-500 dark:text-neutral-400">Connecte via {user?.email}</p>
+                          <p className="text-xs text-stone-500 dark:text-neutral-400 truncate">Connecte via {user?.email}</p>
                         </div>
                       </div>
-                      <Check className="h-6 w-6 text-[#006c49]" strokeWidth={2} />
+                      <Check className="h-6 w-6 text-[#006c49] shrink-0" strokeWidth={2} />
                     </div>
                   )}
 
                   {/* Password fields */}
                   {!isGoogleUser && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                       <div className="space-y-1.5">
                         <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 ml-1">Mot de passe actuel</label>
                         <input
                           type="password"
                           value={formData.currentPassword}
                           onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
-                          className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-5 py-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
+                          className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-4 py-3 md:px-5 md:py-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
                           placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;"
                         />
                       </div>
@@ -1229,7 +1283,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                           type="password"
                           value={formData.newPassword}
                           onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
-                          className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-5 py-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
+                          className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-4 py-3 md:px-5 md:py-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
                           placeholder="Entrez 8 caracteres min."
                         />
                       </div>
@@ -1237,9 +1291,9 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                   )}
                   {/* Associer Google — connexion rapide (users sans Google lié) */}
                   {!hasGoogleLinked && (
-                    <div className="mt-6 p-6 rounded-2xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-[#eae8e7] rounded-full flex items-center justify-center shrink-0">
+                    <div className="mt-4 md:mt-6 p-4 md:p-6 rounded-2xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 md:gap-4">
+                      <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                        <div className="w-10 h-10 md:w-12 md:h-12 bg-[#eae8e7] rounded-full flex items-center justify-center shrink-0">
                           <svg className="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -1252,24 +1306,25 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                           <p className="text-xs text-stone-500 dark:text-neutral-400">Associez votre compte Google pour vous connecter plus vite, en un clic.</p>
                         </div>
                       </div>
-                      <button type="button" onClick={linkGoogle} className="shrink-0 rounded-full bg-stone-900 dark:bg-white dark:text-stone-900 px-6 py-3 text-sm font-business-display font-bold text-white hover:bg-stone-800 dark:hover:bg-neutral-200 transition-all">Associer Google</button>
+                      <button type="button" onClick={linkGoogle} className="shrink-0 h-10 md:h-auto rounded-full bg-stone-900 dark:bg-white dark:text-stone-900 px-6 py-2.5 md:py-3 text-sm active:scale-[0.98] font-business-display font-bold text-white hover:bg-stone-800 dark:hover:bg-neutral-200 transition-all">Associer Google</button>
                     </div>
                   )}
                 </section>
 
                 {/* Footer actions */}
-                <div className="mt-12 pt-8 border-t border-[#c4c7c7]/10 dark:border-neutral-700 flex items-center justify-between">
+                {/* Mobile : barre d'action collée en bas de la feuille ; ≥ md : pied classique */}
+                <div className="sticky -bottom-8 z-10 -mx-4 sm:-mx-6 px-4 sm:px-6 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] -mb-8 bg-[#fbf9f8]/95 dark:bg-neutral-950/95 backdrop-blur border-t border-[#c4c7c7]/20 dark:border-neutral-800 md:static md:mx-0 md:px-0 md:mb-0 md:bg-transparent md:dark:bg-transparent md:backdrop-blur-none md:mt-12 md:pt-8 md:pb-0 md:border-[#c4c7c7]/10 md:dark:border-neutral-700 flex items-center justify-between">
                   <button
                     type="button"
                     onClick={onClose}
-                    className="text-sm font-business-display font-bold text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white transition-colors"
+                    className="hidden md:block text-sm font-business-display font-bold text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white transition-colors"
                   >
                     Ignorer les modifications
                   </button>
                   <button
                     type="submit"
                     disabled={loading}
-                    className="bg-stone-900 text-white font-business-display font-extrabold text-sm px-10 py-5 rounded-full flex items-center gap-3 shadow-2xl shadow-stone-900/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                    className="w-full md:w-auto justify-center bg-stone-900 dark:bg-white dark:text-stone-900 md:dark:bg-stone-900 md:dark:text-white text-white font-business-display font-extrabold text-sm px-6 py-3.5 md:px-10 md:py-5 rounded-full flex items-center gap-3 shadow-2xl shadow-stone-900/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
                   >
                     {loading ? <Loader2 className="animate-spin h-5 w-5" /> : null}
                     Enregistrer les modifications
@@ -1281,11 +1336,11 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
 
             {/* ─── SECURITY TAB ─── */}
             {activeTab === 'security' && (
-              <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h3 className="font-business-display font-extrabold text-3xl text-stone-900 dark:text-white mb-8 tracking-tight">Securite & Connexion</h3>
+              <div className="max-w-xl space-y-4 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <h3 className="font-business-display font-extrabold text-xl md:text-3xl text-stone-900 dark:text-white mb-4 md:mb-8 tracking-tight">Securite & Connexion</h3>
 
                 {isGoogleUser ? (
-                  <div className="p-6 bg-[#006c49]/5 border border-[#006c49]/10 rounded-2xl flex gap-4">
+                  <div className="p-4 md:p-6 bg-[#006c49]/5 border border-[#006c49]/10 rounded-2xl flex gap-3 md:gap-4">
                     <div className="p-3 bg-[#006c49]/10 rounded-xl h-fit">
                       <Shield className="h-6 w-6 text-[#006c49] shrink-0" strokeWidth={1.5} />
                     </div>
@@ -1295,14 +1350,14 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                     </div>
                   </div>
                 ) : (
-                  <form onSubmit={handleUpdatePassword} className="space-y-6">
+                  <form onSubmit={handleUpdatePassword} className="space-y-4 md:space-y-6">
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 ml-1">Mot de passe actuel (Requis)</label>
                       <input
                         type="password"
                         value={formData.currentPassword}
                         onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
-                        className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-5 py-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
+                        className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-4 py-3 md:px-5 md:py-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
                         placeholder="Votre mot de passe actuel"
                         required
                       />
@@ -1313,7 +1368,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                         type="password"
                         value={formData.newPassword}
                         onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
-                        className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-5 py-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
+                        className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-4 py-3 md:px-5 md:py-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
                         placeholder="8 caracteres minimum"
                         minLength={8}
                       />
@@ -1324,7 +1379,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                         type="password"
                         value={formData.confirmPassword}
                         onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                        className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-5 py-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
+                        className="w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl px-4 py-3 md:px-5 md:py-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 outline-none transition-all font-medium"
                         placeholder="Repetez le mot de passe"
                         minLength={8}
                       />
@@ -1332,7 +1387,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                     <button
                       type="submit"
                       disabled={loading || !formData.newPassword || !formData.confirmPassword || !formData.currentPassword}
-                      className="w-full bg-stone-900 text-white px-6 py-4 rounded-full font-business-display font-extrabold flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-50"
+                      className="w-full bg-stone-900 text-white px-6 py-3.5 md:py-4 rounded-full font-business-display font-extrabold flex items-center justify-center gap-2 transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
                     >
                       {loading ? <Loader2 className="animate-spin h-5 w-5" /> : <Shield className="h-5 w-5" strokeWidth={1.5} />}
                       Mettre a jour le mot de passe
@@ -1342,9 +1397,9 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
 
                 {/* Associer Google — connexion rapide */}
                 {!hasGoogleLinked && (
-                  <div className="p-6 rounded-2xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-[#eae8e7] rounded-full flex items-center justify-center shrink-0">
+                  <div className="p-4 md:p-6 rounded-2xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 md:gap-4">
+                    <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                      <div className="w-10 h-10 md:w-12 md:h-12 bg-[#eae8e7] rounded-full flex items-center justify-center shrink-0">
                         <svg className="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                           <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -1357,7 +1412,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                         <p className="text-xs text-stone-500 dark:text-neutral-400">Associez votre compte Google pour vous connecter plus vite, en un clic.</p>
                       </div>
                     </div>
-                    <button type="button" onClick={linkGoogle} className="shrink-0 rounded-full bg-stone-900 dark:bg-white dark:text-stone-900 px-6 py-3 text-sm font-business-display font-bold text-white hover:bg-stone-800 dark:hover:bg-neutral-200 transition-all">Associer Google</button>
+                    <button type="button" onClick={linkGoogle} className="shrink-0 h-10 md:h-auto rounded-full bg-stone-900 dark:bg-white dark:text-stone-900 px-6 py-2.5 md:py-3 text-sm active:scale-[0.98] font-business-display font-bold text-white hover:bg-stone-800 dark:hover:bg-neutral-200 transition-all">Associer Google</button>
                   </div>
                 )}
               </div>
@@ -1365,27 +1420,27 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
 
             {/* ─── DELETE ACCOUNT TAB ─── */}
             {activeTab === 'delete_account' && (
-              <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h3 className="font-business-display font-extrabold text-3xl text-stone-900 dark:text-white mb-2 tracking-tight">Suppression du compte</h3>
+              <div className="max-w-xl space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <h3 className="font-business-display font-extrabold text-xl md:text-3xl text-stone-900 dark:text-white mb-1 md:mb-2 tracking-tight">Suppression du compte</h3>
                 <p className="text-stone-500 dark:text-neutral-400 text-sm">
                   Supprimez d&eacute;finitivement votre compte et toutes les donn&eacute;es de votre organisation.
                 </p>
 
                 {/* Step 0: Idle — delete button */}
                 {deleteStep === 'idle' && (
-                  <div className="mt-8 p-6 rounded-2xl border border-red-200/50 dark:border-red-500/20 bg-red-50/30 dark:bg-red-500/5">
-                    <div className="flex items-start gap-4">
+                  <div className="mt-4 md:mt-8 p-4 md:p-6 rounded-2xl border border-red-200/50 dark:border-red-500/20 bg-red-50/30 dark:bg-red-500/5">
+                    <div className="flex items-start gap-3 md:gap-4">
                       <div className="p-2.5 rounded-xl bg-red-100 dark:bg-red-500/10 shrink-0">
                         <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <h4 className="font-bold text-stone-900 dark:text-white text-sm">Supprimer mon compte</h4>
                         <p className="text-xs text-stone-500 dark:text-neutral-400 mt-1 leading-relaxed">
                           Cette action est <strong className="text-red-600">irr&eacute;versible</strong>. Votre compte, votre organisation, tous les membres de l'&eacute;quipe et toutes les donn&eacute;es seront d&eacute;finitivement supprim&eacute;s.
                         </p>
                         <button
                           onClick={() => setDeleteStep('confirm')}
-                          className="mt-4 px-6 py-2.5 rounded-full bg-red-600 text-white text-sm font-bold hover:bg-red-700 active:scale-95 transition-all"
+                          className="mt-4 h-10 md:h-auto px-6 py-2.5 rounded-full bg-red-600 text-white text-sm font-bold hover:bg-red-700 active:scale-95 transition-all"
                         >
                           Supprimer mon compte
                         </button>
@@ -1396,9 +1451,9 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
 
                 {/* Step 1: Confirmation */}
                 {deleteStep === 'confirm' && (
-                  <div className="mt-8 p-8 rounded-2xl border border-stone-200/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-lg">
+                  <div className="mt-4 md:mt-8 p-5 md:p-8 rounded-2xl border border-stone-200/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-lg">
                     <div className="text-center">
-                      <div className="text-5xl mb-4">&#9888;&#65039;</div>
+                      <div className="text-4xl md:text-5xl mb-3 md:mb-4">&#9888;&#65039;</div>
                       <h4 className="font-business-display font-extrabold text-xl text-stone-900 dark:text-white mb-3">
                         &Ecirc;tes-vous s&ucirc;r ?
                       </h4>
@@ -1408,13 +1463,13 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                       <div className="flex gap-3">
                         <button
                           onClick={() => setDeleteStep('idle')}
-                          className="flex-1 px-6 py-3 rounded-full border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 text-sm font-bold hover:bg-stone-50 dark:hover:bg-neutral-700 active:scale-95 transition-all"
+                          className="flex-1 px-4 md:px-6 py-3 rounded-full border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 text-sm font-bold hover:bg-stone-50 dark:hover:bg-neutral-700 active:scale-95 transition-all"
                         >
                           Annuler
                         </button>
                         <button
                           onClick={() => setDeleteStep('export')}
-                          className="flex-1 px-6 py-3 rounded-full bg-red-600 text-white text-sm font-bold hover:bg-red-700 active:scale-95 transition-all"
+                          className="flex-1 px-4 md:px-6 py-3 rounded-full bg-red-600 text-white text-sm font-bold hover:bg-red-700 active:scale-95 transition-all"
                         >
                           Continuer
                         </button>
@@ -1425,9 +1480,9 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
 
                 {/* Step 2: Export reminder */}
                 {deleteStep === 'export' && (
-                  <div className="mt-8 p-8 rounded-2xl border border-stone-200/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-lg">
+                  <div className="mt-4 md:mt-8 p-5 md:p-8 rounded-2xl border border-stone-200/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-lg">
                     <div className="text-center">
-                      <div className="text-5xl mb-4">&#128230;</div>
+                      <div className="text-4xl md:text-5xl mb-3 md:mb-4">&#128230;</div>
                       <h4 className="font-business-display font-extrabold text-xl text-stone-900 dark:text-white mb-3">
                         Exportez vos donn&eacute;es
                       </h4>
@@ -1459,14 +1514,14 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                       <div className="flex gap-3">
                         <button
                           onClick={() => setDeleteStep('confirm')}
-                          className="flex-1 px-6 py-3 rounded-full border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 text-sm font-bold hover:bg-stone-50 dark:hover:bg-neutral-700 active:scale-95 transition-all"
+                          className="flex-1 px-4 md:px-6 py-3 rounded-full border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 text-sm font-bold hover:bg-stone-50 dark:hover:bg-neutral-700 active:scale-95 transition-all"
                         >
                           Retour
                         </button>
                         <button
                           onClick={sendDeleteCode}
                           disabled={deleteSending}
-                          className="flex-1 px-6 py-3 rounded-full bg-red-600 text-white text-sm font-bold hover:bg-red-700 active:scale-95 transition-all disabled:opacity-50"
+                          className="flex-1 px-4 md:px-6 py-3 rounded-full bg-red-600 text-white text-sm font-bold hover:bg-red-700 active:scale-95 transition-all disabled:opacity-50"
                         >
                           {deleteSending ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "J'ai export\u00e9, continuer"}
                         </button>
@@ -1477,9 +1532,9 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
 
                 {/* Step 3: Verification code */}
                 {deleteStep === 'code' && (
-                  <div className="mt-8 p-8 rounded-2xl border border-stone-200/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-lg">
+                  <div className="mt-4 md:mt-8 p-5 md:p-8 rounded-2xl border border-stone-200/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-lg">
                     <div className="text-center">
-                      <div className="text-4xl mb-4">&#128274;</div>
+                      <div className="text-3xl md:text-4xl mb-3 md:mb-4">&#128274;</div>
                       <h4 className="font-business-display font-extrabold text-xl text-stone-900 dark:text-white mb-2">
                         Code de confirmation
                       </h4>
@@ -1494,10 +1549,10 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                         </div>
                       )}
 
-                      <div className="flex justify-center gap-2.5 mb-6" onPaste={handleDeletePaste}>
+                      <div className="flex justify-center gap-2 md:gap-2.5 mb-6" onPaste={handleDeletePaste}>
                         {deleteCode.map((digit, i) => (
                           <div key={i} className="relative">
-                            {i === 3 && <div className="absolute -left-2.5 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-stone-300 dark:bg-neutral-600" />}
+                            {i === 3 && <div className="absolute -left-1.5 md:-left-2.5 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-stone-300 dark:bg-neutral-600" />}
                             <input
                               ref={el => { deleteInputRefs.current[i] = el }}
                               type="text"
@@ -1507,7 +1562,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                               onChange={e => handleDeleteInput(i, e.target.value)}
                               onKeyDown={e => handleDeleteKeyDown(i, e)}
                               disabled={deleteVerifying}
-                              className="w-11 h-13 text-center text-lg font-bold bg-stone-100/50 dark:bg-neutral-700 border border-stone-300 dark:border-neutral-600 rounded-xl text-stone-900 dark:text-white focus:ring-2 focus:ring-red-500/30 focus:border-red-500 outline-none transition-all disabled:opacity-50"
+                              className="w-10 h-12 md:w-11 md:h-13 text-center text-lg font-bold bg-stone-100/50 dark:bg-neutral-700 border border-stone-300 dark:border-neutral-600 rounded-xl text-stone-900 dark:text-white focus:ring-2 focus:ring-red-500/30 focus:border-red-500 outline-none transition-all disabled:opacity-50"
                             />
                           </div>
                         ))}
@@ -1544,16 +1599,16 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
             {/* ─── SUPPORT TAB ─── */}
             {/* ─── INTERFACE TAB ─── */}
             {activeTab === 'interface' && (
-              <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h3 className="font-business-display font-extrabold text-3xl text-stone-900 dark:text-white mb-8 tracking-tight">Interface</h3>
+              <div className="max-w-xl space-y-4 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <h3 className="font-business-display font-extrabold text-xl md:text-3xl text-stone-900 dark:text-white mb-4 md:mb-8 tracking-tight">Interface</h3>
 
                 {/* Dark mode toggle */}
                 <div
                   onClick={toggleDark}
-                  className="flex items-center justify-between p-6 rounded-2xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                  className="flex items-center justify-between gap-3 md:gap-0 p-4 md:p-6 rounded-2xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm hover:shadow-md active:scale-[0.99] transition-all cursor-pointer group"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="p-2.5 rounded-xl bg-stone-900/10 dark:bg-white/10 text-stone-900 dark:text-white group-hover:bg-stone-900/15 dark:group-hover:bg-white/15 transition-colors">
+                  <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                    <div className="shrink-0 p-2.5 rounded-xl bg-stone-900/10 dark:bg-white/10 text-stone-900 dark:text-white group-hover:bg-stone-900/15 dark:group-hover:bg-white/15 transition-colors">
                       <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
                     </div>
                     <div>
@@ -1570,10 +1625,10 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                 {/* Pop-up canal de contact (écrit / vocal / mail) */}
                 <div
                   onClick={() => setAskChannelEnabled(!askChannelEnabled)}
-                  className="flex items-center justify-between p-6 rounded-2xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                  className="flex items-center justify-between gap-3 md:gap-0 p-4 md:p-6 rounded-2xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm hover:shadow-md active:scale-[0.99] transition-all cursor-pointer group"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="p-2.5 rounded-xl bg-stone-900/10 dark:bg-white/10 text-stone-900 dark:text-white group-hover:bg-stone-900/15 dark:group-hover:bg-white/15 transition-colors">
+                  <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                    <div className="shrink-0 p-2.5 rounded-xl bg-stone-900/10 dark:bg-white/10 text-stone-900 dark:text-white group-hover:bg-stone-900/15 dark:group-hover:bg-white/15 transition-colors">
                       <MessageSquare className="h-5 w-5" strokeWidth={1.5} />
                     </div>
                     <div>
@@ -1594,9 +1649,9 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                 </div>
 
                 {/* Language toggle */}
-                <div className="p-6 rounded-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 bg-white dark:bg-neutral-800">
+                <div className="p-4 md:p-6 rounded-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 bg-white dark:bg-neutral-800">
                   <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 mb-1">{t.settings_language}</label>
-                  <p className="text-sm text-stone-500 dark:text-neutral-400 mb-5">{t.settings_language_desc}</p>
+                  <p className="text-sm text-stone-500 dark:text-neutral-400 mb-4 md:mb-5">{t.settings_language_desc}</p>
                   <div className="flex gap-2">
                     {([
                       { value: 'fr' as const, label: '🇫🇷 Francais' },
@@ -1620,9 +1675,9 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                 </div>
 
                 {/* Dashboard Period */}
-                <div className="p-6 rounded-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 bg-white dark:bg-neutral-800">
+                <div className="p-4 md:p-6 rounded-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 bg-white dark:bg-neutral-800">
                   <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 mb-1">{t.settings_dashboard_period}</label>
-                  <p className="text-sm text-stone-500 dark:text-neutral-400 mb-5">{t.settings_dashboard_period_desc}</p>
+                  <p className="text-sm text-stone-500 dark:text-neutral-400 mb-4 md:mb-5">{t.settings_dashboard_period_desc}</p>
                   <div className="flex flex-wrap gap-2">
                     {([
                       { value: 'today', label: t.common_today },
@@ -1661,7 +1716,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                 </div>
 
                 {/* ─── Sidebar Order ─── */}
-                <div className="p-6 rounded-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 bg-white dark:bg-neutral-800">
+                <div className="p-4 md:p-6 rounded-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 bg-white dark:bg-neutral-800">
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500">Organisation de la sidebar</label>
                     <div className="flex items-center gap-2">
@@ -1678,7 +1733,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                       )}
                     </div>
                   </div>
-                  <p className="text-sm text-stone-500 dark:text-neutral-400 mb-5">Glissez-déposez les pages pour réorganiser votre sidebar.</p>
+                  <p className="text-sm text-stone-500 dark:text-neutral-400 mb-4 md:mb-5">Glissez-déposez les pages pour réorganiser votre sidebar.</p>
 
                   {/* Mini sidebar preview */}
                   <div className="flex gap-6">
@@ -1782,18 +1837,18 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
             )}
 
             {activeTab === 'devices' && (
-              <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h3 className="font-business-display font-extrabold text-3xl text-stone-900 dark:text-white mb-2 tracking-tight">Appareils connect&eacute;s</h3>
+              <div className="max-w-xl space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <h3 className="font-business-display font-extrabold text-xl md:text-3xl text-stone-900 dark:text-white mb-1 md:mb-2 tracking-tight">Appareils connect&eacute;s</h3>
                 <p className="text-stone-500 dark:text-neutral-400 text-sm mb-6">
                   Appareils ayant acc&egrave;s &agrave; votre compte. Les sessions expirent automatiquement apr&egrave;s 7 jours.
                 </p>
 
                 {devicesLoading ? (
-                  <div className="flex justify-center py-12">
+                  <div className="flex justify-center py-8 md:py-12">
                     <Loader2 className="h-6 w-6 animate-spin text-stone-400" />
                   </div>
                 ) : devices.length === 0 ? (
-                  <div className="text-center py-12 text-stone-400 dark:text-neutral-500 text-sm">
+                  <div className="text-center py-8 md:py-12 text-stone-400 dark:text-neutral-500 text-sm">
                     Aucun appareil connect&eacute;
                   </div>
                 ) : (
@@ -1809,13 +1864,13 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                         <div
                           key={device.id}
                           className={cn(
-                            'flex items-center justify-between p-4 rounded-2xl border transition-all',
+                            'flex items-center justify-between gap-3 md:gap-0 p-3.5 md:p-4 rounded-2xl border transition-all',
                             isCurrentDevice
                               ? 'bg-emerald-50/50 dark:bg-emerald-500/5 border-emerald-200/50 dark:border-emerald-500/20'
                               : 'bg-white dark:bg-neutral-800/50 border-stone-200/20 dark:border-neutral-700'
                           )}
                         >
-                          <div className="flex items-center gap-4 min-w-0">
+                          <div className="flex items-center gap-3 md:gap-4 min-w-0">
                             <div className={cn(
                               'w-10 h-10 rounded-full flex items-center justify-center shrink-0',
                               isCurrentDevice
@@ -1828,7 +1883,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                               )} />
                             </div>
                             <div className="min-w-0">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
                                 <p className="font-semibold text-sm text-stone-900 dark:text-white truncate">{deviceName}</p>
                                 {isCurrentDevice && (
                                   <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full shrink-0">
@@ -1836,7 +1891,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                                   </span>
                                 )}
                               </div>
-                              <p className="text-xs text-stone-400 dark:text-neutral-500 mt-0.5">
+                              <p className="text-xs text-stone-400 dark:text-neutral-500 mt-0.5 truncate">
                                 Connect&eacute; le {createdAt.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })} &middot; Expire dans {daysLeft}j
                               </p>
                             </div>
@@ -1845,7 +1900,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                             <button
                               onClick={() => revokeDevice(device.id)}
                               disabled={revokingId === device.id}
-                              className="shrink-0 ml-4 px-4 py-2 rounded-full bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-bold hover:bg-red-100 dark:hover:bg-red-500/20 active:scale-95 transition-all disabled:opacity-50"
+                              className="shrink-0 md:ml-4 h-9 md:h-auto px-3.5 md:px-4 py-2 rounded-full bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-bold hover:bg-red-100 dark:hover:bg-red-500/20 active:scale-95 transition-all disabled:opacity-50"
                             >
                               {revokingId === device.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'R\u00e9voquer'}
                             </button>
@@ -1859,26 +1914,26 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
             )}
 
             {activeTab === 'organisation' && isTeamMember && (
-              <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h3 className="font-business-display font-extrabold text-3xl text-stone-900 dark:text-white mb-2 tracking-tight">Organisation</h3>
+              <div className="max-w-xl space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <h3 className="font-business-display font-extrabold text-xl md:text-3xl text-stone-900 dark:text-white mb-1 md:mb-2 tracking-tight">Organisation</h3>
                 <p className="text-stone-500 dark:text-neutral-400 text-sm">
                   G&eacute;rez votre appartenance &agrave; l'organisation.
                 </p>
 
                 {leaveStep === 'idle' && (
-                  <div className="mt-8 p-6 rounded-2xl border border-red-200/50 dark:border-red-500/20 bg-red-50/30 dark:bg-red-500/5">
-                    <div className="flex items-start gap-4">
+                  <div className="mt-4 md:mt-8 p-4 md:p-6 rounded-2xl border border-red-200/50 dark:border-red-500/20 bg-red-50/30 dark:bg-red-500/5">
+                    <div className="flex items-start gap-3 md:gap-4">
                       <div className="p-2.5 rounded-xl bg-red-100 dark:bg-red-500/10 shrink-0">
                         <LogOut className="h-5 w-5 text-red-600 dark:text-red-400" />
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <h4 className="font-bold text-stone-900 dark:text-white text-sm">Quitter l'organisation</h4>
                         <p className="text-xs text-stone-500 dark:text-neutral-400 mt-1 leading-relaxed">
                           Cette action est <strong className="text-red-600">irr&eacute;versible</strong>. Votre compte, vos donn&eacute;es, vos factures et toutes vos informations seront d&eacute;finitivement supprim&eacute;s.
                         </p>
                         <button
                           onClick={() => setLeaveStep('confirm')}
-                          className="mt-4 px-6 py-2.5 rounded-full bg-red-600 text-white text-sm font-bold hover:bg-red-700 active:scale-95 transition-all"
+                          className="mt-4 h-10 md:h-auto px-6 py-2.5 rounded-full bg-red-600 text-white text-sm font-bold hover:bg-red-700 active:scale-95 transition-all"
                         >
                           Quitter l'organisation
                         </button>
@@ -1889,9 +1944,9 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
 
                 {/* Step 1: Confirmation popup */}
                 {leaveStep === 'confirm' && (
-                  <div className="mt-8 p-8 rounded-2xl border border-stone-200/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-lg">
+                  <div className="mt-4 md:mt-8 p-5 md:p-8 rounded-2xl border border-stone-200/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-lg">
                     <div className="text-center">
-                      <div className="text-5xl mb-4">&#128557;</div>
+                      <div className="text-4xl md:text-5xl mb-3 md:mb-4">&#128557;</div>
                       <h4 className="font-business-display font-extrabold text-xl text-stone-900 dark:text-white mb-3">
                         Ne partez pas maintenant
                       </h4>
@@ -1901,14 +1956,14 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                       <div className="flex gap-3">
                         <button
                           onClick={() => setLeaveStep('idle')}
-                          className="flex-1 px-6 py-3 rounded-full border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 text-sm font-bold hover:bg-stone-50 dark:hover:bg-neutral-700 active:scale-95 transition-all"
+                          className="flex-1 px-4 md:px-6 py-3 rounded-full border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 text-sm font-bold hover:bg-stone-50 dark:hover:bg-neutral-700 active:scale-95 transition-all"
                         >
                           Annuler
                         </button>
                         <button
                           onClick={sendLeaveCode}
                           disabled={leaveSending}
-                          className="flex-1 px-6 py-3 rounded-full bg-red-600 text-white text-sm font-bold hover:bg-red-700 active:scale-95 transition-all disabled:opacity-50"
+                          className="flex-1 px-4 md:px-6 py-3 rounded-full bg-red-600 text-white text-sm font-bold hover:bg-red-700 active:scale-95 transition-all disabled:opacity-50"
                         >
                           {leaveSending ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Continuer'}
                         </button>
@@ -1919,9 +1974,9 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
 
                 {/* Step 2: Verification code */}
                 {leaveStep === 'code' && (
-                  <div className="mt-8 p-8 rounded-2xl border border-stone-200/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-lg">
+                  <div className="mt-4 md:mt-8 p-5 md:p-8 rounded-2xl border border-stone-200/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-lg">
                     <div className="text-center">
-                      <div className="text-4xl mb-4">&#128274;</div>
+                      <div className="text-3xl md:text-4xl mb-3 md:mb-4">&#128274;</div>
                       <h4 className="font-business-display font-extrabold text-xl text-stone-900 dark:text-white mb-2">
                         Code de confirmation
                       </h4>
@@ -1936,10 +1991,10 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                         </div>
                       )}
 
-                      <div className="flex justify-center gap-2.5 mb-6" onPaste={handleLeavePaste}>
+                      <div className="flex justify-center gap-2 md:gap-2.5 mb-6" onPaste={handleLeavePaste}>
                         {leaveCode.map((digit, i) => (
                           <div key={i} className="relative">
-                            {i === 3 && <div className="absolute -left-2.5 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-stone-300 dark:bg-neutral-600" />}
+                            {i === 3 && <div className="absolute -left-1.5 md:-left-2.5 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-stone-300 dark:bg-neutral-600" />}
                             <input
                               ref={el => { leaveInputRefs.current[i] = el }}
                               type="text"
@@ -1949,7 +2004,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                               onChange={e => handleLeaveInput(i, e.target.value)}
                               onKeyDown={e => handleLeaveKeyDown(i, e)}
                               disabled={leaveVerifying}
-                              className="w-11 h-13 text-center text-lg font-bold bg-stone-100/50 dark:bg-neutral-700 border border-stone-300 dark:border-neutral-600 rounded-xl text-stone-900 dark:text-white focus:ring-2 focus:ring-red-500/30 focus:border-red-500 outline-none transition-all disabled:opacity-50"
+                              className="w-10 h-12 md:w-11 md:h-13 text-center text-lg font-bold bg-stone-100/50 dark:bg-neutral-700 border border-stone-300 dark:border-neutral-600 rounded-xl text-stone-900 dark:text-white focus:ring-2 focus:ring-red-500/30 focus:border-red-500 outline-none transition-all disabled:opacity-50"
                             />
                           </div>
                         ))}
@@ -1984,8 +2039,8 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
             )}
 
             {activeTab === 'organisation' && !isTeamMember && (
-              <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h3 className="font-business-display font-extrabold text-3xl text-stone-900 dark:text-white mb-2 tracking-tight">Organisation</h3>
+              <div className="max-w-xl space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <h3 className="font-business-display font-extrabold text-xl md:text-3xl text-stone-900 dark:text-white mb-1 md:mb-2 tracking-tight">Organisation</h3>
                 <p className="text-stone-500 dark:text-neutral-400 text-sm">
                   G&eacute;rez votre organisation et ses donn&eacute;es.
                 </p>
@@ -2006,10 +2061,10 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                       refreshProfile?.()
                     }
                   }}
-                  className="flex items-center justify-between p-6 rounded-2xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                  className="flex items-center justify-between gap-3 md:gap-0 p-4 md:p-6 rounded-2xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm hover:shadow-md active:scale-[0.99] transition-all cursor-pointer group"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="p-2.5 rounded-xl bg-stone-900/10 dark:bg-white/10 text-stone-900 dark:text-white group-hover:bg-stone-900/15 dark:group-hover:bg-white/15 transition-colors">
+                  <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                    <div className="shrink-0 p-2.5 rounded-xl bg-stone-900/10 dark:bg-white/10 text-stone-900 dark:text-white group-hover:bg-stone-900/15 dark:group-hover:bg-white/15 transition-colors">
                       <FileText className="h-5 w-5" />
                     </div>
                     <div>
@@ -2024,19 +2079,19 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                 </div>}
 
                 {resetStep === 'idle' && (
-                  <div className="mt-8 p-6 rounded-2xl border border-red-200/50 dark:border-red-500/20 bg-red-50/30 dark:bg-red-500/5">
-                    <div className="flex items-start gap-4">
+                  <div className="mt-4 md:mt-8 p-4 md:p-6 rounded-2xl border border-red-200/50 dark:border-red-500/20 bg-red-50/30 dark:bg-red-500/5">
+                    <div className="flex items-start gap-3 md:gap-4">
                       <div className="p-2.5 rounded-xl bg-red-100 dark:bg-red-500/10 shrink-0">
                         <RotateCcw className="h-5 w-5 text-red-600 dark:text-red-400" />
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <h4 className="font-bold text-stone-900 dark:text-white text-sm">R&eacute;initialiser l'organisation</h4>
                         <p className="text-xs text-stone-500 dark:text-neutral-400 mt-1 leading-relaxed">
                           Cette action est <strong className="text-red-600">irr&eacute;versible</strong>. Toutes les donn&eacute;es de l'organisation seront supprim&eacute;es : prospects, campagnes, rendez-vous, formules, commissions, objectifs, factures, rapports et tous les membres de l'&eacute;quipe.
                         </p>
                         <button
                           onClick={() => setResetStep('confirm')}
-                          className="mt-4 px-6 py-2.5 rounded-full bg-red-600 text-white text-sm font-bold hover:bg-red-700 active:scale-95 transition-all"
+                          className="mt-4 h-10 md:h-auto px-6 py-2.5 rounded-full bg-red-600 text-white text-sm font-bold hover:bg-red-700 active:scale-95 transition-all"
                         >
                           R&eacute;initialiser l'organisation
                         </button>
@@ -2046,9 +2101,9 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                 )}
 
                 {resetStep === 'confirm' && (
-                  <div className="mt-8 p-8 rounded-2xl border border-stone-200/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-lg">
+                  <div className="mt-4 md:mt-8 p-5 md:p-8 rounded-2xl border border-stone-200/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-lg">
                     <div className="text-center">
-                      <div className="text-5xl mb-4">&#9888;&#65039;</div>
+                      <div className="text-4xl md:text-5xl mb-3 md:mb-4">&#9888;&#65039;</div>
                       <h4 className="font-business-display font-extrabold text-xl text-stone-900 dark:text-white mb-3">
                         &Ecirc;tes-vous s&ucirc;r ?
                       </h4>
@@ -2069,14 +2124,14 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                       <div className="flex gap-3">
                         <button
                           onClick={() => setResetStep('idle')}
-                          className="flex-1 px-6 py-3 rounded-full border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 text-sm font-bold hover:bg-stone-50 dark:hover:bg-neutral-700 active:scale-95 transition-all"
+                          className="flex-1 px-4 md:px-6 py-3 rounded-full border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 text-sm font-bold hover:bg-stone-50 dark:hover:bg-neutral-700 active:scale-95 transition-all"
                         >
                           Annuler
                         </button>
                         <button
                           onClick={sendResetCode}
                           disabled={resetSending}
-                          className="flex-1 px-6 py-3 rounded-full bg-red-600 text-white text-sm font-bold hover:bg-red-700 active:scale-95 transition-all disabled:opacity-50"
+                          className="flex-1 px-4 md:px-6 py-3 rounded-full bg-red-600 text-white text-sm font-bold hover:bg-red-700 active:scale-95 transition-all disabled:opacity-50"
                         >
                           {resetSending ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Continuer'}
                         </button>
@@ -2086,9 +2141,9 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                 )}
 
                 {resetStep === 'code' && (
-                  <div className="mt-8 p-8 rounded-2xl border border-stone-200/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-lg">
+                  <div className="mt-4 md:mt-8 p-5 md:p-8 rounded-2xl border border-stone-200/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-lg">
                     <div className="text-center">
-                      <div className="text-4xl mb-4">&#128274;</div>
+                      <div className="text-3xl md:text-4xl mb-3 md:mb-4">&#128274;</div>
                       <h4 className="font-business-display font-extrabold text-xl text-stone-900 dark:text-white mb-2">
                         Code de confirmation
                       </h4>
@@ -2103,10 +2158,10 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                         </div>
                       )}
 
-                      <div className="flex justify-center gap-2.5 mb-6" onPaste={handleResetPaste}>
+                      <div className="flex justify-center gap-2 md:gap-2.5 mb-6" onPaste={handleResetPaste}>
                         {resetCode.map((digit, i) => (
                           <div key={i} className="relative">
-                            {i === 3 && <div className="absolute -left-2.5 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-stone-300 dark:bg-neutral-600" />}
+                            {i === 3 && <div className="absolute -left-1.5 md:-left-2.5 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-stone-300 dark:bg-neutral-600" />}
                             <input
                               ref={el => { resetInputRefs.current[i] = el }}
                               type="text"
@@ -2116,7 +2171,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                               onChange={e => handleResetInput(i, e.target.value)}
                               onKeyDown={e => handleResetKeyDown(i, e)}
                               disabled={resetVerifying}
-                              className="w-11 h-13 text-center text-lg font-bold bg-stone-100/50 dark:bg-neutral-700 border border-stone-300 dark:border-neutral-600 rounded-xl text-stone-900 dark:text-white focus:ring-2 focus:ring-red-500/30 focus:border-red-500 outline-none transition-all disabled:opacity-50"
+                              className="w-10 h-12 md:w-11 md:h-13 text-center text-lg font-bold bg-stone-100/50 dark:bg-neutral-700 border border-stone-300 dark:border-neutral-600 rounded-xl text-stone-900 dark:text-white focus:ring-2 focus:ring-red-500/30 focus:border-red-500 outline-none transition-all disabled:opacity-50"
                             />
                           </div>
                         ))}
@@ -2151,19 +2206,19 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
             )}
 
             {activeTab === 'mcp' && !isTeamMember && (
-              <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h3 className="font-business-display font-extrabold text-3xl text-stone-900 dark:text-white mb-2 tracking-tight">Assistant IA (MCP)</h3>
+              <div className="max-w-xl space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <h3 className="font-business-display font-extrabold text-xl md:text-3xl text-stone-900 dark:text-white mb-1 md:mb-2 tracking-tight">Assistant IA (MCP)</h3>
                 <p className="text-stone-500 dark:text-neutral-400 text-sm mb-6">
                   Connectez Claude (ou tout client MCP) à votre compte : gestion des prospects, campagnes, rendez-vous,
                   relances, formulaires et équipe — directement depuis votre assistant.
                 </p>
 
                 {mcpLoading ? (
-                  <div className="flex justify-center py-12">
+                  <div className="flex justify-center py-8 md:py-12">
                     <Loader2 className="h-6 w-6 animate-spin text-stone-400" />
                   </div>
                 ) : !mcpKey ? (
-                  <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 text-center">
+                  <div className="p-6 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 text-center">
                     <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white dark:bg-neutral-900 flex items-center justify-center">
                       <Bot className="h-7 w-7 text-stone-500" strokeWidth={1.5} />
                     </div>
@@ -2201,19 +2256,19 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                         URL du connecteur
                       </label>
                       <div className="flex items-center gap-2">
-                        <code className="flex-1 min-w-0 truncate bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl px-4 py-3 text-xs text-stone-900 dark:text-white font-mono">
+                        <code className="flex-1 min-w-0 truncate bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl px-3 md:px-4 py-3 text-xs text-stone-900 dark:text-white font-mono">
                           {mcpRevealed ? mcpUrl : `${window.location.origin}/api/business-mcp/cos_••••••••••••`}
                         </code>
                         <button
                           onClick={() => setMcpRevealed(v => !v)}
-                          className="p-3 rounded-xl text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors"
+                          className="shrink-0 p-3 rounded-xl text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors"
                           title={mcpRevealed ? 'Masquer' : 'Afficher'}
                         >
                           {mcpRevealed ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                         <button
                           onClick={() => copyMcp('url')}
-                          className="flex items-center gap-2 bg-stone-900 dark:bg-white text-white dark:text-stone-900 px-4 py-3 rounded-xl font-business-display font-bold text-xs active:scale-95 transition-all whitespace-nowrap"
+                          className="shrink-0 flex items-center gap-2 bg-stone-900 dark:bg-white text-white dark:text-stone-900 px-3 md:px-4 py-3 rounded-xl font-business-display font-bold text-xs active:scale-95 transition-all whitespace-nowrap"
                         >
                           {mcpCopied === 'url' ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                           {mcpCopied === 'url' ? 'Copié' : 'Copier'}
@@ -2234,7 +2289,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                     </div>
 
                     {/* Ce que l'assistant peut faire */}
-                    <div className="p-5 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800">
+                    <div className="p-4 md:p-5 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800">
                       <p className="text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 mb-3">
                         Ce que votre assistant peut piloter
                       </p>
@@ -2283,36 +2338,36 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
             )}
 
             {activeTab === 'support' && (
-              <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h3 className="font-business-display font-extrabold text-3xl text-stone-900 dark:text-white mb-8 tracking-tight">Centre d'Aide</h3>
+              <div className="max-w-xl space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <h3 className="font-business-display font-extrabold text-xl md:text-3xl text-stone-900 dark:text-white mb-4 md:mb-8 tracking-tight">Centre d'Aide</h3>
 
-                <a href="mailto:support@closeos.fr" className="group block p-6 rounded-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:shadow-md transition-all hover:scale-[1.01]">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 rounded-xl bg-[#006c49]/10 text-[#006c49] group-hover:bg-[#006c49]/15 transition-colors">
+                <a href="mailto:support@closeos.fr" className="group block p-4 md:p-6 rounded-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:shadow-md transition-all hover:scale-[1.01] active:scale-[0.99]">
+                  <div className="flex items-center justify-between gap-3 md:gap-0">
+                    <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                      <div className="shrink-0 p-3 rounded-xl bg-[#006c49]/10 text-[#006c49] group-hover:bg-[#006c49]/15 transition-colors">
                         <Mail className="h-6 w-6" strokeWidth={1.5} />
                       </div>
                       <div>
-                        <h4 className="font-bold text-stone-900 dark:text-white text-lg">Email Support</h4>
+                        <h4 className="font-bold text-stone-900 dark:text-white text-base md:text-lg">Email Support</h4>
                         <p className="text-sm text-stone-500 dark:text-neutral-400">Reponse sous 24h ouvrees</p>
                       </div>
                     </div>
-                    <ExternalLink className="h-5 w-5 text-stone-300 group-hover:text-stone-900 transition-colors" strokeWidth={1.5} />
+                    <ExternalLink className="h-5 w-5 shrink-0 text-stone-300 group-hover:text-stone-900 transition-colors" strokeWidth={1.5} />
                   </div>
                 </a>
 
-                <button onClick={() => { onClose(); navigate('/business/aide'); }} className="group block w-full text-left p-6 rounded-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:shadow-md transition-all hover:scale-[1.01]">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 rounded-xl bg-[#ffddb8]/30 text-[#2a1700] group-hover:bg-[#ffddb8]/50 transition-colors">
+                <button onClick={() => { onClose(); navigate('/business/aide'); }} className="group block w-full text-left p-4 md:p-6 rounded-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:shadow-md transition-all hover:scale-[1.01] active:scale-[0.99]">
+                  <div className="flex items-center justify-between gap-3 md:gap-0">
+                    <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                      <div className="shrink-0 p-3 rounded-xl bg-[#ffddb8]/30 text-[#2a1700] group-hover:bg-[#ffddb8]/50 transition-colors">
                         <AlertCircle className="h-6 w-6" strokeWidth={1.5} />
                       </div>
                       <div>
-                        <h4 className="font-bold text-stone-900 dark:text-white text-lg">Centre d'aide & FAQ</h4>
+                        <h4 className="font-bold text-stone-900 dark:text-white text-base md:text-lg">Centre d'aide & FAQ</h4>
                         <p className="text-sm text-stone-500 dark:text-neutral-400">Guides, « par où commencer » et recherche</p>
                       </div>
                     </div>
-                    <ExternalLink className="h-5 w-5 text-stone-300 group-hover:text-stone-900 transition-colors" strokeWidth={1.5} />
+                    <ExternalLink className="h-5 w-5 shrink-0 text-stone-300 group-hover:text-stone-900 transition-colors" strokeWidth={1.5} />
                   </div>
                 </button>
               </div>
@@ -2323,7 +2378,8 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
         {/* Close button (top right) */}
         <button
           onClick={onClose}
-          className="absolute top-8 right-8 w-12 h-12 rounded-full bg-white/70 dark:bg-neutral-800/70 backdrop-blur-md flex items-center justify-center text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white transition-all z-20 shadow-sm"
+          aria-label="Fermer"
+          className="hidden md:flex absolute top-8 right-8 w-12 h-12 rounded-full bg-white/70 dark:bg-neutral-800/70 backdrop-blur-md items-center justify-center text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white transition-all z-20 shadow-sm"
         >
           <X className="h-5 w-5" strokeWidth={1.5} />
         </button>

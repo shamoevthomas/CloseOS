@@ -1022,6 +1022,14 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
     }
   };
 
+  // Mobile : garde la puce de l'intégration active visible dans la rangée défilante
+  const providerBarRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const bar = providerBarRef.current;
+    const el = bar?.querySelector<HTMLElement>('[data-active="true"]');
+    if (bar && el && bar.scrollWidth > bar.clientWidth) bar.scrollTo({ left: Math.max(0, el.offsetLeft - 16), behavior: 'smooth' });
+  }, [selected, isOpen]);
+
   if (!isOpen) return null;
 
   const baseUrl = window.location.origin.includes('localhost') ? 'https://closeos.fr' : window.location.origin;
@@ -1274,27 +1282,30 @@ Le séparateur doit être une virgule. Les champs contenant des virgules doivent
     selected === 'closeos';
 
   const selectCls = "w-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/30 dark:border-neutral-700 rounded-xl py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-[#006c49]/20 focus:border-[#006c49] text-[#1b1c1b] dark:text-white";
-  const inputCls = "w-full bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-xl py-3 px-4 text-sm font-mono text-[#444748] dark:text-neutral-300 focus:ring-2 focus:ring-[#006c49]/20";
+  // Mobile : fond blanc + filet pour que le champ se détache de la carte grise
+  const inputCls = "w-full bg-[#f5f3f2] dark:bg-neutral-800 max-md:bg-white max-md:dark:bg-neutral-900 max-md:ring-1 max-md:ring-inset max-md:ring-[#c4c7c7]/40 max-md:dark:ring-neutral-700 border-none rounded-xl py-3 px-4 text-sm font-mono text-[#444748] dark:text-neutral-300 focus:ring-2 focus:ring-[#006c49]/20";
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#1b1c1b]/20 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-neutral-900 w-full max-w-5xl max-h-[85vh] rounded-2xl shadow-[0_40px_80px_rgba(27,28,27,0.12)] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-[#1b1c1b]/40 md:bg-[#1b1c1b]/20 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4">
+      {/* Mobile (< md) : feuille du bas quasi plein écran ; ≥ md : modale centrée */}
+      <div className="bg-white dark:bg-neutral-900 text-[#1b1c1b] dark:text-white w-full max-w-5xl h-[94dvh] md:h-auto md:max-h-[85vh] rounded-t-3xl md:rounded-2xl shadow-[0_40px_80px_rgba(27,28,27,0.12)] flex flex-col overflow-hidden">
+        <div className="md:hidden mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-stone-300 dark:bg-neutral-700" />
         {/* Modal Header */}
-        <div className="px-8 py-8 border-b border-[#c4c7c7]/10 dark:border-neutral-700 flex justify-between items-start flex-shrink-0">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Intégration CRM</h1>
-            <p className="text-[#444748] dark:text-neutral-300 mt-2 text-sm">Choisissez et configurez votre CRM pour synchroniser vos données.</p>
+        <div className="px-4 pt-2.5 pb-3 md:px-8 md:py-8 border-b border-[#c4c7c7]/10 dark:border-neutral-700 flex justify-between items-center md:items-start gap-3 flex-shrink-0">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Intégration CRM</h1>
+            <p className="text-[#444748] dark:text-neutral-300 mt-0.5 md:mt-2 text-xs sm:text-sm">Choisissez et configurez votre CRM pour synchroniser vos données.</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-[#eae8e7] dark:hover:bg-neutral-800 rounded-full transition-colors">
+          <button onClick={onClose} aria-label="Fermer" className="h-10 w-10 md:h-auto md:w-auto shrink-0 flex items-center justify-center p-2 bg-[#f5f3f2] dark:bg-neutral-800 md:bg-transparent md:dark:bg-transparent hover:bg-[#eae8e7] dark:hover:bg-neutral-800 rounded-full active:scale-95 transition">
             <X className="h-5 w-5 text-[#444748]" />
           </button>
         </div>
 
         {/* Modal Content (Split Layout) */}
-        <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
-          {/* Left Sidebar — CRM Selection */}
-          <div className="w-full md:w-72 bg-[#f5f3f2] dark:bg-neutral-900 md:border-r border-b md:border-b-0 border-[#c4c7c7]/10 dark:border-neutral-700 md:overflow-y-auto overflow-x-auto p-4 md:space-y-2 flex md:flex-col flex-row gap-2 md:gap-0 flex-shrink-0">
-            <label className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-[#444748]/50 block">Available Integrations</label>
+        <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
+          {/* Left Sidebar — CRM Selection (mobile : rangée de puces défilante) */}
+          <div ref={providerBarRef} className="relative w-full md:w-56 lg:w-72 bg-[#f5f3f2] dark:bg-neutral-900 md:border-r border-b md:border-b-0 border-[#c4c7c7]/10 dark:border-neutral-700 md:overflow-y-auto overflow-x-auto max-md:no-scrollbar overscroll-x-contain snap-x md:snap-none scroll-px-4 px-4 py-3 md:p-3 lg:p-4 md:space-y-2 flex md:flex-col flex-row gap-2 md:gap-0 flex-shrink-0">
+            <label className="hidden md:block px-2 lg:px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-[#444748]/50">Available Integrations</label>
             {CRM_OPTIONS.map((crm) => {
               const isActive = selected === crm.id;
               const isCrmConnected = (crm.id === 'hubspot' && hubspotConnected) ||
@@ -1308,42 +1319,43 @@ Le séparateur doit être une virgule. Les champs contenant des virgules doivent
               return (
                 <button
                   key={crm.id}
+                  data-active={isActive}
                   onClick={() => { setSelected(crm.id); setSyncResult(null); }}
-                  className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl transition-all ${
+                  className={`shrink-0 snap-start md:w-full flex items-center gap-2 md:gap-3 lg:gap-4 pl-1 pr-3.5 py-1 md:px-3 md:py-3 lg:px-4 lg:py-4 rounded-full md:rounded-xl active:scale-[0.97] transition-all ${
                     isActive
-                      ? 'bg-[#e4e2e1] dark:bg-neutral-800 shadow-inner ring-1 ring-[#1b1c1b]/10 dark:ring-neutral-700'
-                      : 'hover:bg-[#eae8e7] dark:hover:bg-neutral-800'
+                      ? 'bg-[#e4e2e1] dark:bg-neutral-800 shadow-inner ring-1 ring-[#1b1c1b]/10 dark:ring-neutral-700 max-md:bg-[#1b1c1b] max-md:dark:bg-white max-md:shadow-none max-md:ring-0'
+                      : 'md:hover:bg-[#eae8e7] md:dark:hover:bg-neutral-800 max-md:bg-white max-md:dark:bg-neutral-800 max-md:ring-1 max-md:ring-[#c4c7c7]/30 max-md:dark:ring-neutral-700'
                   }`}
                 >
-                  <div className={`w-10 h-10 rounded-xl ${crm.logo ? 'bg-white dark:bg-neutral-800' : crm.iconBg} flex items-center justify-center shrink-0 overflow-hidden`}>
+                  <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full md:rounded-xl ${crm.logo ? 'bg-white dark:bg-neutral-800' : crm.iconBg} flex items-center justify-center shrink-0 overflow-hidden`}>
                     {crm.logo ? (
-                      <img src={crm.logo} alt={crm.name} className="w-7 h-7 object-contain" />
+                      <img src={crm.logo} alt={crm.name} className="w-5 h-5 md:w-7 md:h-7 object-contain" />
                     ) : (
                       <span className={`font-bold text-sm ${crm.iconText}`}>{crm.name[0]}</span>
                     )}
                   </div>
-                  <span className={`font-bold text-sm ${isActive ? 'text-[#1b1c1b] dark:text-white' : 'text-[#444748] dark:text-neutral-400'}`} style={{ fontFamily: 'Manrope, sans-serif' }}>{crm.name}</span>
-                  {isCrmConnected && <div className="ml-auto w-2 h-2 rounded-full bg-[#006c49]" />}
+                  <span className={`font-bold text-[13px] md:text-sm whitespace-nowrap ${isActive ? 'text-[#1b1c1b] dark:text-white max-md:text-white max-md:dark:text-[#1b1c1b]' : 'text-[#444748] dark:text-neutral-400'}`} style={{ fontFamily: 'Manrope, sans-serif' }}>{crm.name}</span>
+                  {isCrmConnected && <div className="ml-0.5 md:ml-auto w-2 h-2 shrink-0 rounded-full bg-[#006c49]" />}
                 </button>
               );
             })}
           </div>
 
           {/* Right Configuration Area */}
-          <div className="flex-1 overflow-y-auto p-10 bg-white dark:bg-neutral-900">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 md:p-8 lg:p-10 bg-white dark:bg-neutral-900">
             {selectedCrm && (
               <section className="max-w-2xl">
                 {/* CRM Header */}
-                <div className="flex items-center gap-6 mb-10">
-                  <div className={`w-20 h-20 rounded-2xl ${selectedCrm.logo ? 'bg-white dark:bg-neutral-800' : selectedCrm.iconBg} flex items-center justify-center shadow-xl overflow-hidden`} style={{ boxShadow: `0 10px 30px ${selectedCrm.iconBg.includes('#ff7a59') ? 'rgba(255,122,89,0.2)' : selectedCrm.iconBg.includes('#ff4a00') ? 'rgba(255,74,0,0.2)' : selectedCrm.iconBg.includes('#006bff') ? 'rgba(0,107,255,0.2)' : selectedCrm.iconBg.includes('#18bfff') ? 'rgba(24,191,255,0.2)' : 'rgba(27,28,27,0.1)'}` }}>
+                <div className="flex items-center gap-4 md:gap-6 mb-5 md:mb-10">
+                  <div className={`w-14 h-14 md:w-20 md:h-20 shrink-0 rounded-xl md:rounded-2xl ${selectedCrm.logo ? 'bg-white dark:bg-neutral-800' : selectedCrm.iconBg} flex items-center justify-center shadow-xl overflow-hidden`} style={{ boxShadow: `0 10px 30px ${selectedCrm.iconBg.includes('#ff7a59') ? 'rgba(255,122,89,0.2)' : selectedCrm.iconBg.includes('#ff4a00') ? 'rgba(255,74,0,0.2)' : selectedCrm.iconBg.includes('#006bff') ? 'rgba(0,107,255,0.2)' : selectedCrm.iconBg.includes('#18bfff') ? 'rgba(24,191,255,0.2)' : 'rgba(27,28,27,0.1)'}` }}>
                     {selectedCrm.logo ? (
-                      <img src={selectedCrm.logo} alt={selectedCrm.name} className="w-14 h-14 object-contain" />
+                      <img src={selectedCrm.logo} alt={selectedCrm.name} className="w-10 h-10 md:w-14 md:h-14 object-contain" />
                     ) : (
                       <span className={`font-extrabold text-2xl ${selectedCrm.iconText}`}>{selectedCrm.name[0]}</span>
                     )}
                   </div>
                   <div>
-                    <h3 className="text-2xl md:text-3xl font-extrabold text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{selectedCrm.name}</h3>
+                    <h3 className="text-xl md:text-3xl font-extrabold text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{selectedCrm.name}</h3>
                     {isConnected && (
                       <p className="text-[#006c49] font-semibold text-sm flex items-center gap-1.5 mt-1">
                         <Check className="h-4 w-4" />
@@ -1353,30 +1365,30 @@ Le séparateur doit être une virgule. Les champs contenant des virgules doivent
                   </div>
                 </div>
 
-                <div className="space-y-8">
+                <div className="space-y-5 md:space-y-8">
                   {/* ─── CloseOS CRM (native API + outbound webhooks) ─── */}
                   {selected === 'closeos' && (
-                    <div className="space-y-6">
-                      <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                        <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>CRM Intégré CloseOS</h4>
+                    <div className="space-y-4 md:space-y-6">
+                      <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                        <h4 className="font-bold text-base md:text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>CRM Intégré CloseOS</h4>
                         <p className="text-[#444748] dark:text-neutral-300 text-sm">
                           Activé par défaut — aucune configuration nécessaire. Vous pouvez aussi exposer une API REST entrante et configurer des webhooks sortants pour brancher vos automatisations.
                         </p>
                       </div>
 
                       {!hasApiAccess && (
-                        <div className="relative overflow-hidden p-8 rounded-2xl bg-gradient-to-br from-[#1b1c1b] via-[#2a1538] to-[#1b1c1b] border border-[#d511fd]/30 text-white">
-                          <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-[#d511fd]/15 blur-3xl pointer-events-none" />
-                          <div className="absolute -bottom-20 -left-20 w-72 h-72 rounded-full bg-[#ff2f2f]/10 blur-3xl pointer-events-none" />
+                        <div className="relative overflow-hidden p-4 md:p-8 rounded-2xl bg-gradient-to-br from-[#1b1c1b] via-[#2a1538] to-[#1b1c1b] border border-[#d511fd]/30 text-white">
+                          <div className="hidden md:block absolute -top-20 -right-20 w-72 h-72 rounded-full bg-[#d511fd]/15 blur-3xl pointer-events-none" />
+                          <div className="hidden md:block absolute -bottom-20 -left-20 w-72 h-72 rounded-full bg-[#ff2f2f]/10 blur-3xl pointer-events-none" />
                           <div className="relative">
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 mb-4">
                               <Sparkles className="h-3 w-3 text-[#d511fd]" />
                               <span className="text-[10px] uppercase font-bold tracking-[0.15em] text-white/80">Fonctionnalité Pro</span>
                             </div>
-                            <h4 className="font-extrabold text-2xl mb-3 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                            <h4 className="font-extrabold text-lg md:text-2xl mb-2 md:mb-3 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
                               L'API & les webhooks ne sont pas inclus dans la formule Business
                             </h4>
-                            <p className="text-white/70 text-sm leading-relaxed mb-6 max-w-2xl">
+                            <p className="text-white/70 text-sm leading-relaxed mb-4 md:mb-6 max-w-2xl">
                               Pour accéder à l'API REST entrante, aux webhooks sortants signés HMAC et à la documentation développeur,
                               passez à la formule <strong className="text-white">Business + Acquisition</strong>, <strong className="text-white">Solo</strong> ou <strong className="text-white">Enterprise</strong>.
                               Le CRM intégré CloseOS reste disponible et fonctionnel sur votre formule actuelle.
@@ -1408,15 +1420,15 @@ Le séparateur doit être une virgule. Les champs contenant des virgules doivent
                       {hasApiAccess && (<>
 
                       {/* ── Section A : Clés API entrantes ───────────────── */}
-                      <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                      <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-bold text-lg text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Clés API entrantes</h4>
+                          <h4 className="font-bold text-base md:text-lg text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Clés API entrantes</h4>
                         </div>
-                        <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">
+                        <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4 md:mb-6">
                           Ces clés permettent à un service externe de pousser des prospects dans CloseOS via l'API REST.
                         </p>
 
-                        <div className="flex gap-2 mb-6">
+                        <div className="flex gap-2 mb-4 md:mb-6">
                           <input
                             type="text"
                             value={closeosNewKeyName}
@@ -1443,14 +1455,14 @@ Le séparateur doit être une virgule. Les champs contenant des virgules doivent
                                 ? k.api_key
                                 : (k.api_key ? `${k.api_key.slice(0, 6)}••••••••${k.api_key.slice(-4)}` : '••••');
                               return (
-                                <div key={k.id} className="bg-white dark:bg-neutral-900 rounded-xl border border-[#c4c7c7]/20 p-4">
-                                  <div className="flex items-center justify-between gap-4 flex-wrap">
-                                    <div>
+                                <div key={k.id} className="bg-white dark:bg-neutral-900 rounded-xl border border-[#c4c7c7]/20 p-3 md:p-4">
+                                  <div className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
+                                    <div className="min-w-0">
                                       <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">{k.name || 'Clé API'}</p>
                                       <p className="text-[11px] text-[#444748]/60">Créée {new Date(k.created_at).toLocaleDateString('fr-FR')}</p>
                                     </div>
                                     <div className="flex gap-2 items-center">
-                                      <code className="text-xs font-mono px-3 py-2 rounded-lg bg-[#f5f3f2] dark:bg-neutral-800">{masked}</code>
+                                      <code className="text-xs font-mono px-3 py-2 rounded-lg bg-[#f5f3f2] dark:bg-neutral-800 min-w-0 truncate">{masked}</code>
                                       <button
                                         onClick={() => setCloseosShowKey(prev => ({ ...prev, [k.id]: !prev[k.id] }))}
                                         className="p-2 rounded-lg hover:bg-[#eae8e7] transition-colors"
@@ -1482,8 +1494,8 @@ Le séparateur doit être une virgule. Les champs contenant des virgules doivent
                       </div>
 
                       {/* ── Section B : Endpoint entrant + cURL ──────────── */}
-                      <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                        <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Endpoint entrant</h4>
+                      <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                        <h4 className="font-bold text-base md:text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Endpoint entrant</h4>
                         <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4">
                           POSTez sur cette URL avec votre clé API en <code className="text-xs font-mono">Authorization: Bearer &lt;clé&gt;</code>.
                           Tous les champs ci-dessous sont supportés. Tout champ supplémentaire est conservé dans <code className="text-xs">metadata</code>.
@@ -1504,14 +1516,14 @@ Le séparateur doit être une virgule. Les champs contenant des virgules doivent
                       </div>
 
                       {/* ── Section C : Webhooks sortants ────────────────── */}
-                      <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                        <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhooks sortants</h4>
-                        <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">
+                      <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                        <h4 className="font-bold text-base md:text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhooks sortants</h4>
+                        <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4 md:mb-6">
                           CloseOS POSTera vers vos URLs à chaque évènement. Le payload est signé HMAC-SHA256 (header <code className="text-xs">X-CloseOS-Signature</code>).
                         </p>
 
                         {/* Add form */}
-                        <div className="space-y-3 mb-6 bg-white dark:bg-neutral-900 rounded-xl border border-[#c4c7c7]/20 p-4">
+                        <div className="space-y-3 mb-4 md:mb-6 bg-white dark:bg-neutral-900 rounded-xl border border-[#c4c7c7]/20 p-3 md:p-4">
                           <input
                             type="url"
                             value={closeosNewSubUrl}
@@ -1568,7 +1580,7 @@ Le séparateur doit être une virgule. Les champs contenant des virgules doivent
                                 status === 0 ? 'bg-[#ffb95f]/30 text-[#b87500]' :
                                 'bg-[#ba1a1a]/15 text-[#ba1a1a]';
                               return (
-                                <div key={s.id} className="bg-white dark:bg-neutral-900 rounded-xl border border-[#c4c7c7]/20 p-4 space-y-3">
+                                <div key={s.id} className="bg-white dark:bg-neutral-900 rounded-xl border border-[#c4c7c7]/20 p-3 md:p-4 space-y-3">
                                   <div className="flex items-start justify-between gap-3">
                                     <div className="min-w-0 flex-1">
                                       <p className="text-sm font-mono text-[#1b1c1b] dark:text-white break-all">{s.url}</p>
@@ -1587,9 +1599,9 @@ Le séparateur doit être une virgule. Les champs contenant des virgules doivent
                                     </div>
                                   </div>
 
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-[10px] font-bold text-[#444748]/60 uppercase">Secret</span>
-                                    <code className="text-xs font-mono px-3 py-1.5 rounded-lg bg-[#f5f3f2] dark:bg-neutral-800">{maskedSecret}</code>
+                                  <div className="flex items-center gap-2 max-sm:flex-nowrap flex-wrap">
+                                    <span className="text-[10px] font-bold text-[#444748]/60 uppercase shrink-0">Secret</span>
+                                    <code className="text-xs font-mono px-3 py-1.5 rounded-lg bg-[#f5f3f2] dark:bg-neutral-800 min-w-0 truncate">{maskedSecret}</code>
                                     <button
                                       onClick={() => setCloseosShowSecret(prev => ({ ...prev, [s.id]: !prev[s.id] }))}
                                       className="p-2 rounded-lg hover:bg-[#eae8e7] transition-colors"
@@ -1638,9 +1650,9 @@ Le séparateur doit être une virgule. Les champs contenant des virgules doivent
                       </div>
 
                       {/* ── Section D : Documentation inline ─────────────── */}
-                      <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                      <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
                         <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
-                          <h4 className="font-bold text-lg text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Documentation</h4>
+                          <h4 className="font-bold text-base md:text-lg text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Documentation</h4>
                           <a
                             href="/business/docs/api"
                             target="_blank"
@@ -1656,7 +1668,7 @@ Le séparateur doit être une virgule. Les champs contenant des virgules doivent
                           <h5 className="font-bold text-sm mb-2 text-[#1b1c1b] dark:text-white">Évènements disponibles</h5>
                           <ul className="text-sm space-y-1.5">
                             {CLOSEOS_EVENT_CATALOG.map(ev => (
-                              <li key={ev.id} className="flex gap-2">
+                              <li key={ev.id} className="flex flex-col sm:flex-row max-sm:items-start gap-1 sm:gap-2">
                                 <code className="text-[11px] font-mono px-2 py-0.5 rounded bg-white dark:bg-neutral-900 text-[#1b1c1b] dark:text-white border border-[#c4c7c7]/20 shrink-0">{ev.id}</code>
                                 <span className="text-[#444748] dark:text-neutral-300">{ev.description}</span>
                               </li>
@@ -1704,11 +1716,11 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
 
                   {/* ─── iClosed Config ─── */}
                   {selected === 'iclosed' && (
-                    <div className="space-y-6">
+                    <div className="space-y-4 md:space-y-6">
                       {!iclosedApiKey ? (
-                        <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Générer une clé API</h4>
-                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">Quand un contact est créé ou mis à jour dans iClosed, le prospect sera créé/mis à jour automatiquement dans CloseOS.</p>
+                        <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                          <h4 className="font-bold text-base md:text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Générer une clé API</h4>
+                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4 md:mb-6">Quand un contact est créé ou mis à jour dans iClosed, le prospect sera créé/mis à jour automatiquement dans CloseOS.</p>
                           <button onClick={handleGenerateIclosedKey} disabled={iclosedLoading} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
                             {iclosedLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
                             Générer une clé API
@@ -1716,8 +1728,8 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
                         </div>
                       ) : (
                         <>
-                          <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                            <h4 className="font-bold text-lg mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook & API Access</h4>
+                          <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                            <h4 className="font-bold text-base md:text-lg mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook & API Access</h4>
                             <div className="space-y-5">
                               <div className="space-y-2">
                                 <label className="text-xs font-bold text-[#444748]/60 uppercase">Webhook URL</label>
@@ -1754,7 +1766,7 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
                                 'Sélectionnez les événements de contact (création / mise à jour de stage).',
                               ].map((text, i) => (
                                 <li key={i} className="flex items-start gap-3">
-                                  <span className="w-5 h-5 rounded-full bg-[#efedec] text-[10px] font-bold flex items-center justify-center mt-0.5 shrink-0">{i + 1}</span>
+                                  <span className="w-5 h-5 rounded-full bg-[#efedec] text-[#1b1c1b] text-[10px] font-bold flex items-center justify-center mt-0.5 shrink-0">{i + 1}</span>
                                   <p className="text-sm text-[#444748]">{text}</p>
                                 </li>
                               ))}
@@ -1767,29 +1779,29 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
                           </div>
 
                           {/* ─── Custom stage mapping ─── */}
-                          <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                            <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Mapping des stages personnalisés</h4>
+                          <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                            <h4 className="font-bold text-base md:text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Mapping des stages personnalisés</h4>
                             <p className="text-[#444748] dark:text-neutral-300 text-sm mb-2">Les stages standards iClosed (Customer, No Show, Qualified, etc.) sont reconnus automatiquement.</p>
-                            <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">Si vous avez créé des stages <strong>personnalisés</strong> dans iClosed (ex. "Demo Booked", "Hot Lead"), mappez-les ici vers un stage CloseOS — sinon ils seront classés dans <em>Prospect</em> par défaut.</p>
+                            <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4 md:mb-6">Si vous avez créé des stages <strong>personnalisés</strong> dans iClosed (ex. "Demo Booked", "Hot Lead"), mappez-les ici vers un stage CloseOS — sinon ils seront classés dans <em>Prospect</em> par défaut.</p>
 
                             <div className="space-y-3">
                               {iclosedMappings.length === 0 && (
                                 <p className="text-xs text-[#444748]/60 italic">Aucun mapping personnalisé.</p>
                               )}
                               {iclosedMappings.map((m, i) => (
-                                <div key={i} className="flex gap-2 items-center">
+                                <div key={i} className="flex flex-wrap sm:flex-nowrap gap-2 items-center">
                                   <input
                                     type="text"
                                     value={m.name}
                                     onChange={(e) => handleUpdateIclosedMapping(i, 'name', e.target.value)}
                                     placeholder="Nom du stage iClosed (ex. Demo Booked)"
-                                    className={inputCls + ' flex-1'}
+                                    className={inputCls + ' flex-1 min-w-0 max-sm:basis-full'}
                                   />
                                   <span className="text-[#444748]/50 text-sm">→</span>
                                   <select
                                     value={m.stage}
                                     onChange={(e) => handleUpdateIclosedMapping(i, 'stage', e.target.value)}
-                                    className={selectCls + ' w-44'}
+                                    className={selectCls + ' w-44 max-sm:flex-1 max-sm:w-auto max-sm:min-w-0 sm:w-44 sm:shrink-0'}
                                   >
                                     <option value="prospect">Prospect</option>
                                     <option value="qualified">Qualifié</option>
@@ -1809,7 +1821,7 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
                               ))}
                             </div>
 
-                            <div className="flex gap-2 mt-6">
+                            <div className="flex flex-wrap gap-2 mt-4 md:mt-6">
                               <button
                                 onClick={handleAddIclosedMapping}
                                 className="px-5 py-2.5 border border-[#c4c7c7]/30 rounded-full font-bold text-sm text-[#1b1c1b] dark:text-white hover:bg-white dark:hover:bg-neutral-700 transition-colors"
@@ -1836,11 +1848,11 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
                       )}
 
                       {/* ─── Push key (CloseOS → iClosed) ─── */}
-                      <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                        <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                      <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                        <h4 className="font-bold text-base md:text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
                           Push CloseOS → iClosed
                         </h4>
-                        <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">
+                        <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4 md:mb-6">
                           Collez votre clé iClosed personnelle (commençant par <code>iclosed_</code>) pour que les changements de stage CloseOS remontent automatiquement vers iClosed (contact, deal, outcome).
                         </p>
 
@@ -1913,21 +1925,21 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
 
                   {/* ─── HubSpot Config ─── */}
                   {selected === 'hubspot' && (
-                    <div className="space-y-6">
+                    <div className="space-y-4 md:space-y-6">
                       {!hubspotConnected ? (
-                        <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Connexion</h4>
-                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">Connectez votre compte HubSpot pour synchroniser automatiquement vos contacts.</p>
+                        <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                          <h4 className="font-bold text-base md:text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Connexion</h4>
+                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4 md:mb-6">Connectez votre compte HubSpot pour synchroniser automatiquement vos contacts.</p>
                           <button onClick={handleConnectHubspot} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors">
                             <LinkIcon className="h-4 w-4" /> Connecter HubSpot
                           </button>
                         </div>
                       ) : (
                         <>
-                          <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                            <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut de la Synchronisation</h4>
-                            <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">La synchronisation auto se fait toutes les 2 minutes.</p>
-                            <div className="flex gap-4 flex-wrap">
+                          <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                            <h4 className="font-bold text-base md:text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut de la Synchronisation</h4>
+                            <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4 md:mb-6">La synchronisation auto se fait toutes les 2 minutes.</p>
+                            <div className="flex gap-2 md:gap-4 flex-wrap">
                               <button onClick={handleSyncHubspot} disabled={isSyncingHubspot} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
                                 {isSyncingHubspot ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                                 Synchroniser maintenant
@@ -1950,21 +1962,21 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
 
                   {/* ─── Pipedrive Config ─── */}
                   {selected === 'pipedrive' && (
-                    <div className="space-y-6">
+                    <div className="space-y-4 md:space-y-6">
                       {!pipedriveConnected ? (
-                        <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Connexion</h4>
-                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">Connectez votre compte Pipedrive pour synchroniser vos deals.</p>
+                        <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                          <h4 className="font-bold text-base md:text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Connexion</h4>
+                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4 md:mb-6">Connectez votre compte Pipedrive pour synchroniser vos deals.</p>
                           <button onClick={handleConnectPipedrive} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors">
                             <LinkIcon className="h-4 w-4" /> Connecter Pipedrive
                           </button>
                         </div>
                       ) : (
                         <>
-                          <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                            <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut de la Synchronisation</h4>
-                            <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">Les changements de stage sont poussés automatiquement.</p>
-                            <div className="flex gap-4 flex-wrap">
+                          <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                            <h4 className="font-bold text-base md:text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut de la Synchronisation</h4>
+                            <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4 md:mb-6">Les changements de stage sont poussés automatiquement.</p>
+                            <div className="flex gap-2 md:gap-4 flex-wrap">
                               <button onClick={handleSyncPipedrive} disabled={isSyncingPipedrive} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
                                 {isSyncingPipedrive ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                                 Synchroniser maintenant
@@ -1980,12 +1992,12 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
                             </div>
                           )}
                           {/* Stage mapping */}
-                          <div className="p-8 rounded-2xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 border border-[#c4c7c7]/10 dark:border-neutral-700">
-                            <h4 className="font-extrabold text-xl mb-6 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Stage Mapping (Pipedrive)</h4>
+                          <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                            <h4 className="font-extrabold text-lg md:text-xl mb-4 md:mb-6 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Stage Mapping (Pipedrive)</h4>
                             {loadingPipelines ? (
                               <div className="flex items-center gap-2 text-sm text-[#444748]"><Loader2 className="h-4 w-4 animate-spin" /> Chargement...</div>
                             ) : (
-                              <div className="grid grid-cols-2 gap-6">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                                 {CLOSEOS_STAGES.map(stage => (
                                   <div key={stage.id} className="space-y-2">
                                     <label className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">{stage.name}</label>
@@ -2016,14 +2028,14 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
 
                   {/* ─── Systeme.io Config ─── */}
                   {selected === 'systemeio' && (
-                    <div className="space-y-6">
-                      <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                        <h4 className="font-bold text-lg mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook & API</h4>
+                    <div className="space-y-4 md:space-y-6">
+                      <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                        <h4 className="font-bold text-base md:text-lg mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook & API</h4>
                         <div className="space-y-5">
                           <div className="space-y-2">
                             <label className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">Clé API Systeme.io</label>
-                            <div className="flex gap-2">
-                              <div className="relative flex-1">
+                            <div className="flex flex-wrap sm:flex-nowrap gap-2">
+                              <div className="relative flex-1 max-sm:basis-full">
                                 <input
                                   type={systemeioShowKey ? 'text' : 'password'}
                                   value={systemeioApiKey}
@@ -2035,7 +2047,7 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
                                   {systemeioShowKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                 </button>
                               </div>
-                              <button onClick={handleSaveSystemeioKey} disabled={systemeioSaving} className="px-4 bg-[#1b1c1b] text-white rounded-xl text-sm font-bold hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
+                              <button onClick={handleSaveSystemeioKey} disabled={systemeioSaving} className="px-4 max-sm:w-full max-sm:py-3 bg-[#1b1c1b] text-white rounded-xl text-sm font-bold hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
                                 {systemeioSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Sauvegarder'}
                               </button>
                             </div>
@@ -2061,7 +2073,7 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
                             'Allez dans Systeme.io → Paramètres → Webhooks et ajoutez l\'URL ci-dessus.',
                           ].map((text, i) => (
                             <li key={i} className="flex items-start gap-3">
-                              <span className="w-5 h-5 rounded-full bg-[#efedec] text-[10px] font-bold flex items-center justify-center mt-0.5 shrink-0">{i + 1}</span>
+                              <span className="w-5 h-5 rounded-full bg-[#efedec] text-[#1b1c1b] text-[10px] font-bold flex items-center justify-center mt-0.5 shrink-0">{i + 1}</span>
                               <p className="text-sm text-[#444748]">{text}</p>
                             </li>
                           ))}
@@ -2073,11 +2085,11 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
 
                   {/* ─── Zapier Config ─── */}
                   {selected === 'zapier' && (
-                    <div className="space-y-6">
+                    <div className="space-y-4 md:space-y-6">
                       {!zapierApiKey ? (
-                        <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Générer une clé API</h4>
-                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">Générez une clé API pour connecter Zapier à CloseOS.</p>
+                        <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                          <h4 className="font-bold text-base md:text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Générer une clé API</h4>
+                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4 md:mb-6">Générez une clé API pour connecter Zapier à CloseOS.</p>
                           <button onClick={handleGenerateZapierKey} disabled={zapierLoading} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
                             {zapierLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
                             Générer une clé API
@@ -2085,8 +2097,8 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
                         </div>
                       ) : (
                         <>
-                          <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                            <h4 className="font-bold text-lg mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook & API Access</h4>
+                          <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                            <h4 className="font-bold text-base md:text-lg mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook & API Access</h4>
                             <div className="space-y-5">
                               <div className="space-y-2">
                                 <label className="text-xs font-bold text-[#444748]/60 uppercase">Webhook URL</label>
@@ -2126,11 +2138,11 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
 
                   {/* ─── Make Config ─── */}
                   {selected === 'make' && (
-                    <div className="space-y-6">
+                    <div className="space-y-4 md:space-y-6">
                       {!makeApiKey ? (
-                        <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Générer une clé API</h4>
-                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">Générez une clé API pour connecter Make à CloseOS.</p>
+                        <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                          <h4 className="font-bold text-base md:text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Générer une clé API</h4>
+                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4 md:mb-6">Générez une clé API pour connecter Make à CloseOS.</p>
                           <button onClick={handleGenerateMakeKey} disabled={makeLoading} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
                             {makeLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
                             Générer une clé API
@@ -2138,8 +2150,8 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
                         </div>
                       ) : (
                         <>
-                          <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                            <h4 className="font-bold text-lg mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook & API Access</h4>
+                          <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                            <h4 className="font-bold text-base md:text-lg mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook & API Access</h4>
                             <div className="space-y-5">
                               <div className="space-y-2">
                                 <label className="text-xs font-bold text-[#444748]/60 uppercase">Webhook URL (Make)</label>
@@ -2179,11 +2191,11 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
 
                   {/* ─── n8n Config ─── */}
                   {selected === 'n8n' && (
-                    <div className="space-y-6">
+                    <div className="space-y-4 md:space-y-6">
                       {!n8nApiKey ? (
-                        <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Générer une clé API</h4>
-                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">Générez une clé API pour connecter n8n à CloseOS. Les prospects seront importés directement dans votre pipeline.</p>
+                        <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                          <h4 className="font-bold text-base md:text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Générer une clé API</h4>
+                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4 md:mb-6">Générez une clé API pour connecter n8n à CloseOS. Les prospects seront importés directement dans votre pipeline.</p>
                           <button onClick={handleGenerateN8nKey} disabled={n8nLoading} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
                             {n8nLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
                             Générer une clé API
@@ -2191,8 +2203,8 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
                         </div>
                       ) : (
                         <>
-                          <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                            <h4 className="font-bold text-lg mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook & API Access</h4>
+                          <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                            <h4 className="font-bold text-base md:text-lg mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook & API Access</h4>
                             <div className="space-y-5">
                               <div className="space-y-2">
                                 <label className="text-xs font-bold text-[#444748]/60 uppercase">Webhook URL (n8n)</label>
@@ -2249,11 +2261,11 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
 
                   {/* ─── Calendly Config ─── */}
                   {selected === 'calendly' && (
-                    <div className="space-y-6">
+                    <div className="space-y-4 md:space-y-6">
                       {!calendlyApiKey ? (
-                        <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Générer une clé API</h4>
-                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">Quand quelqu'un book un call, le prospect et le rendez-vous seront créés automatiquement.</p>
+                        <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                          <h4 className="font-bold text-base md:text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Générer une clé API</h4>
+                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4 md:mb-6">Quand quelqu'un book un call, le prospect et le rendez-vous seront créés automatiquement.</p>
                           <button onClick={handleGenerateCalendlyKey} disabled={calendlyLoading} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
                             {calendlyLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
                             Générer une clé API
@@ -2261,8 +2273,8 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
                         </div>
                       ) : (
                         <>
-                          <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                            <h4 className="font-bold text-lg mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook & API Access</h4>
+                          <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                            <h4 className="font-bold text-base md:text-lg mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook & API Access</h4>
                             <div className="space-y-5">
                               <div className="space-y-2">
                                 <label className="text-xs font-bold text-[#444748]/60 uppercase">Webhook URL</label>
@@ -2299,7 +2311,7 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
                                 'Sélectionnez les événements : invitee.created et invitee.canceled.',
                               ].map((text, i) => (
                                 <li key={i} className="flex items-start gap-3">
-                                  <span className="w-5 h-5 rounded-full bg-[#efedec] text-[10px] font-bold flex items-center justify-center mt-0.5 shrink-0">{i + 1}</span>
+                                  <span className="w-5 h-5 rounded-full bg-[#efedec] text-[#1b1c1b] text-[10px] font-bold flex items-center justify-center mt-0.5 shrink-0">{i + 1}</span>
                                   <p className="text-sm text-[#444748]">{text}</p>
                                 </li>
                               ))}
@@ -2323,20 +2335,20 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
 
                   {/* ─── Airtable Config ─── */}
                   {selected === 'airtable' && (
-                    <div className="space-y-6">
+                    <div className="space-y-4 md:space-y-6">
                       {!airtableConnected ? (
-                        <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Connexion</h4>
-                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">Connectez votre compte Airtable pour synchroniser vos enregistrements comme prospects.</p>
+                        <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                          <h4 className="font-bold text-base md:text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Connexion</h4>
+                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4 md:mb-6">Connectez votre compte Airtable pour synchroniser vos enregistrements comme prospects.</p>
                           <button onClick={handleConnectAirtable} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors">
                             <LinkIcon className="h-4 w-4" /> Connecter Airtable
                           </button>
                         </div>
                       ) : (
                         <>
-                          <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                            <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut de la Synchronisation</h4>
-                            <div className="flex gap-4 flex-wrap mt-4">
+                          <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                            <h4 className="font-bold text-base md:text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut de la Synchronisation</h4>
+                            <div className="flex gap-2 md:gap-4 flex-wrap mt-4">
                               <button onClick={handleSyncAirtable} disabled={isSyncingAirtable || !airtableBaseId || !airtableTableId} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
                                 {isSyncingAirtable ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                                 Synchroniser maintenant
@@ -2352,9 +2364,9 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
                             </div>
                           )}
                           {/* Base + Table selectors */}
-                          <div className="p-8 rounded-2xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 border border-[#c4c7c7]/10 dark:border-neutral-700">
-                            <h4 className="font-extrabold text-xl mb-6 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Configuration Airtable</h4>
-                            <div className="grid grid-cols-2 gap-6">
+                          <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                            <h4 className="font-extrabold text-lg md:text-xl mb-4 md:mb-6 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Configuration Airtable</h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                               <div className="space-y-2">
                                 <label className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">Base</label>
                                 {airtableLoadingBases ? (
@@ -2383,12 +2395,12 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
                           </div>
                           {/* Field mapping */}
                           {airtableTableId && airtableFields.length > 0 && (
-                            <div className="p-8 rounded-2xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 border border-[#c4c7c7]/10 dark:border-neutral-700">
-                              <h4 className="font-extrabold text-xl mb-6 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Mapping des champs</h4>
+                            <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                              <h4 className="font-extrabold text-lg md:text-xl mb-4 md:mb-6 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Mapping des champs</h4>
                               {airtableLoadingFields ? (
                                 <div className="flex items-center gap-2 text-xs text-[#444748]"><Loader2 className="h-3 w-3 animate-spin" /> Chargement...</div>
                               ) : (
-                                <div className="grid grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                                   {['firstName', 'lastName', 'email', 'phone', 'company', 'stage', 'value'].map(field => (
                                     <div key={field} className="space-y-2">
                                       <label className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">
@@ -2406,9 +2418,9 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
                           )}
                           {/* Stage mapping */}
                           {airtableFieldMapping.stage && (
-                            <div className="p-8 rounded-2xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 border border-[#c4c7c7]/10 dark:border-neutral-700">
-                              <h4 className="font-extrabold text-xl mb-6 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Mapping des étapes</h4>
-                              <div className="grid grid-cols-2 gap-6">
+                            <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                              <h4 className="font-extrabold text-lg md:text-xl mb-4 md:mb-6 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Mapping des étapes</h4>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                                 {CLOSEOS_STAGES.map(stage => (
                                   <div key={stage.id} className="space-y-2">
                                     <label className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">{stage.name}</label>
@@ -2437,21 +2449,21 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
                   )}
                   {/* ─── GHL Config ─── */}
                   {selected === 'ghl' && (
-                    <div className="space-y-6">
+                    <div className="space-y-4 md:space-y-6">
                       {!ghlConnected ? (
-                        <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Connexion</h4>
-                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">Connectez votre compte GoHighLevel pour synchroniser vos contacts et opportunités.</p>
+                        <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                          <h4 className="font-bold text-base md:text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Connexion</h4>
+                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4 md:mb-6">Connectez votre compte GoHighLevel pour synchroniser vos contacts et opportunités.</p>
                           <button onClick={handleConnectGhl} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors">
                             <LinkIcon className="h-4 w-4" /> Connecter GoHighLevel
                           </button>
                         </div>
                       ) : (
                         <>
-                          <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                            <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut de la Synchronisation</h4>
-                            <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">La synchronisation auto se fait toutes les 2 minutes.</p>
-                            <div className="flex gap-4 flex-wrap">
+                          <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                            <h4 className="font-bold text-base md:text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut de la Synchronisation</h4>
+                            <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4 md:mb-6">La synchronisation auto se fait toutes les 2 minutes.</p>
+                            <div className="flex gap-2 md:gap-4 flex-wrap">
                               <button onClick={handleSyncGhl} disabled={isSyncingGhl} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
                                 {isSyncingGhl ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                                 Synchroniser maintenant
@@ -2467,12 +2479,12 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
                             </div>
                           )}
                           {/* Pipeline selection + Stage mapping */}
-                          <div className="p-8 rounded-2xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 border border-[#c4c7c7]/10 dark:border-neutral-700">
-                            <h4 className="font-extrabold text-xl mb-6 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Pipeline & Mapping</h4>
+                          <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                            <h4 className="font-extrabold text-lg md:text-xl mb-4 md:mb-6 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Pipeline & Mapping</h4>
                             {ghlLoadingPipelines ? (
                               <div className="flex items-center gap-2 text-sm text-[#444748]"><Loader2 className="h-4 w-4 animate-spin" /> Chargement...</div>
                             ) : (
-                              <div className="space-y-6">
+                              <div className="space-y-4 md:space-y-6">
                                 <div className="space-y-2">
                                   <label className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">Pipeline</label>
                                   <select
@@ -2487,7 +2499,7 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
                                   </select>
                                 </div>
                                 {ghlSelectedPipeline && (
-                                  <div className="grid grid-cols-2 gap-6">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                                     {CLOSEOS_STAGES.map(stage => (
                                       <div key={stage.id} className="space-y-2">
                                         <label className="text-xs font-bold text-[#444748]/60 uppercase tracking-tighter">{stage.name}</label>
@@ -2516,12 +2528,12 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
 
                   {/* ─── CSV Import / Export ─── */}
                   {selected === 'csv' && (
-                    <div className="space-y-6">
+                    <div className="space-y-4 md:space-y-6">
                       {/* Export */}
-                      <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                      <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
                         <div className="flex items-center gap-3 mb-3">
                           <Download className="h-5 w-5 text-[#006c49]" />
-                          <h4 className="font-bold text-lg text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Exporter le CRM</h4>
+                          <h4 className="font-bold text-base md:text-lg text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Exporter le CRM</h4>
                         </div>
                         <p className="text-[#444748] dark:text-neutral-300 text-sm mb-5">Téléchargez tous vos prospects au format CSV ({prospects.length} prospect{prospects.length > 1 ? 's' : ''}).</p>
                         <button
@@ -2534,10 +2546,10 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
                       </div>
 
                       {/* Import */}
-                      <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                      <div className="p-4 md:p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
                         <div className="flex items-center gap-3 mb-3">
                           <Upload className="h-5 w-5 text-[#006c49]" />
-                          <h4 className="font-bold text-lg text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Importer des prospects</h4>
+                          <h4 className="font-bold text-base md:text-lg text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Importer des prospects</h4>
                         </div>
                         <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4">Importez un fichier CSV pour créer des prospects dans votre CRM.</p>
 
@@ -2574,10 +2586,10 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
                         </div>
 
                         {/* Format guide */}
-                        <div className="p-5 rounded-xl bg-white dark:bg-neutral-900 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                        <div className="p-3 md:p-5 rounded-xl bg-white dark:bg-neutral-900 border border-[#c4c7c7]/10 dark:border-neutral-700">
                           <h5 className="font-bold text-sm text-[#1b1c1b] dark:text-white mb-3" style={{ fontFamily: 'Manrope, sans-serif' }}>Format attendu du CSV</h5>
                           <div className="overflow-x-auto mb-4">
-                            <table className="text-[11px] font-mono text-[#444748] dark:text-neutral-400 border-collapse w-full">
+                            <table className="text-[11px] font-mono text-[#444748] dark:text-neutral-400 border-collapse w-full min-w-[440px] sm:min-w-0">
                               <thead>
                                 <tr className="border-b border-[#c4c7c7]/20 dark:border-neutral-700">
                                   <th className="text-left py-1.5 px-2 font-bold text-[#1b1c1b] dark:text-white">Colonne</th>
@@ -2603,10 +2615,10 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
                       </div>
 
                       {/* AI Prompt helper */}
-                      <div className="p-8 rounded-2xl bg-gradient-to-br from-[#006c49]/5 to-[#006c49]/0 dark:from-emerald-900/10 dark:to-transparent border border-[#006c49]/10 dark:border-emerald-900/20">
+                      <div className="p-4 md:p-8 rounded-2xl bg-gradient-to-br from-[#006c49]/5 to-[#006c49]/0 dark:from-emerald-900/10 dark:to-transparent border border-[#006c49]/10 dark:border-emerald-900/20">
                         <div className="flex items-center gap-3 mb-3">
                           <Sparkles className="h-5 w-5 text-[#006c49]" />
-                          <h4 className="font-bold text-lg text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>CSV pas au bon format ?</h4>
+                          <h4 className="font-bold text-base md:text-lg text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>CSV pas au bon format ?</h4>
                         </div>
                         <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4">
                           Si votre CSV vient d'un autre CRM ou a un format différent, copiez ce prompt et collez-le dans <strong>ChatGPT</strong>, <strong>Claude</strong> ou toute autre IA avec votre fichier CSV. L'IA reformatera automatiquement votre fichier pour qu'il soit compatible.
@@ -2630,11 +2642,11 @@ if (sig !== expected) throw new Error('Invalid signature')`}</pre>
         </div>
 
         {/* Modal Footer */}
-        <div className="px-8 py-6 bg-[#f5f3f2] dark:bg-neutral-900 border-t border-[#c4c7c7]/10 dark:border-neutral-700 flex justify-end gap-4 flex-shrink-0">
-          <button onClick={onClose} className="px-10 py-3 rounded-full font-bold text-sm text-[#444748] dark:text-neutral-300 hover:bg-[#eae8e7] dark:hover:bg-neutral-800 transition-colors" style={{ fontFamily: 'Manrope, sans-serif' }}>
+        <div className="px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:px-8 md:py-6 bg-[#f5f3f2] dark:bg-neutral-900 border-t border-[#c4c7c7]/10 dark:border-neutral-700 flex justify-end gap-3 md:gap-4 flex-shrink-0">
+          <button onClick={onClose} className="flex-1 md:flex-none px-6 md:px-10 py-3 rounded-full font-bold text-sm text-[#444748] dark:text-neutral-300 hover:bg-[#eae8e7] dark:hover:bg-neutral-800 transition-colors" style={{ fontFamily: 'Manrope, sans-serif' }}>
             Fermer
           </button>
-          <button onClick={handleSave} disabled={saving} className="px-10 py-3 rounded-full font-bold text-sm bg-[#1b1c1b] text-white shadow-xl shadow-black/10 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <button onClick={handleSave} disabled={saving} className="flex-1 md:flex-none px-6 md:px-10 py-3 rounded-full font-bold text-sm bg-[#1b1c1b] text-white shadow-xl shadow-black/10 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {saving ? 'Enregistrement...' : 'Enregistrer'}
           </button>
         </div>

@@ -66,6 +66,11 @@ interface TeamCloser {
 const formatCurrency = (n: number) => n.toLocaleString('fr-FR')
 const formatPercent = (n: number) => n.toFixed(1)
 
+// Tuiles KPI : compactes sur téléphone (classes max-sm: uniquement), inchangées à partir de sm.
+const TILE_HEAD = 'flex items-center gap-3 mb-3 max-sm:gap-2 max-sm:mb-2'
+const TILE_LABEL = 'min-w-0 text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 max-sm:text-[10px] max-sm:tracking-wide max-sm:leading-tight max-sm:line-clamp-2'
+const TILE_VALUE = 'text-2xl sm:text-4xl font-extrabold tracking-tighter text-stone-900 dark:text-white max-sm:truncate'
+
 export function CloserKPI() {
   const { user, teamMember, ownerUserId, isTeamMember, isSolo } = useBusinessAuth()
   const { t, lang } = useBusinessLang()
@@ -649,53 +654,57 @@ export function CloserKPI() {
     : t.kpi_all_periods
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-100 dark:bg-white/5">
+      {/* Header — téléphone : titre compact + actions en boutons icône sur la même ligne */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="hidden sm:flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-stone-100 dark:bg-white/5">
             <TrendingUp className="h-5 w-5 text-stone-700 dark:text-neutral-200" />
           </div>
-          <div>
-            <p className="text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-1">{t.kpi_performance_closer.toUpperCase()}</p>
-            <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">{t.kpi_performance_closer}</h1>
-            <p className="text-sm text-stone-500 dark:text-neutral-400">{isOwnerView ? t.kpi_team_overview : t.kpi_your_performance}</p>
+          <div className="min-w-0">
+            <p className="hidden sm:block text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-1">{t.kpi_performance_closer.toUpperCase()}</p>
+            <h1 className="text-xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white max-sm:truncate">{t.kpi_performance_closer}</h1>
+            <p className="text-xs sm:text-sm text-stone-500 dark:text-neutral-400 truncate">{isOwnerView ? t.kpi_team_overview : t.kpi_your_performance}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => setIsConfigOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-white/10 transition-colors"
+            aria-label={t.kpi_configure}
+            className="flex items-center justify-center gap-2 h-10 w-10 rounded-full sm:h-auto sm:w-auto sm:px-4 sm:py-2 sm:rounded-xl border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-white/10 active:scale-95 transition"
           >
-            <Settings className="h-4 w-4" /> {t.kpi_configure}
+            <Settings className="h-4 w-4" /> <span className="hidden sm:inline">{t.kpi_configure}</span>
           </button>
           <button
             onClick={handleExportPdf}
             disabled={exporting}
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-stone-900 dark:bg-white text-sm font-bold text-white dark:text-stone-900 hover:opacity-90 transition-all disabled:opacity-50 active:scale-95"
+            aria-label={t.kpi_export_pdf}
+            className="flex items-center justify-center gap-2 h-10 w-10 sm:h-auto sm:w-auto sm:px-4 sm:py-2 rounded-full bg-stone-900 dark:bg-white text-sm font-bold text-white dark:text-stone-900 hover:opacity-90 transition-all disabled:opacity-50 active:scale-95"
           >
             {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            {t.kpi_export_pdf}
+            <span className="hidden sm:inline">{t.kpi_export_pdf}</span>
           </button>
         </div>
       </div>
 
       {/* Period selector */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <CalendarDays className="h-4 w-4 text-stone-400" />
-        <span className="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400">{t.kpi_period_label}</span>
+      {/* Période — téléphone : les deux dates se partagent la ligne */}
+      <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <CalendarDays className="h-4 w-4 shrink-0 text-stone-400" />
+        <span className="hidden sm:inline text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400">{t.kpi_period_label}</span>
         <input
           type="date"
           value={periodFrom}
           onChange={e => setPeriodFrom(e.target.value)}
-          className="rounded-full bg-stone-100 dark:bg-neutral-800 border-0 px-3 py-1.5 text-sm text-stone-900 dark:text-white font-medium focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+          className="min-w-0 flex-1 sm:flex-initial rounded-full bg-stone-100 dark:bg-neutral-800 border-0 px-3 py-1.5 text-sm text-stone-900 dark:text-white font-medium focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
         />
         <span className="text-stone-400">→</span>
         <input
           type="date"
           value={periodTo}
           onChange={e => setPeriodTo(e.target.value)}
-          className="rounded-full bg-stone-100 dark:bg-neutral-800 border-0 px-3 py-1.5 text-sm text-stone-900 dark:text-white font-medium focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+          className="min-w-0 flex-1 sm:flex-initial rounded-full bg-stone-100 dark:bg-neutral-800 border-0 px-3 py-1.5 text-sm text-stone-900 dark:text-white font-medium focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
         />
         {(periodFrom || periodTo) && (
           <button
@@ -708,14 +717,16 @@ export function CloserKPI() {
       </div>
 
       {/* Tabs + Global Member Selector */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex p-1.5 bg-stone-100 dark:bg-neutral-800 rounded-full w-fit flex-wrap">
+      {/* Sous xl : onglets en rangée défilante pleine largeur, sélecteur de membre dessous */}
+      <div className="flex flex-col items-stretch xl:flex-row xl:items-center justify-between gap-3">
+        <div className="-mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto no-scrollbar overscroll-x-contain xl:overflow-visible">
+        <div className="flex p-1 sm:p-1.5 bg-stone-100 dark:bg-neutral-800 rounded-full w-max xl:w-fit xl:flex-wrap">
           {tabs.map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={cn(
-                'px-4 py-2 rounded-full text-sm font-medium transition-all',
+                'shrink-0 whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all',
                 activeTab === tab.key
                   ? 'bg-white dark:bg-white/10 text-stone-900 dark:text-white shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
                   : 'text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white'
@@ -725,13 +736,14 @@ export function CloserKPI() {
             </button>
           ))}
         </div>
+        </div>
         {isOwnerView && !isSolo && teamClosers.length > 0 && (
-          <div className="flex items-center gap-2 bg-white dark:bg-white/5 rounded-full border border-stone-200 dark:border-white/10 pl-3 pr-1 py-1 shadow-sm">
+          <div className="flex items-center gap-2 w-full sm:w-auto sm:self-start xl:self-auto bg-white dark:bg-white/5 rounded-full border border-stone-200 dark:border-white/10 pl-3 pr-1 py-1 shadow-sm">
             <Users className="h-4 w-4 text-stone-400 shrink-0" />
             <select
               value={globalMemberId || ''}
               onChange={(e) => setGlobalMemberId(e.target.value || null)}
-              className="bg-transparent text-sm font-semibold text-stone-900 dark:text-white pr-6 py-1.5 focus:outline-none appearance-none cursor-pointer"
+              className="min-w-0 w-full sm:w-auto bg-transparent text-sm font-semibold text-stone-900 dark:text-white pr-6 py-1.5 focus:outline-none appearance-none cursor-pointer"
             >
               <option value="">{t.kpi_all_members}</option>
               {teamClosers.map(c => (
@@ -744,7 +756,7 @@ export function CloserKPI() {
 
       {activeTab === 'org' && (
         <div className="rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-white/10 px-4 py-3">
-          <p className="text-sm text-stone-700">{t.kpi_org_kpis}</p>
+          <p className="text-sm text-stone-700 dark:text-neutral-200">{t.kpi_org_kpis}</p>
         </div>
       )}
 
@@ -752,11 +764,11 @@ export function CloserKPI() {
         <div className="rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-white/10 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm text-stone-700 dark:text-neutral-200 shrink-0">{t.kpi_by_formula_label}</p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial justify-end">
               <select
                 value={selectedOfferId || ''}
                 onChange={(e) => setSelectedOfferId(e.target.value)}
-                className="rounded-lg border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-400 focus:outline-none"
+                className="min-w-0 w-full sm:w-auto rounded-lg border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-400 focus:outline-none"
               >
                 {formulas.length === 0 && <option value="">{t.kpi_no_formula}</option>}
                 {formulas.map(f => (
@@ -772,11 +784,11 @@ export function CloserKPI() {
         <div className="rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-white/10 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm text-stone-700 dark:text-neutral-200 shrink-0">{t.kpi_by_campaign_label}</p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial justify-end">
               <select
                 value={selectedCampaignId || ''}
                 onChange={(e) => setSelectedCampaignId(e.target.value)}
-                className="rounded-lg border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-400 focus:outline-none"
+                className="min-w-0 w-full sm:w-auto rounded-lg border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-400 focus:outline-none"
               >
                 {campaigns.length === 0 && <option value="">{t.kpi_no_campaign}</option>}
                 {campaigns.map(c => (
@@ -792,11 +804,11 @@ export function CloserKPI() {
         <div className="rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-white/10 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm text-stone-700 dark:text-neutral-200 shrink-0">{t.kpi_by_source_label}</p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial justify-end">
               <select
                 value={selectedSource || ''}
                 onChange={(e) => setSelectedSource(e.target.value)}
-                className="rounded-lg border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-400 focus:outline-none"
+                className="min-w-0 w-full sm:w-auto rounded-lg border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-400 focus:outline-none"
               >
                 {uniqueSources.length === 0 && <option value="">{t.kpi_no_source}</option>}
                 {uniqueSources.map(s => (
@@ -809,7 +821,7 @@ export function CloserKPI() {
       )}
 
       {/* PDF export content */}
-      <div ref={pdfRef} className="space-y-6">
+      <div ref={pdfRef} className="space-y-4 sm:space-y-6">
       {/* PDF header (hidden on screen, visible in PDF) */}
       <div className="hidden print:block mb-6">
         <h1 className="text-2xl font-extrabold text-stone-900">{t.kpi_performance_closer} — {periodLabel}</h1>
@@ -817,7 +829,8 @@ export function CloserKPI() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* 2 colonnes sur téléphone ; nombre impair → la dernière tuile prend toute la largeur (sous lg) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 [&>*:last-child:nth-child(odd)]:col-span-2 lg:[&>*:last-child:nth-child(odd)]:col-span-1">
         <KpiCard title={t.kpi_ca_generated} value={`${formatCurrency(v.revenue)} €`} icon={DollarSign} color="emerald" />
         <KpiCard title={t.kpi_total_sales} value={v.sales} icon={ShoppingCart} color="blue" />
         <KpiCard title={t.kpi_closing_rate} value={`${formatPercent(v.conversion)}%`} icon={Target} color="purple" />
@@ -829,10 +842,10 @@ export function CloserKPI() {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-white/5 rounded-2xl border border-stone-200 dark:border-neutral-700/50 p-5 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
-          <h3 className="text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-4">{t.kpi_closing_rate_chart}</h3>
-          <div className="h-56">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="bg-white dark:bg-white/5 min-w-0 rounded-2xl border border-stone-200 dark:border-neutral-700/50 p-4 sm:p-5 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
+          <h3 className="text-xs sm:text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-3 sm:mb-4">{t.kpi_closing_rate_chart}</h3>
+          <div className="h-48 sm:h-56">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <defs>
@@ -852,9 +865,9 @@ export function CloserKPI() {
         </div>
 
         {!isFixedComp && !isSolo && (
-        <div className="bg-white dark:bg-white/5 rounded-2xl border border-stone-200 dark:border-neutral-700/50 p-5 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
-          <h3 className="text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-4">{t.kpi_commission_chart}</h3>
-          <div className="h-56">
+        <div className="bg-white dark:bg-white/5 min-w-0 rounded-2xl border border-stone-200 dark:border-neutral-700/50 p-4 sm:p-5 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
+          <h3 className="text-xs sm:text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-3 sm:mb-4">{t.kpi_commission_chart}</h3>
+          <div className="h-48 sm:h-56">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <defs>
@@ -877,35 +890,36 @@ export function CloserKPI() {
 
       {/* Loss Reason Pie Chart */}
       {lossReasonData.length > 0 && (
-      <div className="bg-white dark:bg-white/5 rounded-2xl border border-stone-200 dark:border-neutral-700/50 p-5 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
-        <h3 className="text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-4">{t.kpi_loss_reasons}</h3>
-        <div className="flex flex-col lg:flex-row items-center gap-8">
-          <div className="w-56 h-56">
+      <div className="bg-white dark:bg-white/5 min-w-0 rounded-2xl border border-stone-200 dark:border-neutral-700/50 p-4 sm:p-5 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
+        <h3 className="text-xs sm:text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-3 sm:mb-4">{t.kpi_loss_reasons}</h3>
+        <div className="flex flex-col lg:flex-row items-center gap-4 sm:gap-6 lg:gap-8">
+          {/* Rayons en % du rayon max (conteneur − marges 5px) : identiques au bureau (224px → 50/85), plus petits sur téléphone */}
+          <div className="w-44 h-44 sm:w-56 sm:h-56 shrink-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={lossReasonData} cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={3} dataKey="value">
+                <Pie data={lossReasonData} cx="50%" cy="50%" innerRadius="46.729%" outerRadius="79.439%" paddingAngle={3} dataKey="value">
                   {lossReasonData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                 </Pie>
                 <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e7e5e4', fontSize: 12 }} formatter={(v: number) => [v, 'Deals']} />
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex-1 space-y-3">
+          <div className="w-full lg:w-auto flex-1 space-y-3">
             {lossReasonData.map(d => {
               const total = lossReasonData.reduce((s, r) => s + r.value, 0)
               const isAutre = d.name === 'Autre'
               return (
                 <div
                   key={d.name}
-                  className={`flex justify-between items-center ${isAutre ? 'cursor-pointer hover:bg-stone-50 dark:hover:bg-neutral-800 -mx-3 px-3 py-1.5 rounded-xl transition-colors' : ''}`}
+                  className={`flex justify-between items-center gap-3 ${isAutre ? 'cursor-pointer hover:bg-stone-50 dark:hover:bg-neutral-800 -mx-3 px-3 py-1.5 rounded-xl transition-colors' : ''}`}
                   onClick={isAutre ? openAutreModal : undefined}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
-                    <span className={`text-sm font-medium text-stone-700 dark:text-neutral-200 ${isAutre ? 'underline decoration-dashed underline-offset-4' : ''}`}>{d.name}</span>
-                    {isAutre && <ArrowRight className="h-3.5 w-3.5 text-stone-400" />}
+                    <span className={`min-w-0 max-lg:truncate text-sm font-medium text-stone-700 dark:text-neutral-200 ${isAutre ? 'underline decoration-dashed underline-offset-4' : ''}`}>{d.name}</span>
+                    {isAutre && <ArrowRight className="h-3.5 w-3.5 shrink-0 text-stone-400" />}
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 shrink-0">
                     <span className="text-sm font-bold text-stone-900 dark:text-white">{d.value}</span>
                     <span className="text-xs text-stone-400 dark:text-neutral-500 w-10 text-right">{total > 0 ? Math.round((d.value / total) * 100) : 0}%</span>
                   </div>
@@ -919,28 +933,30 @@ export function CloserKPI() {
 
       {/* Autre Loss Reasons Modal */}
       {showAutreModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        // Feuille du bas sur téléphone, fenêtre centrée à partir de sm
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowAutreModal(false)} />
-          <div className="relative w-full max-w-3xl max-h-[85vh] bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl border border-stone-200/20 dark:border-neutral-700 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+          <div className="relative w-full sm:max-w-3xl max-h-[92dvh] sm:max-h-[85vh] bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-3xl shadow-2xl border border-stone-200/20 dark:border-neutral-700 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            <div className="sm:hidden mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-stone-300 dark:bg-neutral-700" />
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-stone-100 dark:border-neutral-800">
-              <div>
-                <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">{t.kpi_autre_details_title}</h3>
+            <div className="flex items-center justify-between gap-3 px-5 py-3 sm:p-6 shrink-0 border-b border-stone-100 dark:border-neutral-800">
+              <div className="min-w-0">
+                <h3 className="text-lg font-extrabold text-stone-900 dark:text-white truncate">{t.kpi_autre_details_title}</h3>
                 <p className="text-xs text-stone-500 dark:text-neutral-400 mt-1">{t.kpi_autre_results.replace('{n}', String(autreDetails.length))}</p>
               </div>
-              <button onClick={() => setShowAutreModal(false)} className="p-2 rounded-xl hover:bg-stone-100 dark:hover:bg-neutral-800 transition-colors">
+              <button onClick={() => setShowAutreModal(false)} className="shrink-0 p-2 rounded-xl hover:bg-stone-100 dark:hover:bg-neutral-800 transition-colors">
                 <X className="h-5 w-5 text-stone-500" />
               </button>
             </div>
 
             {/* Filters */}
-            <div className="flex flex-wrap items-center gap-3 px-6 py-4 border-b border-stone-100 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 px-5 py-3 sm:px-6 sm:py-4 shrink-0 border-b border-stone-100 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50">
               <Filter className="h-4 w-4 text-stone-400 shrink-0" />
               {/* Closer */}
               <select
                 value={autreFilterCloser}
                 onChange={e => setAutreFilterCloser(e.target.value)}
-                className="text-xs font-bold bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-stone-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-stone-900/10"
+                className="min-w-0 max-w-full max-sm:flex-1 text-xs font-bold bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-stone-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-stone-900/10"
               >
                 <option value="all">{t.kpi_all_closers}</option>
                 {teamClosers.map(m => (
@@ -952,7 +968,7 @@ export function CloserKPI() {
                 <select
                   value={autreFilterTeam}
                   onChange={e => setAutreFilterTeam(e.target.value)}
-                  className="text-xs font-bold bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-stone-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-stone-900/10"
+                  className="min-w-0 max-w-full max-sm:flex-1 text-xs font-bold bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-stone-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-stone-900/10"
                 >
                   <option value="all">{t.kpi_all_teams}</option>
                   {teams.map(t => (
@@ -963,7 +979,7 @@ export function CloserKPI() {
             </div>
 
             {/* Table */}
-            <div className="overflow-y-auto flex-1">
+            <div className="overflow-y-auto overscroll-contain flex-1 min-h-0 pb-[env(safe-area-inset-bottom)] sm:pb-0">
               {autreDetails.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-stone-400 dark:text-neutral-500">
                   <UserX className="h-10 w-10 mb-3 opacity-50" />
@@ -971,7 +987,19 @@ export function CloserKPI() {
                   <p className="text-xs mt-1">{t.kpi_try_change_filters}</p>
                 </div>
               ) : (
-                <table className="w-full">
+                <>
+                {/* Téléphone : liste (motif en titre, prospect · closer · date en méta) */}
+                <div className="sm:hidden divide-y divide-stone-100 dark:divide-neutral-800">
+                  {autreDetails.map((row: any) => (
+                    <div key={row.id} className="px-5 py-3">
+                      <p className="text-sm font-medium text-stone-900 dark:text-white line-clamp-2">{row.motif}</p>
+                      <p className="mt-0.5 text-xs text-stone-500 dark:text-neutral-400 truncate">
+                        {row.prospect} · {row.closer} · {new Date(row.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <table className="hidden sm:table w-full">
                   <thead>
                     <tr className="border-b border-stone-100 dark:border-neutral-800">
                       <th className="text-left text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 px-6 py-3">{t.kpi_autre_header_motif}</th>
@@ -995,6 +1023,7 @@ export function CloserKPI() {
                     ))}
                   </tbody>
                 </table>
+                </>
               )}
             </div>
           </div>
@@ -1002,9 +1031,9 @@ export function CloserKPI() {
       )}
 
       {/* Pipeline Summary */}
-      <div className="bg-stone-900 text-white rounded-2xl p-6">
-        <h3 className="text-sm font-bold tracking-widest uppercase text-stone-400 mb-4">{t.kpi_pipeline_summary}</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="bg-stone-900 text-white rounded-2xl p-4 sm:p-6">
+        <h3 className="text-xs sm:text-sm font-bold tracking-widest uppercase text-stone-400 mb-1 md:mb-4">{t.kpi_pipeline_summary}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-md:gap-0 max-md:divide-y max-md:divide-white/10">
           <SummaryItem label={t.kpi_total_leads} value={v.leads} icon={Users} color="indigo" dark />
           <SummaryItem label={t.kpi_deals_in_progress} value={v.deals} icon={Briefcase} color="cyan" dark />
           {!isFixedComp && !isSolo && <SummaryItem label={t.kpi_avg_comm} value={`${formatCurrency(avgCommission)} €`} icon={Award} color="stone" dark />}
@@ -1017,16 +1046,18 @@ export function CloserKPI() {
         const cfg = getConfigForKey(configTab)
         const cfgMode = cfg.mode || 'formulas'
         return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+        // Feuille du bas sur téléphone (en-tête et pied fixes, corps défilant), fenêtre centrée à partir de sm
+        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setIsConfigOpen(false)} />
-          <div className="relative w-full max-w-xl mx-4 bg-white dark:bg-[#1a1a1a] rounded-2xl border border-stone-200 dark:border-white/10 shadow-2xl overflow-hidden">
+          <div className="relative w-full sm:max-w-xl sm:mx-4 max-h-[92dvh] sm:max-h-none flex flex-col sm:block bg-white dark:bg-[#1a1a1a] rounded-t-3xl sm:rounded-2xl border border-stone-200 dark:border-white/10 shadow-2xl overflow-hidden">
+            <div className="sm:hidden mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-stone-300 dark:bg-white/20" />
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-stone-100 dark:border-white/5">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-stone-100 dark:bg-blue-600/20 rounded-lg border border-stone-200 dark:border-blue-500/30">
+            <div className="flex items-center justify-between gap-3 px-5 py-3 sm:p-6 shrink-0 border-b border-stone-100 dark:border-white/5">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 shrink-0 bg-stone-100 dark:bg-blue-600/20 rounded-lg border border-stone-200 dark:border-blue-500/30">
                   <Settings className="w-5 h-5 text-stone-600 dark:text-blue-400" />
                 </div>
-                <h2 className="text-xl font-bold text-stone-900 dark:text-white">{t.kpi_config_title}</h2>
+                <h2 className="text-lg sm:text-xl font-bold text-stone-900 dark:text-white truncate">{t.kpi_config_title}</h2>
               </div>
               <button onClick={() => setIsConfigOpen(false)} className="p-2 rounded-lg text-stone-400 hover:bg-stone-100 dark:hover:bg-white/5 hover:text-stone-600 dark:hover:text-white transition-colors">
                 <X className="w-5 h-5" />
@@ -1034,14 +1065,14 @@ export function CloserKPI() {
             </div>
 
             {/* Warning */}
-            <div className="mx-6 mt-4 flex items-center gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30">
+            <div className="mx-5 sm:mx-6 mt-3 sm:mt-4 shrink-0 flex items-center gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30">
               <AlertTriangle className="w-5 h-5 text-amber-500 dark:text-amber-400 flex-shrink-0" />
-              <p className="text-sm text-amber-700 dark:text-amber-300">{lang === 'fr' ? 'Renseignez ici vos KPI avant de rejoindre l\'organisation' : 'Enter your KPI from before joining the organization'}</p>
+              <p className="text-xs sm:text-sm text-amber-700 dark:text-amber-300">{lang === 'fr' ? 'Renseignez ici vos KPI avant de rejoindre l\'organisation' : 'Enter your KPI from before joining the organization'}</p>
             </div>
-            <p className="mx-6 mt-3 text-xs text-stone-400 dark:text-white/40 italic">{lang === 'fr' ? 'Ces données apparaîtront uniquement dans l\'onglet Personnel.' : 'This data will only appear in the Personal tab.'}</p>
+            <p className="mx-5 sm:mx-6 mt-2 sm:mt-3 shrink-0 text-xs text-stone-400 dark:text-white/40 italic">{lang === 'fr' ? 'Ces données apparaîtront uniquement dans l\'onglet Personnel.' : 'This data will only appear in the Personal tab.'}</p>
 
             {/* Form body */}
-            <div className="p-6 space-y-4 max-h-[50vh] overflow-y-auto">
+            <div className="p-5 sm:p-6 space-y-4 flex-1 min-h-0 sm:max-h-[50vh] overflow-y-auto overscroll-contain">
               {/* 4 call count fields */}
               {[
                 { key: 'planned_calls', label: lang === 'fr' ? 'Combien de calls prévus initialement ?' : 'How many calls originally planned?', icon: '📞' },
@@ -1101,7 +1132,7 @@ export function CloserKPI() {
                           <input type="text" value={fm.name} onChange={e => updateFormula(configTab, idx, 'name', e.target.value)} placeholder="Ex: Formule Gold"
                             className="w-full rounded-lg border border-stone-200 dark:border-white/10 bg-stone-50 dark:bg-white/5 px-3 py-2 text-sm text-stone-900 dark:text-white focus:outline-none focus:border-stone-400 dark:focus:border-blue-500" />
                         </div>
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-3 gap-2 sm:gap-3">
                           <div>
                             <label className="text-xs text-stone-400 dark:text-white/40 mb-1 block">{lang === 'fr' ? 'Prix (€)' : 'Price (€)'}</label>
                             <input type="number" min={0} value={fm.price} onChange={e => updateFormula(configTab, idx, 'price', parseFloat(e.target.value) || 0)}
@@ -1147,12 +1178,12 @@ export function CloserKPI() {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 pb-6">
-              <button onClick={() => setIsConfigOpen(false)} className="px-4 py-2.5 rounded-xl text-sm font-medium text-stone-400 hover:text-stone-600 dark:hover:text-white transition-colors">
+            <div className="flex items-center justify-end gap-3 shrink-0 px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:pt-0 sm:pb-6 max-sm:border-t max-sm:border-stone-100 max-sm:dark:border-white/5">
+              <button onClick={() => setIsConfigOpen(false)} className="max-sm:flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-stone-400 hover:text-stone-600 dark:hover:text-white transition-colors">
                 {t.common_cancel}
               </button>
               <button onClick={saveConfig} disabled={savingConfig}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-stone-900 dark:bg-gradient-to-r dark:from-blue-600 dark:to-indigo-600 text-sm font-bold text-white hover:opacity-90 transition-all shadow-lg disabled:opacity-50">
+                className="max-sm:flex-1 flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-stone-900 dark:bg-gradient-to-r dark:from-blue-600 dark:to-indigo-600 text-sm font-bold text-white hover:opacity-90 transition-all shadow-lg disabled:opacity-50">
                 <Save className="w-4 h-4" />
                 {savingConfig ? '...' : t.common_save}
               </button>
@@ -1178,14 +1209,14 @@ const KpiCard = ({ title, value, icon: Icon, color, highlight }: any) => {
   const iconColor = iconColors[color] || iconColors.stone
   return (
     <div className={cn(
-      'bg-white dark:bg-white/5 rounded-2xl border p-5 transition-all hover:shadow-md dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]',
+      'min-w-0 bg-white dark:bg-white/5 rounded-2xl border p-4 sm:p-5 transition-all hover:shadow-md dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]',
       highlight ? 'border-stone-200 dark:border-neutral-700/50 shadow-sm' : 'border-stone-200 dark:border-neutral-700/50'
     )}>
-      <div className="flex items-center gap-3 mb-3">
-        <Icon className={cn('h-4 w-4', iconColor)} />
-        <span className="text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400">{title}</span>
+      <div className={TILE_HEAD}>
+        <Icon className={cn('h-4 w-4 max-sm:shrink-0', iconColor)} />
+        <span className={TILE_LABEL}>{title}</span>
       </div>
-      <p className="text-4xl font-extrabold tracking-tighter text-stone-900 dark:text-white">{value}</p>
+      <p className={TILE_VALUE}>{value}</p>
     </div>
   )
 }
@@ -1197,13 +1228,14 @@ const SummaryItem = ({ label, value, icon: Icon, color, dark }: any) => {
     stone: 'bg-stone-50 text-stone-600',
   }
   return (
-    <div className="flex items-center gap-6 p-3 rounded-xl transition-colors">
-      <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl', colors[color])}>
-        <Icon className="h-5 w-5" />
+    // Téléphone/tablette : ligne compacte (icône, libellé, valeur) dans une liste à filets
+    <div className="flex items-center gap-6 p-3 rounded-xl transition-colors max-md:gap-3 max-md:px-0 max-md:py-2.5">
+      <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl max-md:h-8 max-md:w-8 max-md:rounded-lg', colors[color])}>
+        <Icon className="h-5 w-5 max-md:h-4 max-md:w-4" />
       </div>
-      <div>
-        <p className={cn("text-xs font-bold tracking-widest uppercase", dark ? "text-stone-400" : "text-stone-500")}>{label}</p>
-        <p className={cn("text-2xl font-extrabold tracking-tighter", dark ? "text-white" : "text-stone-900")}>{value}</p>
+      <div className="max-md:flex max-md:flex-1 max-md:min-w-0 max-md:items-center max-md:justify-between max-md:gap-3">
+        <p className={cn("text-xs font-bold tracking-widest uppercase max-md:truncate max-md:tracking-wider", dark ? "text-stone-400" : "text-stone-500")}>{label}</p>
+        <p className={cn("text-2xl font-extrabold tracking-tighter max-md:text-lg max-md:shrink-0", dark ? "text-white" : "text-stone-900")}>{value}</p>
       </div>
     </div>
   )

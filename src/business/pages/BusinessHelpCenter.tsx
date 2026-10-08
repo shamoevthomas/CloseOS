@@ -113,15 +113,15 @@ export default function BusinessHelpCenter() {
   const ArticleRow = ({ art }: { art: Article }) => {
     const open = openId === art.id
     return (
-      <div className={`group rounded-2xl border bg-white dark:bg-neutral-800/40 overflow-hidden transition-all ${open ? 'border-[#006c49]/40 shadow-[0_4px_24px_-8px_rgba(0,108,73,0.25)]' : 'border-stone-200 dark:border-neutral-700 hover:border-[#006c49]/30 hover:shadow-sm'}`}>
-        <button onClick={() => setOpenId(open ? null : art.id)} className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left">
-          <span className="font-business-display font-bold text-stone-900 dark:text-white">{art.title}</span>
+      <div className={`group sm:rounded-2xl sm:border sm:bg-white sm:dark:bg-neutral-800/40 overflow-hidden transition-all ${open ? 'bg-[#006c49]/[0.03] sm:border-[#006c49]/40 sm:shadow-[0_4px_24px_-8px_rgba(0,108,73,0.25)]' : 'sm:border-stone-200 sm:dark:border-neutral-700 sm:hover:border-[#006c49]/30 sm:hover:shadow-sm'}`}>
+        <button onClick={() => setOpenId(open ? null : art.id)} className="flex w-full items-center justify-between gap-3 px-4 py-3.5 sm:px-5 sm:py-4 text-left active:bg-stone-50 dark:active:bg-neutral-800 sm:active:bg-transparent transition-colors">
+          <span className="min-w-0 font-business-display font-bold text-[15px] leading-snug sm:text-base sm:leading-normal line-clamp-2 sm:line-clamp-none text-stone-900 dark:text-white">{art.title}</span>
           <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-all ${open ? 'bg-[#006c49] text-white rotate-90' : 'bg-stone-100 dark:bg-neutral-700 text-stone-400 group-hover:text-[#006c49]'}`}>
             <ChevronRight className="h-4 w-4" />
           </span>
         </button>
         {open && (
-          <div className="px-5 pb-5 space-y-2.5 border-t border-stone-100 dark:border-neutral-700/60 pt-4">
+          <div className="px-4 pb-4 pt-3 sm:px-5 sm:pb-5 sm:pt-4 space-y-2.5 border-t border-stone-100 dark:border-neutral-700/60">
             {art.body.map((p, i) => (
               <p key={i} className="text-sm text-stone-600 dark:text-neutral-300 leading-relaxed">{p}</p>
             ))}
@@ -132,9 +132,9 @@ export default function BusinessHelpCenter() {
   }
 
   return (
-    <div className="relative max-w-4xl mx-auto pb-24">
-      {/* Halo décoratif */}
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-8 h-72 bg-gradient-to-b from-[#006c49]/[0.06] to-transparent blur-2xl" />
+    <div className="relative max-w-4xl mx-auto pb-12 sm:pb-24">
+      {/* Halo décoratif (masqué sur mobile) */}
+      <div aria-hidden className="hidden sm:block pointer-events-none absolute inset-x-0 -top-8 h-72 bg-gradient-to-b from-[#006c49]/[0.06] to-transparent blur-2xl" />
 
       {/* Doodles hero */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-64 hidden md:block">
@@ -147,29 +147,29 @@ export default function BusinessHelpCenter() {
       </div>
 
       {/* Header */}
-      <div className="relative text-center pt-6 pb-8">
-        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#006c49] to-emerald-600 text-white shadow-lg shadow-emerald-600/20">
-          <LifeBuoy className="h-8 w-8" strokeWidth={1.5} />
+      <div className="relative text-center pt-1 pb-5 sm:pt-6 sm:pb-8">
+        <div className="mx-auto mb-3 sm:mb-5 flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#006c49] to-emerald-600 text-white shadow-lg shadow-emerald-600/20">
+          <LifeBuoy className="h-6 w-6 sm:h-8 sm:w-8" strokeWidth={1.5} />
         </div>
-        <h1 className="relative inline-block font-business-display text-4xl md:text-5xl font-extrabold text-stone-900 dark:text-white tracking-tight">
+        <h1 className="relative inline-block font-business-display text-2xl sm:text-4xl md:text-5xl font-extrabold text-stone-900 dark:text-white tracking-tight">
           {fr ? "Centre d'aide" : 'Help center'}
-          <DoodleSquiggle className="pointer-events-none absolute left-1/2 -translate-x-1/2 -bottom-3 w-40 md:w-52 text-emerald-500" aria-hidden="true" />
+          <DoodleSquiggle className="pointer-events-none absolute left-1/2 -translate-x-1/2 -bottom-2 sm:-bottom-3 w-28 sm:w-40 md:w-52 text-emerald-500" aria-hidden="true" />
         </h1>
-        <p className="text-stone-500 dark:text-neutral-400 mt-5 text-lg max-w-xl mx-auto">{fr ? 'Tout pour tirer le meilleur de CloseOS Business, expliqué simplement.' : 'Everything to get the most out of CloseOS Business, explained simply.'}</p>
+        <p className="text-stone-500 dark:text-neutral-400 mt-3 sm:mt-5 text-sm sm:text-lg max-w-xl mx-auto">{fr ? 'Tout pour tirer le meilleur de CloseOS Business, expliqué simplement.' : 'Everything to get the most out of CloseOS Business, explained simply.'}</p>
       </div>
 
       {/* Barre de recherche */}
-      <div className="relative mb-12 max-w-2xl mx-auto">
+      <div className="relative mb-6 sm:mb-12 max-w-2xl mx-auto">
         <Search className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={fr ? "Rechercher un sujet (relance, booking, équipe, Stripe…)" : 'Search a topic (follow-up, booking, team, Stripe…)'}
-          className="w-full rounded-full border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 py-4 pr-12 text-base text-stone-900 dark:text-white placeholder:text-stone-400 focus:ring-4 focus:ring-[#006c49]/15 focus:border-[#006c49] focus:outline-none shadow-[0_8px_30px_-12px_rgba(0,0,0,0.15)]"
+          className="w-full rounded-full border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 py-3 sm:py-4 pr-12 text-base text-stone-900 dark:text-white placeholder:text-stone-400 focus:ring-4 focus:ring-[#006c49]/15 focus:border-[#006c49] focus:outline-none shadow-[0_8px_30px_-12px_rgba(0,0,0,0.15)]"
           style={{ paddingLeft: '3.25rem' }}
         />
         {query && (
-          <button onClick={() => setQuery('')} className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-stone-400 hover:bg-stone-100 dark:hover:bg-neutral-700 hover:text-stone-700 transition-colors">
+          <button onClick={() => setQuery('')} aria-label="Effacer" className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-stone-400 hover:bg-stone-100 dark:hover:bg-neutral-700 hover:text-stone-700 transition-colors">
             <X className="h-4 w-4" />
           </button>
         )}
@@ -186,7 +186,7 @@ export default function BusinessHelpCenter() {
           {results.map(({ cat, art }) => (
             <div key={art.id}>
               <span className="text-[11px] font-bold uppercase tracking-wider text-[#006c49]">{cat.label}</span>
-              <div className="mt-1"><ArticleRow art={art} /></div>
+              <div className="mt-1 max-sm:rounded-2xl max-sm:border max-sm:border-stone-200 max-sm:dark:border-neutral-700 max-sm:bg-white max-sm:dark:bg-neutral-800/40 max-sm:divide-y max-sm:divide-stone-100 max-sm:dark:divide-neutral-700/60 max-sm:overflow-hidden"><ArticleRow art={art} /></div>
             </div>
           ))}
           {results.length === 0 && <SupportCard fr={fr} />}
@@ -194,31 +194,32 @@ export default function BusinessHelpCenter() {
       ) : (
         <>
           {/* Par où commencer */}
-          <section className="relative mb-14 overflow-hidden rounded-3xl border border-[#006c49]/20 bg-gradient-to-br from-[#006c49]/[0.06] via-emerald-50/40 to-transparent dark:from-emerald-900/20 dark:via-emerald-900/5 dark:to-transparent p-6 sm:p-9">
+          <section className="relative mb-8 sm:mb-14 overflow-hidden rounded-3xl border border-[#006c49]/20 bg-gradient-to-br from-[#006c49]/[0.06] via-emerald-50/40 to-transparent dark:from-emerald-900/20 dark:via-emerald-900/5 dark:to-transparent p-4 sm:p-9">
             <DoodleRocket aria-hidden className="pointer-events-none absolute -right-2 -top-2 w-24 text-emerald-500/50 rotate-12 hidden sm:block" />
             <DoodleStar5 aria-hidden className="pointer-events-none absolute right-[22%] top-6 w-4 text-emerald-500 hidden sm:block" />
             <DoodleBurst aria-hidden className="pointer-events-none absolute right-8 bottom-6 w-6 text-emerald-500/70 hidden sm:block" />
 
             <div className="relative">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#006c49] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white">
+              <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-[#006c49] px-2.5 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-white">
                 {fr ? 'Le plus important' : 'Start here'}
               </span>
-              <h2 className="mt-3 font-business-display text-3xl font-extrabold text-stone-900 dark:text-white">{fr ? 'Par où commencer' : 'Getting started'}</h2>
-              <p className="text-sm text-stone-500 dark:text-neutral-400 mt-2 mb-8 max-w-lg">
+              <h2 className="mt-2 sm:mt-3 font-business-display text-xl sm:text-3xl font-extrabold text-stone-900 dark:text-white">{fr ? 'Par où commencer' : 'Getting started'}</h2>
+              <p className="text-sm text-stone-500 dark:text-neutral-400 mt-1 sm:mt-2 mb-5 sm:mb-8 max-w-lg">
                 {fr
                   ? (isManagement ? 'Suivez cette marche à suivre pour bien démarrer, adaptée à votre offre ' : "Bienvenue dans l'équipe ! Voici par où commencer, adapté à votre rôle ")
                   : (isManagement ? 'Follow this path to get started, tailored to your ' : 'Welcome to the team! Here is where to start, tailored to your ')}
                 <span className="font-bold text-[#006c49]">{audienceLabel}</span>.
               </p>
 
-              <ol className="relative space-y-2.5">
+              {/* Mobile : frise à plat (pastilles reliées) ; ≥ sm : étapes en cartes */}
+              <ol className="relative space-y-4 sm:space-y-2.5">
                 {/* ligne verticale de liaison */}
-                <span aria-hidden className="pointer-events-none absolute left-4 top-3 bottom-3 w-px bg-[#006c49]/20" />
+                <span aria-hidden className="pointer-events-none absolute left-3.5 sm:left-4 top-3 bottom-3 w-px bg-[#006c49]/20" />
                 {startSteps.map((s, i) => (
-                  <li key={i} className="relative flex gap-4 rounded-2xl bg-white/70 dark:bg-neutral-800/50 backdrop-blur-sm border border-white/60 dark:border-neutral-700/50 p-3.5 hover:border-[#006c49]/30 transition-colors">
-                    <span className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#006c49] text-white text-sm font-extrabold ring-4 ring-white dark:ring-neutral-900">{i + 1}</span>
-                    <div className="pt-0.5">
-                      <p className="font-business-display font-bold text-stone-900 dark:text-white">{s.title}</p>
+                  <li key={i} className="relative flex gap-3 sm:gap-4 rounded-2xl sm:bg-white/70 sm:dark:bg-neutral-800/50 sm:backdrop-blur-sm border border-transparent sm:border-white/60 sm:dark:border-neutral-700/50 p-0 sm:p-3.5 sm:hover:border-[#006c49]/30 transition-colors">
+                    <span className="relative z-10 flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-[#006c49] text-white text-xs sm:text-sm font-extrabold ring-4 ring-[#f1f6f2] sm:ring-white dark:ring-neutral-900">{i + 1}</span>
+                    <div className="min-w-0 pt-0.5">
+                      <p className="font-business-display font-bold text-[15px] sm:text-base text-stone-900 dark:text-white">{s.title}</p>
                       <p className="text-sm text-stone-600 dark:text-neutral-300 leading-relaxed mt-0.5">{s.body}</p>
                     </div>
                   </li>
@@ -226,7 +227,7 @@ export default function BusinessHelpCenter() {
               </ol>
 
               {isManagement && !hasAcquisition && (
-                <div className="mt-6 flex items-start gap-3 rounded-2xl border border-[#006c49]/20 bg-white dark:bg-neutral-800/60 p-4">
+                <div className="mt-5 sm:mt-6 flex items-start gap-3 rounded-2xl border border-[#006c49]/20 bg-white dark:bg-neutral-800/60 p-3.5 sm:p-4">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#006c49]/10 text-[#006c49]"><Megaphone className="h-5 w-5" strokeWidth={1.5} /></div>
                   <p className="text-sm text-stone-600 dark:text-neutral-300 pt-1">
                     {fr ? "Le système d'acquisition (campagnes, pages de capture, tracking) est inclus dans l'offre " : 'The acquisition system (campaigns, capture pages, tracking) is included in the '}
@@ -238,20 +239,20 @@ export default function BusinessHelpCenter() {
           </section>
 
           {/* Catégories */}
-          <div className="space-y-12">
+          <div className="space-y-8 sm:space-y-12">
             {categories.map((cat, ci) => {
               const Accent = CAT_ACCENTS[ci % CAT_ACCENTS.length]
               return (
                 <section key={cat.id} className="relative">
-                  <div className="flex items-center gap-3 mb-5">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#006c49]/10 to-emerald-500/10 text-[#006c49] ring-1 ring-[#006c49]/10">
-                      <cat.icon className="h-5 w-5" strokeWidth={1.5} />
+                  <div className="flex items-center gap-3 mb-3 sm:mb-5">
+                    <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#006c49]/10 to-emerald-500/10 text-[#006c49] ring-1 ring-[#006c49]/10">
+                      <cat.icon className="h-[18px] w-[18px] sm:h-5 sm:w-5" strokeWidth={1.5} />
                     </div>
-                    <h2 className="font-business-display text-xl font-extrabold text-stone-900 dark:text-white">{cat.label}</h2>
+                    <h2 className="min-w-0 truncate font-business-display text-lg sm:text-xl font-extrabold text-stone-900 dark:text-white">{cat.label}</h2>
                     <span className="h-px flex-1 bg-gradient-to-r from-stone-200 dark:from-neutral-700 to-transparent" />
                     <Accent.C aria-hidden className={`pointer-events-none w-6 shrink-0 ${Accent.color} hidden sm:block`} />
                   </div>
-                  <div className="space-y-2.5">
+                  <div className="max-sm:rounded-2xl max-sm:border max-sm:border-stone-200 max-sm:dark:border-neutral-700 max-sm:bg-white max-sm:dark:bg-neutral-800/40 max-sm:divide-y max-sm:divide-stone-100 max-sm:dark:divide-neutral-700/60 max-sm:overflow-hidden sm:space-y-2.5">
                     {cat.articles.map((art) => <ArticleRow key={art.id} art={art} />)}
                   </div>
                 </section>
@@ -259,7 +260,7 @@ export default function BusinessHelpCenter() {
             })}
           </div>
 
-          <div className="mt-14"><SupportCard fr={fr} /></div>
+          <div className="mt-8 sm:mt-14"><SupportCard fr={fr} /></div>
         </>
       )}
     </div>
@@ -268,17 +269,17 @@ export default function BusinessHelpCenter() {
 
 function SupportCard({ fr }: { fr: boolean }) {
   return (
-    <a href="mailto:support@closeos.fr" className="group relative flex items-center justify-between gap-4 overflow-hidden rounded-3xl border border-[#006c49]/20 bg-gradient-to-br from-[#006c49]/[0.05] to-transparent dark:from-emerald-900/15 p-6 hover:shadow-[0_10px_40px_-15px_rgba(0,108,73,0.35)] hover:border-[#006c49]/40 transition-all">
+    <a href="mailto:support@closeos.fr" className="group relative flex items-center justify-between gap-3 sm:gap-4 overflow-hidden rounded-2xl sm:rounded-3xl border border-[#006c49]/20 bg-gradient-to-br from-[#006c49]/[0.05] to-transparent dark:from-emerald-900/15 p-4 sm:p-6 hover:shadow-[0_10px_40px_-15px_rgba(0,108,73,0.35)] hover:border-[#006c49]/40 active:scale-[0.99] transition-all">
       <DoodleBubble aria-hidden className="pointer-events-none absolute -right-3 -bottom-3 w-20 text-emerald-500/20 rotate-6" />
       <DoodleSparkle aria-hidden className="pointer-events-none absolute right-16 top-4 w-4 text-emerald-500/60 hidden sm:block" />
-      <div className="relative flex items-center gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#006c49] to-emerald-600 text-white shadow-md shadow-emerald-600/20"><Mail className="h-6 w-6" strokeWidth={1.5} /></div>
-        <div>
-          <h4 className="font-business-display font-extrabold text-stone-900 dark:text-white text-lg">{fr ? 'Une question sans réponse ?' : 'Still stuck?'}</h4>
+      <div className="relative flex min-w-0 items-center gap-3 sm:gap-4">
+        <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#006c49] to-emerald-600 text-white shadow-md shadow-emerald-600/20"><Mail className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={1.5} /></div>
+        <div className="min-w-0">
+          <h4 className="font-business-display font-extrabold text-stone-900 dark:text-white text-base sm:text-lg">{fr ? 'Une question sans réponse ?' : 'Still stuck?'}</h4>
           <p className="text-sm text-stone-500 dark:text-neutral-400">{fr ? "Écrivez-nous à support@closeos.fr, réponse sous 24h ouvrées." : 'Email support@closeos.fr — reply within 24 business hours.'}</p>
         </div>
       </div>
-      <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white dark:bg-neutral-800 text-[#006c49] shadow-sm group-hover:translate-x-0.5 transition-transform">
+      <span className="relative hidden sm:flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white dark:bg-neutral-800 text-[#006c49] shadow-sm group-hover:translate-x-0.5 transition-transform">
         <ArrowRight className="h-5 w-5" />
       </span>
     </a>

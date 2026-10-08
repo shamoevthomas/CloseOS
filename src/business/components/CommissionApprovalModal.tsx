@@ -116,24 +116,25 @@ export function CommissionApprovalModal({ approvalId, onClose, onDecided }: Comm
   const alreadyDecided = details && details.status !== 'pending'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-xl rounded-2xl bg-white dark:bg-neutral-900 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between border-b border-stone-200 dark:border-white/10 px-6 py-4">
-          <div className="flex items-center gap-3">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4">
+      <div className="w-full max-w-xl rounded-t-3xl sm:rounded-2xl bg-white dark:bg-neutral-900 shadow-2xl overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[90vh]">
+        <div className="relative flex items-center justify-between gap-3 border-b border-stone-200 dark:border-white/10 px-4 sm:px-6 pt-5 pb-3 sm:py-4">
+          <div className="sm:hidden absolute left-1/2 top-1.5 h-1 w-10 -translate-x-1/2 rounded-full bg-stone-300 dark:bg-neutral-700" />
+          <div className="flex min-w-0 items-center gap-3">
             <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-500/10">
               <Award className="h-5 w-5 text-amber-600" />
             </div>
-            <h2 className="text-lg font-bold text-stone-900 dark:text-white font-['Manrope']">{t.approval_modal_title}</h2>
+            <h2 className="text-base sm:text-lg font-bold leading-tight text-stone-900 dark:text-white font-['Manrope']">{t.approval_modal_title}</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-stone-400 hover:bg-stone-100 dark:hover:bg-white/5 transition-colors"
+            className="shrink-0 p-2 rounded-full sm:rounded-lg bg-stone-100 dark:bg-white/5 sm:bg-transparent sm:dark:bg-transparent text-stone-400 hover:bg-stone-100 dark:hover:bg-white/5 transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-4">
           {loading ? (
             <div className="flex items-center justify-center py-10">
               <Loader2 className="h-6 w-6 animate-spin text-stone-400" />
@@ -154,7 +155,7 @@ export function CommissionApprovalModal({ approvalId, onClose, onDecided }: Comm
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 <InfoCard label={t.approval_modal_closer} value={closerFullName} />
                 <InfoCard label={t.approval_modal_prospect} value={details.prospect_name || '—'} sub={details.prospect_offer || undefined} />
                 <InfoCard label={t.approval_modal_amount} value={`${details.sale_amount.toFixed(2)} €`} highlight />
@@ -164,18 +165,18 @@ export function CommissionApprovalModal({ approvalId, onClose, onDecided }: Comm
               {details.custom_commission_rate != null && (
                 <div className="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-500/10 p-4 space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold uppercase tracking-widest text-amber-700">{t.approval_modal_custom_rate}</span>
+                    <span className="text-xs font-bold uppercase tracking-wider sm:tracking-widest text-amber-700">{t.approval_modal_custom_rate}</span>
                     <span className="text-xl font-bold text-amber-700">{details.custom_commission_rate}%</span>
                   </div>
                   <div className="flex justify-between text-sm text-stone-700 dark:text-neutral-200">
                     <span>{t.approval_modal_standard_amount}</span>
                     <span>{standardCommission.toFixed(2)} €</span>
                   </div>
-                  <div className="flex justify-between text-sm font-bold text-amber-800">
-                    <span>{t.approval_modal_custom_amount}</span>
-                    <span>
-                      {customCommission.toFixed(2)} €{' '}
-                      <span className="font-normal">({diff >= 0 ? '+' : ''}{diff.toFixed(2)} €)</span>
+                  <div className="flex justify-between gap-3 text-sm font-bold text-amber-800">
+                    <span className="min-w-0">{t.approval_modal_custom_amount}</span>
+                    <span className="shrink-0 text-right">
+                      <span className="whitespace-nowrap">{customCommission.toFixed(2)} €</span>{' '}
+                      <span className="block whitespace-nowrap font-normal sm:inline">({diff >= 0 ? '+' : ''}{diff.toFixed(2)} €)</span>
                     </span>
                   </div>
                 </div>
@@ -212,11 +213,11 @@ export function CommissionApprovalModal({ approvalId, onClose, onDecided }: Comm
         </div>
 
         {!alreadyDecided && !loading && details && (
-          <div className="flex items-center justify-end gap-2 border-t border-stone-200 dark:border-white/10 px-6 py-4">
+          <div className="flex items-center justify-end gap-2 border-t border-stone-200 dark:border-white/10 px-4 sm:px-6 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:py-4">
             <button
               onClick={() => handleDecide('rejected')}
               disabled={submitting !== null || (showRejectInput && !rejectionReason.trim())}
-              className="inline-flex items-center gap-2 rounded-full border-2 border-red-500 px-5 py-2 text-sm font-bold text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="flex-1 sm:flex-none justify-center inline-flex items-center gap-2 rounded-full border-2 border-red-500 px-5 py-2.5 sm:py-2 text-sm font-bold text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {submitting === 'reject' ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
               {submitting === 'reject' ? t.approval_modal_rejecting : t.approval_modal_reject}
@@ -224,7 +225,7 @@ export function CommissionApprovalModal({ approvalId, onClose, onDecided }: Comm
             <button
               onClick={() => handleDecide('approved')}
               disabled={submitting !== null}
-              className="inline-flex items-center gap-2 rounded-full bg-emerald-600 hover:bg-emerald-700 px-5 py-2 text-sm font-bold text-white shadow-md shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="flex-1 sm:flex-none justify-center inline-flex items-center gap-2 rounded-full bg-emerald-600 hover:bg-emerald-700 px-5 py-2.5 sm:py-2 text-sm font-bold text-white shadow-md shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {submitting === 'approve' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
               {submitting === 'approve' ? t.approval_modal_approving : t.approval_modal_approve}
@@ -239,13 +240,13 @@ export function CommissionApprovalModal({ approvalId, onClose, onDecided }: Comm
 function InfoCard({ label, value, sub, highlight }: { label: string; value: string; sub?: string; highlight?: boolean }) {
   return (
     <div className={cn(
-      'rounded-xl border p-3',
+      'min-w-0 rounded-xl border p-3',
       highlight
         ? 'border-emerald-200 bg-emerald-50 dark:bg-emerald-500/10'
         : 'border-stone-200 bg-stone-50/50 dark:border-white/10 dark:bg-white/5'
     )}>
       <div className="text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400 mb-1">{label}</div>
-      <div className={cn('text-sm font-bold', highlight ? 'text-emerald-700' : 'text-stone-900 dark:text-white')}>{value}</div>
+      <div className={cn('text-sm font-bold break-words', highlight ? 'text-emerald-700' : 'text-stone-900 dark:text-white')}>{value}</div>
       {sub && <div className="text-xs text-stone-500 dark:text-neutral-400 mt-0.5">{sub}</div>}
     </div>
   )

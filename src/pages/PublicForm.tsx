@@ -353,7 +353,7 @@ export default function PublicForm() {
       onKeyDown={handleKeyDown}
       className={isEmbed ? 'min-h-screen bg-transparent' : 'relative min-h-screen overflow-hidden bg-gradient-to-b from-white via-[#fbf9f8] to-[#f5f3f2]'}
     >
-      <div className="relative z-10 max-w-2xl mx-auto px-6 py-14 sm:py-24">{children}</div>
+      <div className="relative z-10 max-w-2xl mx-auto px-5 sm:px-6 py-10 sm:py-24">{children}</div>
     </div>
   )
 
@@ -380,7 +380,7 @@ export default function PublicForm() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="relative text-center py-24"
+        className="relative text-center py-16 sm:py-24"
       >
         {!isEmbed && (
           <div className="pointer-events-none select-none fixed inset-0 z-0 hidden lg:block" aria-hidden="true" style={{ color: accent }}>
@@ -394,15 +394,15 @@ export default function PublicForm() {
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.1, type: 'spring', stiffness: 260, damping: 18 }}
-          className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-8"
+          className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mx-auto mb-6 sm:mb-8"
           style={{ backgroundColor: `${accent}1a` }}
         >
-          <Check className="h-10 w-10" style={{ color: accent }} strokeWidth={2.5} />
+          <Check className="h-8 w-8 sm:h-10 sm:w-10" style={{ color: accent }} strokeWidth={2.5} />
         </motion.div>
-        <h1 className="text-4xl sm:text-5xl font-['Manrope'] font-extrabold tracking-tight text-[#1b1c1b] mb-3">
+        <h1 className="text-[1.75rem] leading-tight sm:text-5xl font-['Manrope'] font-extrabold tracking-tight text-[#1b1c1b] mb-3">
           {form.settings.thankyou_title}
         </h1>
-        <p className="text-lg text-[#444748] font-['Inter'] leading-relaxed whitespace-pre-wrap">
+        <p className="text-base sm:text-lg text-[#444748] font-['Inter'] leading-relaxed sm:leading-relaxed whitespace-pre-wrap">
           {form.settings.thankyou_text}
         </p>
       </motion.div>,
@@ -443,13 +443,13 @@ export default function PublicForm() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="mb-12"
+          className="mb-8 sm:mb-12"
         >
-          <h1 className="text-4xl sm:text-5xl font-['Manrope'] font-extrabold tracking-tight text-[#1b1c1b] leading-[1.05]">
+          <h1 className="text-[1.75rem] sm:text-5xl font-['Manrope'] font-extrabold tracking-tight text-[#1b1c1b] leading-[1.1]">
             {form.name}
           </h1>
           {form.description && (
-            <p className="mt-5 text-lg text-[#444748] font-['Inter'] leading-relaxed whitespace-pre-wrap">
+            <p className="mt-3 sm:mt-5 text-base sm:text-lg text-[#444748] font-['Inter'] leading-relaxed sm:leading-relaxed whitespace-pre-wrap">
               {form.description}
             </p>
           )}
@@ -458,7 +458,7 @@ export default function PublicForm() {
 
       {/* Compteur d'étape */}
       {showProgress && (
-        <p className="mb-6 text-[0.7rem] font-bold uppercase tracking-[0.18em] text-[#444748]/45 font-['Inter']">
+        <p className="mb-4 sm:mb-6 text-[0.7rem] font-bold uppercase tracking-[0.18em] text-[#444748]/45 font-['Inter']">
           {S.step(currentPos + 1, activeSteps.length)}
         </p>
       )}
@@ -471,7 +471,7 @@ export default function PublicForm() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -16 }}
           transition={{ duration: 0.32, ease: 'easeOut' }}
-          className="space-y-8"
+          className="space-y-7 sm:space-y-8"
         >
           {current?.blocks.filter(isRenderable).map(block => (
             <BlockRenderer
@@ -499,7 +499,7 @@ export default function PublicForm() {
         const missing = (current?.blocks || []).filter(b => errors[b.id])
         if (missing.length === 0) return null
         return (
-          <div className="mt-10 rounded-2xl border border-[#ffb4ab] bg-[#ffdad6]/40 px-5 py-4">
+          <div className="mt-8 sm:mt-10 rounded-2xl border border-[#ffb4ab] bg-[#ffdad6]/40 px-4 py-3.5 sm:px-5 sm:py-4">
             <p className="flex items-center gap-2 text-sm font-['Manrope'] font-bold text-[#ba1a1a] mb-2">
               <AlertCircle className="h-4 w-4 flex-shrink-0" /> {S.missing_title}
             </p>
@@ -515,20 +515,21 @@ export default function PublicForm() {
       })()}
 
       {/* Navigation */}
-      <div className="mt-14 flex items-center gap-3">
+      <div className="mt-10 sm:mt-14 flex items-center gap-2 sm:gap-3">
         {!isFirst && (
           <button
             onClick={goBack}
             disabled={submitting}
-            className="flex items-center gap-2 px-6 py-4 rounded-full font-['Manrope'] font-bold text-sm text-[#444748] hover:bg-black/[0.05] transition-colors disabled:opacity-50"
+            aria-label={S.back}
+            className="flex shrink-0 items-center justify-center gap-2 h-14 w-14 sm:h-auto sm:w-auto px-0 sm:px-6 sm:py-4 rounded-full max-sm:bg-black/[0.04] font-['Manrope'] font-bold text-sm text-[#444748] hover:bg-black/[0.05] transition-colors disabled:opacity-50"
           >
-            <ArrowLeft className="h-4 w-4" /> {S.back}
+            <ArrowLeft className="h-5 w-5 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">{S.back}</span>
           </button>
         )}
         <button
           onClick={isLast ? submit : goNext}
           disabled={submitting}
-          className="flex items-center gap-2 px-9 py-4 rounded-full text-white font-['Manrope'] font-bold text-base transition-all hover:-translate-y-0.5 active:scale-95 disabled:opacity-60"
+          className="flex flex-1 sm:flex-none min-w-0 items-center justify-center gap-2 h-14 sm:h-auto px-6 sm:px-9 sm:py-4 rounded-full text-white font-['Manrope'] font-bold text-base transition-all hover:-translate-y-0.5 active:scale-95 disabled:opacity-60"
           style={{ backgroundColor: accent, boxShadow: `0 12px 26px -10px ${accent}` }}
         >
           {submitting ? (
@@ -544,7 +545,7 @@ export default function PublicForm() {
           )}
         </button>
         {!submitting && (
-          <span className="hidden sm:flex items-center gap-1.5 text-xs font-['Inter'] text-[#444748]/45">
+          <span className="hidden sm:flex [@media(pointer:coarse)]:hidden items-center gap-1.5 text-xs font-['Inter'] text-[#444748]/45">
             {S.press}
             <kbd className="inline-flex items-center gap-1 rounded-md border border-[#c4c7c7]/60 bg-white px-1.5 py-1 font-bold text-[#444748]/70 shadow-sm">
               <CornerDownLeft className="h-3 w-3" /> {S.enter}
@@ -554,7 +555,7 @@ export default function PublicForm() {
       </div>
 
       {!isEmbed && (
-        <p className="mt-16 text-center text-xs text-[#444748]/40 font-['Inter']">
+        <p className="mt-10 sm:mt-16 text-center text-xs text-[#444748]/40 font-['Inter']">
           {S.powered_by}{' '}
           <a href="https://closeos.fr" target="_blank" rel="noopener noreferrer" className="font-bold hover:underline">
             CloseOS
@@ -580,9 +581,9 @@ function BlockRenderer({
   // Blocs de contenu
   switch (block.type) {
     case 'heading':
-      return <h2 className="text-3xl font-['Manrope'] font-extrabold tracking-tight text-[#1b1c1b] pt-4">{block.text}</h2>
+      return <h2 className="text-2xl sm:text-3xl font-['Manrope'] font-extrabold tracking-tight text-[#1b1c1b] pt-2 sm:pt-4">{block.text}</h2>
     case 'subheading':
-      return <h3 className="text-xl font-['Manrope'] font-bold text-[#1b1c1b] pt-2">{block.text}</h3>
+      return <h3 className="text-lg sm:text-xl font-['Manrope'] font-bold text-[#1b1c1b] pt-1 sm:pt-2">{block.text}</h3>
     case 'paragraph':
       return <p className="text-base text-[#444748] font-['Inter'] leading-relaxed whitespace-pre-wrap">{block.text}</p>
     case 'divider':
@@ -600,19 +601,19 @@ function BlockRenderer({
 
   // Blocs de saisie
   const inputBase =
-    'w-full rounded-2xl border-2 bg-white px-5 py-4 text-lg text-[#1b1c1b] font-[\'Inter\'] placeholder:text-[#444748]/30 outline-none transition-all focus:shadow-[0_1px_2px_rgba(27,28,27,0.04),0_12px_28px_-14px_rgba(27,28,27,0.18)]'
+    'w-full rounded-2xl border-2 bg-white px-4 py-3.5 text-base sm:px-5 sm:py-4 sm:text-lg text-[#1b1c1b] font-[\'Inter\'] placeholder:text-[#444748]/30 outline-none transition-all focus:shadow-[0_1px_2px_rgba(27,28,27,0.04),0_12px_28px_-14px_rgba(27,28,27,0.18)]'
   const borderClass = error ? 'border-[#ba1a1a]' : 'border-[#e6e3e1] focus:border-[#1b1c1b]'
 
   return (
     <div>
-      <label className="block text-xl sm:text-2xl font-['Manrope'] font-extrabold text-[#1b1c1b] mb-1.5 leading-snug">
+      <label className="block text-lg sm:text-2xl font-['Manrope'] font-extrabold text-[#1b1c1b] mb-1.5 leading-snug">
         {block.text}
         {block.required && <span className="ml-1" style={{ color: accent }}>*</span>}
       </label>
       {block.description && (
-        <p className="text-base text-[#444748]/70 font-['Inter'] mb-4">{block.description}</p>
+        <p className="text-sm sm:text-base text-[#444748]/70 font-['Inter'] mb-3 sm:mb-4">{block.description}</p>
       )}
-      {!block.description && <div className="mb-4" />}
+      {!block.description && <div className="mb-3 sm:mb-4" />}
 
       {(() => {
         switch (block.type) {
@@ -666,7 +667,7 @@ function BlockRenderer({
                       key={opt}
                       type="button"
                       onClick={() => onChange(opt)}
-                      className="w-full flex items-center gap-3 rounded-2xl border-2 bg-white px-5 py-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-14px_rgba(27,28,27,0.25)]"
+                      className="w-full flex items-center gap-3 rounded-2xl border-2 bg-white px-4 py-3.5 sm:px-5 sm:py-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-14px_rgba(27,28,27,0.25)] active:scale-[0.99]"
                       style={{
                         borderColor: active ? accent : 'rgba(196,199,199,0.4)',
                         backgroundColor: active ? `${accent}0d` : '#ffffff',
@@ -678,7 +679,7 @@ function BlockRenderer({
                       >
                         {active && <span className="h-2 w-2 rounded-full" style={{ backgroundColor: accent }} />}
                       </span>
-                      <span className="text-lg text-[#1b1c1b] font-['Inter']">{label}</span>
+                      <span className="min-w-0 text-base sm:text-lg text-[#1b1c1b] font-['Inter']">{label}</span>
                     </button>
                   )
                 })}
@@ -699,7 +700,7 @@ function BlockRenderer({
                       onClick={() =>
                         onChange(active ? selected.filter(v => v !== opt) : [...selected, opt])
                       }
-                      className="w-full flex items-center gap-3 rounded-2xl border-2 bg-white px-5 py-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-14px_rgba(27,28,27,0.25)]"
+                      className="w-full flex items-center gap-3 rounded-2xl border-2 bg-white px-4 py-3.5 sm:px-5 sm:py-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-14px_rgba(27,28,27,0.25)] active:scale-[0.99]"
                       style={{
                         borderColor: active ? accent : 'rgba(196,199,199,0.4)',
                         backgroundColor: active ? `${accent}0d` : '#ffffff',
@@ -714,7 +715,7 @@ function BlockRenderer({
                       >
                         {active && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
                       </span>
-                      <span className="text-lg text-[#1b1c1b] font-['Inter']">{opt}</span>
+                      <span className="min-w-0 text-base sm:text-lg text-[#1b1c1b] font-['Inter']">{opt}</span>
                     </button>
                   )
                 })}
@@ -753,9 +754,14 @@ function BlockRenderer({
             const min = block.min ?? 1
             const max = block.max ?? 10
             const range = Array.from({ length: Math.max(0, max - min + 1) }, (_, i) => min + i)
+            // Mobile : grille en rangées équilibrées (1–10 → 2 × 5) plutôt qu'un retour à la ligne 6 + 4
+            const scaleCols = range.length <= 7 ? range.length : Math.ceil(range.length / 2)
             return (
               <div>
-                <div className="flex flex-wrap gap-2">
+                <div
+                  className="grid grid-cols-[repeat(var(--scale-cols),minmax(0,1fr))] gap-2 sm:flex sm:flex-wrap"
+                  style={{ '--scale-cols': Math.max(1, scaleCols) } as React.CSSProperties}
+                >
                   {range.map(n => {
                     const active = Number(value) === n
                     return (
@@ -763,7 +769,7 @@ function BlockRenderer({
                         key={n}
                         type="button"
                         onClick={() => onChange(active ? '' : n)}
-                        className="h-11 w-11 rounded-xl border text-sm font-bold font-['Inter'] transition-all"
+                        className="h-11 w-full sm:w-11 rounded-xl border text-sm font-bold font-['Inter'] transition-all active:scale-95"
                         style={{
                           borderColor: active ? accent : 'rgba(196,199,199,0.4)',
                           backgroundColor: active ? accent : '#ffffff',

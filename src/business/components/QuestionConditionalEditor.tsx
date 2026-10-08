@@ -124,7 +124,7 @@ export function QuestionConditionalEditor({ question, allQuestions, onChange }: 
 
   return (
     <div className="ml-7 space-y-2">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <button
           type="button"
           onClick={toggleEnabled}
@@ -145,9 +145,9 @@ export function QuestionConditionalEditor({ question, allQuestions, onChange }: 
       </div>
 
       {enabled && ruleOrphan && (
-        <div className="flex items-start gap-2 text-[10px] text-[#b87500] bg-[#ffb95f]/10 rounded-lg px-3 py-2">
+        <div className="flex flex-wrap sm:flex-nowrap items-start gap-2 text-[10px] text-[#b87500] bg-[#ffb95f]/10 rounded-lg px-3 py-2">
           <AlertTriangle className="h-3 w-3 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">{t.campaigns_conditional_orphan_warning}</div>
+          <div className="min-w-0 flex-1">{t.campaigns_conditional_orphan_warning}</div>
           <button
             type="button"
             onClick={() => onChange(null)}
@@ -165,7 +165,7 @@ export function QuestionConditionalEditor({ question, allQuestions, onChange }: 
             <span className="text-[10px] font-bold text-[#747878] dark:text-neutral-500 uppercase tracking-wide">
               {t.campaigns_conditional_show_if}
             </span>
-            <div className="relative">
+            <div className="relative min-w-0 max-w-full">
               <select
                 value={rule.source_id}
                 onChange={e => setSource(e.target.value)}
@@ -214,7 +214,7 @@ export function QuestionConditionalEditor({ question, allQuestions, onChange }: 
 
           {sourceType === 'number' && (
             <div className="space-y-1.5">
-              <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
                 {(['gte', 'lte', 'between'] as const).map(op => (
                   <button
                     key={op}
@@ -226,7 +226,7 @@ export function QuestionConditionalEditor({ question, allQuestions, onChange }: 
                   </button>
                 ))}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <input
                   type="number"
                   value={typeof rule.values[0] === 'number' ? rule.values[0] : ''}

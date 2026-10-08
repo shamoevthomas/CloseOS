@@ -88,7 +88,7 @@ export function PhoneInput({ value, onChange, className = '', inputClassName, co
         className={baseInputCls}
       />
       {showPicker && (
-        <div className="absolute top-full left-0 z-50 mt-1 w-64 max-h-60 overflow-y-auto rounded-xl border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-xl">
+        <div className="absolute top-full left-0 z-50 mt-1 w-64 max-w-[calc(100vw-2rem)] max-h-60 overflow-y-auto overscroll-contain rounded-xl border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-xl">
           <div className="sticky top-0 bg-white dark:bg-neutral-900 border-b border-stone-100 dark:border-neutral-800 p-2">
             <input
               type="text"

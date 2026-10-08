@@ -86,17 +86,18 @@ export function BusinessContactedRemindersModal({ isOpen, onClose, ownerId }: Pr
   }
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+    <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
-      <div className="relative w-full max-w-lg mx-4 bg-white dark:bg-[#1a1a1a] rounded-2xl border border-stone-200 dark:border-white/10 shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-lg sm:mx-4 bg-white dark:bg-[#1a1a1a] rounded-t-3xl sm:rounded-2xl border border-stone-200 dark:border-white/10 shadow-2xl overflow-hidden max-h-[92dvh] flex flex-col sm:block sm:max-h-none">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-stone-100 dark:border-white/5">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-sky-100 dark:bg-sky-500/20 rounded-lg border border-sky-200 dark:border-sky-500/30">
+        <div className="relative flex items-center justify-between gap-3 px-4 pt-5 pb-3 sm:p-6 border-b border-stone-100 dark:border-white/5">
+          <div className="sm:hidden absolute left-1/2 top-1.5 h-1 w-10 -translate-x-1/2 rounded-full bg-stone-300 dark:bg-neutral-700" />
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="shrink-0 p-2 bg-sky-100 dark:bg-sky-500/20 rounded-lg border border-sky-200 dark:border-sky-500/30">
               <Bell className="w-5 h-5 text-sky-600 dark:text-sky-400" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-stone-900 dark:text-white">
+              <h2 className="text-lg sm:text-xl font-bold leading-tight text-stone-900 dark:text-white">
                 {fr ? 'Relances — Contacté' : 'Reminders — Contacted'}
               </h2>
               <p className="text-xs text-stone-500 dark:text-neutral-400">
@@ -104,13 +105,13 @@ export function BusinessContactedRemindersModal({ isOpen, onClose, ownerId }: Pr
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-lg text-stone-400 hover:bg-stone-100 dark:hover:bg-white/5 hover:text-stone-600 dark:hover:text-white transition-colors">
+          <button onClick={onClose} aria-label={fr ? 'Fermer' : 'Close'} className="shrink-0 p-2 rounded-full sm:rounded-lg bg-stone-100 dark:bg-white/5 sm:bg-transparent sm:dark:bg-transparent text-stone-400 hover:bg-stone-100 dark:hover:bg-white/5 hover:text-stone-600 dark:hover:text-white transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-4 max-h-[55vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 space-y-4 min-h-0 flex-1 sm:max-h-[55vh] overflow-y-auto overscroll-contain">
           <p className="text-sm text-stone-600 dark:text-neutral-300 leading-relaxed">
             {fr
               ? "Configurez les relances email envoyées au setter assigné (ou au closer). La 1ère part X jours après l'entrée en « Contacté » ; chaque suivante, X jours après la relance précédente (max 60 jours par intervalle)."
@@ -129,11 +130,11 @@ export function BusinessContactedRemindersModal({ isOpen, onClose, ownerId }: Pr
                 </p>
               )}
               {days.map((d, idx) => (
-                <div key={idx} className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-stone-400 dark:text-neutral-500 w-20 shrink-0">
+                <div key={idx} className="flex items-center gap-2 sm:gap-3">
+                  <span className="text-xs font-bold text-stone-400 dark:text-neutral-500 w-[4.5rem] sm:w-20 shrink-0">
                     {fr ? `Relance n°${[...days].sort((a, b) => a - b).indexOf(d) + 1}` : `Reminder #${[...days].sort((a, b) => a - b).indexOf(d) + 1}`}
                   </span>
-                  <div className="flex items-center gap-2 flex-1">
+                  <div className="flex min-w-0 items-center gap-2 flex-1">
                     <span className="text-sm text-stone-500 dark:text-neutral-400">{fr ? 'au bout de' : 'after'}</span>
                     <input
                       type="number"
@@ -141,7 +142,7 @@ export function BusinessContactedRemindersModal({ isOpen, onClose, ownerId }: Pr
                       max={60}
                       value={d}
                       onChange={e => updateRow(idx, Math.max(1, Math.min(60, parseInt(e.target.value) || 1)))}
-                      className="w-20 rounded-lg border border-stone-200 dark:border-white/10 bg-stone-50 dark:bg-white/5 px-3 py-2 text-sm font-semibold text-stone-900 dark:text-white focus:outline-none focus:border-sky-400"
+                      className="w-16 sm:w-20 rounded-lg border border-stone-200 dark:border-white/10 bg-stone-50 dark:bg-white/5 px-3 py-2 text-sm font-semibold text-stone-900 dark:text-white focus:outline-none focus:border-sky-400"
                     />
                     <span className="text-sm text-stone-500 dark:text-neutral-400">{fr ? 'jour(s)' : 'day(s)'}</span>
                   </div>
@@ -165,15 +166,15 @@ export function BusinessContactedRemindersModal({ isOpen, onClose, ownerId }: Pr
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 pb-6 pt-2">
-          <button onClick={onClose} className="px-4 py-2.5 rounded-xl text-sm font-medium text-stone-400 hover:text-stone-600 dark:hover:text-white transition-colors">
+        <div className="flex items-center justify-end gap-3 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-stone-100 dark:border-white/5 sm:border-0 sm:px-6 sm:pb-6 sm:pt-2">
+          <button onClick={onClose} className="flex-1 sm:flex-none px-4 py-3 sm:py-2.5 rounded-full sm:rounded-xl bg-stone-100 dark:bg-white/5 sm:bg-transparent sm:dark:bg-transparent text-sm font-medium text-stone-400 hover:text-stone-600 dark:hover:text-white transition-colors">
             {fr ? 'Annuler' : 'Cancel'}
           </button>
           <button
             onClick={handleSave}
             disabled={saving || loading}
             className={cn(
-              'flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#006c49] text-sm font-bold text-white hover:bg-[#005a3d] transition-all shadow-lg disabled:opacity-50'
+              'flex flex-1 sm:flex-none justify-center items-center gap-2 px-6 py-3 sm:py-2.5 rounded-full bg-[#006c49] text-sm font-bold text-white hover:bg-[#005a3d] transition-all shadow-lg disabled:opacity-50'
             )}
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}

@@ -5,7 +5,7 @@ import {
   Calendar, Clock, BarChart3, GitBranch, CalendarDays, Mail,
   AlertCircle, DollarSign, ShoppingCart, Target, UserX, Ban,
   Save, CreditCard, History, LogIn, LogOut, Pencil, Check, X, Globe,
-  Link2, Copy, ExternalLink, Award, Percent, Receipt, CalendarRange, ChevronDown,
+  Link2, Copy, ExternalLink, Award, Percent, Receipt, CalendarRange, ChevronDown, ChevronRight,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { PhoneInput } from '../components/PhoneInput'
@@ -108,7 +108,15 @@ const isReallyOnline = (member: TeamMember) => {
 const GLASS_PANEL = 'bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700'
 const WHITE_CARD = 'bg-white dark:bg-neutral-800 rounded-2xl border border-stone-100 dark:border-neutral-700 shadow-sm'
 const LABEL_STYLE = 'text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold'
-const SECTION_TITLE = 'font-business-display font-extrabold text-lg text-stone-900 dark:text-white flex items-center gap-2'
+const SECTION_TITLE = 'font-business-display font-extrabold text-base sm:text-lg text-stone-900 dark:text-white flex items-center gap-2'
+// Téléphone : une section = une seule carte, lignes à fleur de carte (pas de carte dans la carte)
+const MOBILE_SECTION = 'max-sm:bg-white/70 dark:max-sm:bg-white/5 max-sm:ring-1 max-sm:ring-[#c4c7c7]/20 dark:max-sm:ring-neutral-700'
+const MOBILE_ROWS = 'max-sm:space-y-0 max-sm:divide-y max-sm:divide-stone-100 dark:max-sm:divide-neutral-700/60'
+// Action visible au survol à la souris, toujours visible au doigt
+const HOVER_REVEAL = '[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100'
+// Fiche membre : infos en lignes « libellé … valeur » sur téléphone
+const INFO_ROW = 'space-y-1 max-sm:space-y-0 max-sm:flex max-sm:items-center max-sm:justify-between max-sm:gap-3 max-sm:py-2.5'
+const INFO_VALUE = 'max-sm:min-w-0 max-sm:text-right max-xl:block max-xl:truncate'
 
 const ROLE_COLORS: Record<string, { bg: string; text: string; surface: string }> = {
   'Closer': { bg: 'bg-[#6ffbbe]/20 dark:bg-[#6ffbbe]/10', text: 'text-[#005236] dark:text-[#6ffbbe]', surface: 'bg-blue-50/20' },
@@ -155,7 +163,8 @@ function formatAncienneteLocalized(joinedAt: string, t: any): string {
   if (diffDays < 30) return `${diffDays} ${t.team_days}${diffDays > 1 ? 's' : ''}`
   if (diffDays < 365) {
     const months = Math.floor(diffDays / 30)
-    return `${months} ${t.team_months}${months > 1 ? 's' : ''}`
+    // « mois » est invariable : pas de « s » ajouté s'il y est déjà
+    return `${months} ${t.team_months}${months > 1 && !t.team_months.endsWith('s') ? 's' : ''}`
   }
   const years = (diffDays / 365).toFixed(1)
   return `${years} ${t.team_years}${parseFloat(years) >= 2 ? 's' : ''}`
@@ -165,10 +174,10 @@ const formatCurrencyLocalized = (v: number, lang: string) =>
   new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
 
 function Avatar({ member, size = 'md' }: { member: TeamMember; size?: 'sm' | 'md' | 'lg' | 'xl' }) {
-  const sizeClasses = { sm: 'h-9 w-9', md: 'h-12 w-12', lg: 'h-20 w-20', xl: 'h-32 w-32' }
-  const textClasses = { sm: 'text-xs', md: 'text-sm', lg: 'text-xl', xl: 'text-3xl' }
+  const sizeClasses = { sm: 'h-9 w-9', md: 'h-10 w-10 sm:h-12 sm:w-12', lg: 'h-20 w-20', xl: 'h-20 w-20 sm:h-32 sm:w-32' }
+  const textClasses = { sm: 'text-xs', md: 'text-sm', lg: 'text-xl', xl: 'text-2xl sm:text-3xl' }
   return (
-    <div className={cn(sizeClasses[size], 'rounded-full bg-stone-100 dark:bg-neutral-700 flex items-center justify-center overflow-hidden shrink-0', size === 'xl' ? 'border-4 border-white dark:border-neutral-900 shadow-xl' : 'ring-2 ring-white/80 dark:ring-neutral-800/80')}>
+    <div className={cn(sizeClasses[size], 'rounded-full bg-stone-100 dark:bg-neutral-700 flex items-center justify-center overflow-hidden shrink-0', size === 'xl' ? 'border-[3px] sm:border-4 border-white dark:border-neutral-900 shadow-xl' : 'ring-2 ring-white/80 dark:ring-neutral-800/80')}>
       {member.avatar_url ? (
         <img src={member.avatar_url} alt={`${member.first_name} ${member.last_name}`} className="h-full w-full object-cover" />
       ) : (
@@ -214,7 +223,7 @@ function ContactInfo({ member }: { member: TeamMember }) {
   }
 
   return (
-    <div className="mt-3 pt-3 space-y-1.5" onClick={e => e.stopPropagation()}>
+    <div className="mt-1.5 sm:mt-3 sm:pt-3 space-y-1 sm:space-y-1.5" onClick={e => e.stopPropagation()}>
       <div className="flex items-center gap-2 text-xs text-stone-500 dark:text-neutral-400">
         <Mail className="h-3 w-3 shrink-0" strokeWidth={1.5} />
         <span className="truncate">{member.email}</span>
@@ -247,7 +256,7 @@ function ContactInfo({ member }: { member: TeamMember }) {
               <span className="text-stone-300 dark:text-neutral-600 italic">{t.team_not_provided}</span>
             )}
             {isOwnCard && (
-              <button onClick={e => { e.stopPropagation(); setEditing(true) }} className="text-stone-300 dark:text-neutral-600 hover:text-stone-600 dark:hover:text-neutral-300 ml-auto shrink-0">
+              <button onClick={e => { e.stopPropagation(); setEditing(true) }} className="text-stone-300 dark:text-neutral-600 hover:text-stone-600 dark:hover:text-neutral-300 ml-auto shrink-0 max-sm:p-1.5 max-sm:-m-1.5">
                 <Pencil className="h-3 w-3" strokeWidth={1.5} />
               </button>
             )}
@@ -393,9 +402,9 @@ export function BusinessTeam() {
   /* ─── Detail view ─── */
   if (selectedMember) {
     return (
-      <div className="max-w-6xl mx-auto space-y-8">
+      <div className="max-w-6xl mx-auto space-y-4 sm:space-y-8">
         {/* Top Action Bar */}
-        <header className="flex items-center justify-between">
+        <header className="flex items-center justify-between gap-3">
           <button
             onClick={() => setSelectedMemberId(null)}
             className="group flex items-center gap-2 text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors"
@@ -406,7 +415,7 @@ export function BusinessTeam() {
           {isOwnerView && (
             <button
               onClick={() => handleDeleteMember(selectedMember.id)}
-              className="px-5 py-2.5 rounded-full bg-stone-900 text-white font-business-display font-bold text-sm hover:opacity-90 transition-all flex items-center gap-2"
+              className="px-5 py-2.5 max-sm:px-4 max-sm:py-0 max-sm:h-10 rounded-full bg-stone-900 text-white font-business-display font-bold text-sm hover:opacity-90 transition-all flex items-center gap-2 shrink-0 active:scale-95"
             >
               <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />
               {t.team_delete}
@@ -458,22 +467,23 @@ export function BusinessTeam() {
 
   /* ─── Kanban view ─── */
   return (
-    <div className="max-w-5xl mx-auto space-y-10">
+    <div className="max-w-5xl mx-auto space-y-4 sm:space-y-10">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h2 className="font-business-display text-2xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">
+      <div className="flex max-sm:flex-nowrap flex-wrap items-center justify-between gap-3 sm:gap-4">
+        <div className="min-w-0">
+          <h2 className="font-business-display text-xl sm:text-2xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">
             {members.length + 1} {members.length > 0 ? t.team_member_count_plural : t.team_member_count}
           </h2>
-          <p className="text-sm text-stone-400 dark:text-neutral-500 mt-1">{t.team_manage_subtitle}</p>
+          <p className="text-xs sm:text-sm text-stone-400 dark:text-neutral-500 mt-0.5 sm:mt-1">{t.team_manage_subtitle}</p>
         </div>
         {isOwnerView && (
           <button
             onClick={handleInviteClick}
-            className="flex items-center gap-2.5 rounded-full bg-stone-900 px-6 py-3 text-sm font-bold text-white font-business-display hover:opacity-90 transition-all"
+            aria-label={t.team_invite}
+            className="flex items-center gap-2.5 rounded-full bg-stone-900 px-6 py-3 text-sm font-bold text-white font-business-display hover:opacity-90 transition-all shrink-0 max-sm:h-10 max-sm:w-10 max-sm:p-0 max-sm:justify-center active:scale-95"
           >
-            <Plus className="h-4 w-4" strokeWidth={1.5} />
-            {t.team_invite}
+            <Plus className="h-4 w-4 max-sm:h-5 max-sm:w-5" strokeWidth={1.5} />
+            <span className="max-sm:hidden">{t.team_invite}</span>
           </button>
         )}
       </div>
@@ -501,23 +511,23 @@ export function BusinessTeam() {
         }
         return (
           <div className={cn(GLASS_PANEL, 'rounded-2xl overflow-hidden')}>
-            <div className="px-6 pt-5 pb-2 flex items-center gap-2.5">
+            <div className="px-4 pt-3 sm:px-6 sm:pt-5 pb-1 sm:pb-2 flex items-center gap-2.5">
               <Users className={cn('h-4 w-4', ownerColor.text)} strokeWidth={1.5} />
               <span className="font-business-display text-sm font-extrabold tracking-tight text-stone-900 dark:text-white">Owner</span>
             </div>
-            <div className="px-6 pb-6">
-              <div className="rounded-xl bg-stone-50/60 dark:bg-neutral-800/60 p-4">
-                <div className="flex items-start gap-4">
+            <div className="px-4 pb-3 sm:px-6 sm:pb-6">
+              <div className="sm:rounded-xl sm:bg-stone-50/60 sm:dark:bg-neutral-800/60 py-2 sm:p-4">
+                <div className="flex items-start gap-3 sm:gap-4">
                   <Avatar member={ownerAsMember} size="md" />
                   <div className="flex-1 min-w-0">
                     <p className="font-business-display text-sm font-extrabold tracking-tight text-stone-900 dark:text-white truncate">
                       {ownerInfo.full_name || 'Owner'}
                     </p>
-                    <span className={cn('inline-block mt-1.5 text-xs font-bold uppercase tracking-widest px-3 py-0.5 rounded-full', ownerColor.bg, ownerColor.text)}>
+                    <span className={cn('inline-block mt-1 sm:mt-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest px-2 sm:px-3 py-0.5 rounded-full', ownerColor.bg, ownerColor.text)}>
                       Owner
                     </span>
                     {ownerInfo.timezone && (
-                      <div className="flex items-center gap-2 mt-2 text-xs text-stone-400 dark:text-neutral-500">
+                      <div className="flex items-center gap-2 mt-1.5 sm:mt-2 text-xs text-stone-400 dark:text-neutral-500">
                         <Globe className="h-3 w-3" strokeWidth={1.5} />
                         <span>{getTimezoneLabel(ownerInfo.timezone)}</span>
                       </div>
@@ -531,12 +541,12 @@ export function BusinessTeam() {
         )
       })()}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {Object.entries(roleGroups).map(([role, roleMembers]) => {
             const color = getRoleColor(role)
             return (
-              <div key={role} className="rounded-2xl bg-stone-50/50 dark:bg-neutral-800/50 p-5">
-                <div className="flex items-center justify-between mb-4">
+              <div key={role} className={cn('rounded-2xl sm:bg-stone-50/50 sm:dark:bg-neutral-800/50 sm:p-5 max-sm:overflow-hidden', MOBILE_SECTION)}>
+                <div className="flex items-center justify-between mb-4 max-sm:mb-0 max-sm:px-4 max-sm:pt-3 max-sm:pb-1">
                   <div className="flex items-center gap-2.5">
                     <Users className={cn('h-4 w-4', color.text)} strokeWidth={1.5} />
                     <span className="font-business-display text-sm font-extrabold tracking-tight text-stone-900 dark:text-white">{role}</span>
@@ -546,7 +556,7 @@ export function BusinessTeam() {
                   </span>
                 </div>
 
-                <div className="space-y-3">
+                <div className={cn('space-y-3', MOBILE_ROWS)}>
                   {roleMembers.map((member) => {
                     const memberProspects = prospects.filter(p => p.assigned_to === member.id)
                     const memberWon = memberProspects.filter(p => p.stage === 'won')
@@ -558,9 +568,9 @@ export function BusinessTeam() {
                       <button
                         key={member.id}
                         onClick={() => setSelectedMemberId(member.id)}
-                        className="w-full rounded-xl bg-white/90 dark:bg-neutral-800/90 p-3 md:p-5 text-left hover:bg-white dark:hover:bg-neutral-700 hover:shadow-[0_20px_40px_rgba(27,28,27,0.06)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.3)] transition-all duration-300"
+                        className="w-full rounded-xl bg-white/90 dark:bg-neutral-800/90 p-3 md:p-5 text-left hover:bg-white dark:hover:bg-neutral-700 hover:shadow-[0_20px_40px_rgba(27,28,27,0.06)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.3)] transition-all duration-300 max-sm:rounded-none max-sm:bg-transparent dark:max-sm:bg-transparent max-sm:px-4 max-sm:py-3 max-sm:active:bg-stone-100/60 dark:max-sm:active:bg-white/5"
                       >
-                        <div className="flex items-start gap-4">
+                        <div className="flex items-start gap-3 sm:gap-4">
                           <div className="relative">
                             <Avatar member={member} size="md" />
                             <div
@@ -574,7 +584,7 @@ export function BusinessTeam() {
                             <p className="font-business-display text-sm font-extrabold tracking-tight text-stone-900 dark:text-white truncate">
                               {member.first_name} {member.last_name}
                             </p>
-                            <div className="mt-2.5 space-y-1.5 text-xs text-stone-500 dark:text-neutral-400">
+                            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 sm:block sm:mt-2.5 sm:space-y-1.5 text-xs text-stone-500 dark:text-neutral-400">
                               <div className="flex items-center gap-2">
                                 <CalendarDays className="h-3 w-3" strokeWidth={1.5} />
                                 <span>{formatAncienneteLocalized(member.joined_at, t)}</span>
@@ -604,11 +614,12 @@ export function BusinessTeam() {
                             </div>
                             <ContactInfo member={member} />
                             {memberAbsCount > 0 && (
-                              <div className="mt-3 pt-3 text-xs text-[#ffb95f] font-bold">
+                              <div className="mt-1.5 sm:mt-3 sm:pt-3 text-xs text-[#ffb95f] font-bold">
                                 {memberAbsCount} {t.team_absence_count}{memberAbsCount > 1 ? 's' : ''}
                               </div>
                             )}
                           </div>
+                          <ChevronRight className="sm:hidden h-4 w-4 text-stone-300 dark:text-neutral-600 shrink-0 self-center" strokeWidth={1.5} />
                         </div>
                       </button>
                     )
@@ -672,8 +683,8 @@ function BookingLinksSection({ memberId }: { memberId: string }) {
   }
 
   return (
-    <div className={cn(WHITE_CARD, 'p-8')}>
-      <h3 className={cn(SECTION_TITLE, 'mb-8')}>
+    <div className={cn(WHITE_CARD, 'p-4 sm:p-8')}>
+      <h3 className={cn(SECTION_TITLE, 'mb-4 sm:mb-8')}>
         <Link2 className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
         {t.team_booking_links}
       </h3>
@@ -687,16 +698,16 @@ function BookingLinksSection({ memberId }: { memberId: string }) {
           <p className="text-sm text-stone-400 dark:text-neutral-500">{t.team_no_booking_links}</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className={cn('space-y-4', MOBILE_ROWS)}>
           {links.map(bl => {
             const bookingUrl = bl.slug ? `${window.location.origin}/book/${bl.slug}` : bl.link
             return (
-              <div key={bl.id} className="flex items-center justify-between group p-3 rounded-xl hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors">
+              <div key={bl.id} className="flex items-center justify-between max-sm:gap-2 group p-3 max-sm:px-0 max-sm:py-2 rounded-xl hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors">
                 <div className="min-w-0 flex-1">
                   <h4 className="text-sm font-bold text-stone-900 dark:text-white truncate">{bl.label}</h4>
                   <p className="text-xs text-stone-500 dark:text-neutral-400 mt-0.5">{bl.duration} min</p>
                 </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                <div className={cn('flex gap-1 transition-all shrink-0', HOVER_REVEAL)}>
                   <button
                     onClick={() => handleCopy(bookingUrl)}
                     className="p-2 rounded-full hover:bg-stone-200 dark:hover:bg-neutral-700 transition-all text-stone-500 dark:text-neutral-400"
@@ -933,54 +944,54 @@ function IndividualView({
   const cleanPhone = (member.phone || '').replace(/[^0-9+]/g, '')
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-8">
       {/* ─── Profile Header (glass panel) ─── */}
-      <section className={cn(GLASS_PANEL, 'rounded-2xl p-8 flex flex-col md:flex-row items-center md:items-start gap-10')}>
+      <section className={cn(GLASS_PANEL, 'rounded-2xl p-4 pt-5 sm:p-8 flex flex-col md:flex-row items-center md:items-start gap-3 sm:gap-10')}>
         <div className="relative shrink-0">
           <Avatar member={member} size="xl" />
           <div
             className={cn(
-              'absolute bottom-1 right-1 w-6 h-6 rounded-full border-4 border-white dark:border-neutral-900',
+              'absolute bottom-0.5 right-0.5 sm:bottom-1 sm:right-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full border-[3px] sm:border-4 border-white dark:border-neutral-900',
               isMemberAbsent(member.id) ? 'bg-[#ffb95f]' : isReallyOnline(member) ? 'bg-[#006c49]' : 'bg-stone-300 dark:bg-neutral-600'
             )}
             title={isMemberAbsent(member.id) ? t.team_status_absent : isReallyOnline(member) ? t.team_status_online : t.team_status_offline}
           />
         </div>
-        <div className="flex-1 text-center md:text-left">
-          <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
-            <h2 className="text-4xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">
+        <div className="flex-1 w-full md:w-auto max-md:min-w-0 text-center md:text-left">
+          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 mb-4 sm:mb-6">
+            <h2 className="text-2xl sm:text-4xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white break-words">
               {member.first_name} {member.last_name}
             </h2>
-            <span className={cn('inline-flex px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest self-center md:self-auto', color.bg, color.text)}>
+            <span className={cn('inline-flex px-3 sm:px-4 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest whitespace-nowrap self-center md:self-auto', color.bg, color.text)}>
               {member.role}
             </span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="space-y-1">
-              <p className={LABEL_STYLE}>{t.team_label_email}</p>
-              <p className="text-sm font-semibold text-stone-900 dark:text-white">{member.email}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 lg:max-xl:grid-cols-2 gap-6 max-sm:gap-0 max-sm:text-left max-sm:border-t max-sm:border-stone-100 dark:max-sm:border-neutral-700/60 max-sm:divide-y max-sm:divide-stone-100 dark:max-sm:divide-neutral-700/60">
+            <div className={INFO_ROW}>
+              <p className={cn(LABEL_STYLE, 'shrink-0')}>{t.team_label_email}</p>
+              <p className={cn('text-sm font-semibold text-stone-900 dark:text-white', INFO_VALUE)}>{member.email}</p>
             </div>
-            <div className="space-y-1">
-              <p className={LABEL_STYLE}>{t.team_label_whatsapp}</p>
+            <div className={INFO_ROW}>
+              <p className={cn(LABEL_STYLE, 'shrink-0')}>{t.team_label_whatsapp}</p>
               {member.phone ? (
-                <a href={`https://wa.me/${cleanPhone}`} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-stone-900 dark:text-white hover:text-[#006c49] transition-colors">
+                <a href={`https://wa.me/${cleanPhone}`} target="_blank" rel="noopener noreferrer" className={cn('text-sm font-semibold text-stone-900 dark:text-white hover:text-[#006c49] transition-colors', INFO_VALUE)}>
                   {member.phone}
                 </a>
               ) : (
                 <p className="text-sm text-stone-300 dark:text-neutral-600 italic">—</p>
               )}
             </div>
-            <div className="space-y-1">
-              <p className={LABEL_STYLE}>{t.team_label_birthday}</p>
-              <p className="text-sm font-semibold text-stone-900 dark:text-white">
+            <div className={INFO_ROW}>
+              <p className={cn(LABEL_STYLE, 'shrink-0')}>{t.team_label_birthday}</p>
+              <p className={cn('text-sm font-semibold text-stone-900 dark:text-white', INFO_VALUE)}>
                 {member.date_of_birth
                   ? `${formatDateLocalized(member.date_of_birth, lang)} (${calculateAge(member.date_of_birth)} ${t.team_years_old})`
                   : '—'}
               </p>
             </div>
-            <div className="space-y-1">
-              <p className={LABEL_STYLE}>{t.team_label_arrival}</p>
-              <p className="text-sm font-semibold text-stone-900 dark:text-white">
+            <div className={INFO_ROW}>
+              <p className={cn(LABEL_STYLE, 'shrink-0')}>{t.team_label_arrival}</p>
+              <p className={cn('text-sm font-semibold text-stone-900 dark:text-white', INFO_VALUE)}>
                 {formatDateLocalized(member.joined_at, lang)}
               </p>
             </div>
@@ -990,42 +1001,42 @@ function IndividualView({
 
       {/* ─── KPI Row ─── */}
       {isOwnerView && (
-        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <div className={cn(WHITE_CARD, 'p-5')}>
+        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+          <div className={cn(WHITE_CARD, 'p-4 sm:p-5 max-lg:min-w-0')}>
             <p className={cn(LABEL_STYLE, 'mb-1')}>{t.team_label_prospects}</p>
-            <p className="text-2xl font-business-display font-extrabold text-stone-900 dark:text-white">{memberProspects.length}</p>
+            <p className="text-xl sm:text-2xl max-lg:truncate font-business-display font-extrabold text-stone-900 dark:text-white">{memberProspects.length}</p>
           </div>
-          <div className={cn(WHITE_CARD, 'p-5')}>
+          <div className={cn(WHITE_CARD, 'p-4 sm:p-5 max-lg:min-w-0')}>
             <p className={cn(LABEL_STYLE, 'mb-1')}>{t.team_label_sales}</p>
-            <p className="text-2xl font-business-display font-extrabold text-[#006c49]">{won.length}</p>
+            <p className="text-xl sm:text-2xl max-lg:truncate font-business-display font-extrabold text-[#006c49]">{won.length}</p>
           </div>
-          <div className={cn(WHITE_CARD, 'p-5')}>
+          <div className={cn(WHITE_CARD, 'p-4 sm:p-5 max-lg:min-w-0')}>
             <p className={cn(LABEL_STYLE, 'mb-1')}>{t.team_label_revenue}</p>
-            <p className="text-2xl font-business-display font-extrabold text-stone-900 dark:text-white">{formatCurrencyLocalized(revenue, lang)}</p>
+            <p className="text-xl sm:text-2xl max-lg:truncate font-business-display font-extrabold text-stone-900 dark:text-white">{formatCurrencyLocalized(revenue, lang)}</p>
           </div>
-          <div className={cn(WHITE_CARD, 'p-5')}>
+          <div className={cn(WHITE_CARD, 'p-4 sm:p-5 max-lg:min-w-0')}>
             <p className={cn(LABEL_STYLE, 'mb-1')}>{t.team_label_conversion}</p>
-            <p className="text-2xl font-business-display font-extrabold text-stone-900 dark:text-white">{convRate.toFixed(1)}%</p>
+            <p className="text-xl sm:text-2xl max-lg:truncate font-business-display font-extrabold text-stone-900 dark:text-white">{convRate.toFixed(1)}%</p>
           </div>
-          <div className={cn(WHITE_CARD, 'p-5')}>
+          <div className={cn(WHITE_CARD, 'p-4 sm:p-5 max-lg:min-w-0')}>
             <p className={cn(LABEL_STYLE, 'mb-1')}>{t.team_label_noshow}</p>
-            <p className="text-2xl font-business-display font-extrabold text-[#ba1a1a]">{noshowRate.toFixed(1)}%</p>
+            <p className="text-xl sm:text-2xl max-lg:truncate font-business-display font-extrabold text-[#ba1a1a]">{noshowRate.toFixed(1)}%</p>
           </div>
-          <div className={cn(WHITE_CARD, 'p-5')}>
+          <div className={cn(WHITE_CARD, 'p-4 sm:p-5 max-lg:min-w-0')}>
             <p className={cn(LABEL_STYLE, 'mb-1')}>{t.team_label_lost}</p>
-            <p className="text-2xl font-business-display font-extrabold text-stone-400">{lost.length}</p>
+            <p className="text-xl sm:text-2xl max-lg:truncate font-business-display font-extrabold text-stone-400">{lost.length}</p>
           </div>
         </section>
       )}
 
       {/* ─── Main Body Grid ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8 items-start">
         {/* ─── Left Column (Settings) ─── */}
-        <div className="lg:col-span-4 space-y-8">
+        <div className="lg:col-span-4 space-y-4 sm:space-y-8">
           {/* Role Management */}
           {isOwnerView && (
-            <div className={cn(GLASS_PANEL, 'rounded-2xl p-6')}>
-              <h3 className={cn(SECTION_TITLE, 'mb-6')}>
+            <div className={cn(GLASS_PANEL, 'rounded-2xl p-4 sm:p-6')}>
+              <h3 className={cn(SECTION_TITLE, 'mb-4 sm:mb-6')}>
                 <User className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
                 {t.team_role_management}
               </h3>
@@ -1106,8 +1117,8 @@ function IndividualView({
 
           {/* Rémunération */}
           {isOwnerView && (
-            <div className={cn(GLASS_PANEL, 'rounded-2xl p-6')}>
-              <h3 className={cn(SECTION_TITLE, 'mb-6')}>
+            <div className={cn(GLASS_PANEL, 'rounded-2xl p-4 sm:p-6')}>
+              <h3 className={cn(SECTION_TITLE, 'mb-4 sm:mb-6')}>
                 <span className="h-5 w-5 text-stone-400 flex items-center justify-center font-bold text-sm">€</span>
                 {t.team_compensation}
               </h3>
@@ -1125,7 +1136,7 @@ function IndividualView({
                         key={opt.value}
                         onClick={() => setCompType(opt.value)}
                         className={cn(
-                          'rounded-full px-3 py-2.5 text-xs font-bold transition-all',
+                          'rounded-full px-3 lg:max-xl:px-1 py-2.5 text-xs font-bold transition-all',
                           compType === opt.value
                             ? 'bg-stone-900 text-white dark:bg-white dark:text-stone-900'
                             : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700'
@@ -1216,8 +1227,8 @@ function IndividualView({
 
           {/* Pay Day */}
           {isOwnerView && (
-            <div className={cn(GLASS_PANEL, 'rounded-2xl p-6')}>
-              <h3 className={cn(SECTION_TITLE, 'mb-6')}>
+            <div className={cn(GLASS_PANEL, 'rounded-2xl p-4 sm:p-6')}>
+              <h3 className={cn(SECTION_TITLE, 'mb-4 sm:mb-6')}>
                 <CreditCard className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
                 {t.team_pay_date}
               </h3>
@@ -1256,15 +1267,15 @@ function IndividualView({
 
           {/* Primes / Bonuses */}
           {isOwnerView && (
-            <div className={cn(GLASS_PANEL, 'rounded-2xl p-6')}>
-              <div className="flex items-center justify-between mb-6">
+            <div className={cn(GLASS_PANEL, 'rounded-2xl p-4 sm:p-6')}>
+              <div className="flex items-center justify-between gap-3 mb-4 sm:mb-6">
                 <h3 className={cn(SECTION_TITLE)}>
                   <Award className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
                   {t.team_bonuses}
                 </h3>
                 <button
                   onClick={() => setShowBonusForm(!showBonusForm)}
-                  className="flex items-center gap-1.5 rounded-full bg-stone-100 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 transition-all"
+                  className="shrink-0 max-sm:h-9 flex items-center gap-1.5 rounded-full bg-stone-100 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 transition-all"
                 >
                   <Plus className="h-3.5 w-3.5" strokeWidth={2} />
                   {t.team_bonus_add}
@@ -1272,7 +1283,7 @@ function IndividualView({
               </div>
 
               {showBonusForm && (
-                <div className="mb-5 p-4 bg-stone-50 dark:bg-neutral-800 rounded-xl space-y-3">
+                <div className="mb-5 p-3 sm:p-4 bg-stone-50 dark:bg-neutral-800 rounded-xl space-y-3">
                   <input
                     type="text"
                     value={newBonusLabel}
@@ -1345,7 +1356,7 @@ function IndividualView({
                     const linkedInvoice = paidInvoices.find(i => i.id === bonus.invoice_id)
                     const isLast = idx === bonuses.length - 1
                     return (
-                      <div key={bonus.id} className={cn('flex items-center justify-between py-3 group', !isLast && 'border-b border-stone-100 dark:border-neutral-800')}>
+                      <div key={bonus.id} className={cn('flex items-center justify-between max-sm:gap-2 py-3 group', !isLast && 'border-b border-stone-100 dark:border-neutral-800')}>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-bold text-stone-900 dark:text-white truncate">{bonus.label}</p>
@@ -1370,11 +1381,11 @@ function IndividualView({
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-extrabold text-stone-900 dark:text-white font-business-display">
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-sm font-extrabold text-stone-900 dark:text-white font-business-display whitespace-nowrap">
                             {formatCurrencyLocalized(bonus.amount, lang)}
                           </span>
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className={cn('flex gap-1 transition-opacity', HOVER_REVEAL)}>
                             {!isPaid && (
                               <button
                                 onClick={() => handleMarkBonusPaid(bonus.id)}
@@ -1412,8 +1423,8 @@ function IndividualView({
 
           {/* Connection History */}
           {isOwnerView && (
-            <div className={cn(GLASS_PANEL, 'rounded-2xl p-6')}>
-              <h3 className={cn(SECTION_TITLE, 'mb-6')}>
+            <div className={cn(GLASS_PANEL, 'rounded-2xl p-4 sm:p-6')}>
+              <h3 className={cn(SECTION_TITLE, 'mb-4 sm:mb-6')}>
                 <History className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
                 {t.team_last_week}
               </h3>
@@ -1449,26 +1460,26 @@ function IndividualView({
         </div>
 
         {/* ─── Right Column (Data) ─── */}
-        <div className="lg:col-span-8 space-y-8">
+        <div className="lg:col-span-8 space-y-4 sm:space-y-8">
           {/* Pipeline */}
           {isOwnerView && (
-            <div className={cn(WHITE_CARD, 'p-8')}>
-              <h3 className={cn(SECTION_TITLE, 'mb-8')}>
+            <div className={cn(WHITE_CARD, 'p-4 sm:p-8')}>
+              <h3 className={cn(SECTION_TITLE, 'mb-4 sm:mb-8')}>
                 <GitBranch className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
                 {t.team_pipeline_distribution}
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-7 xl:grid-cols-6 gap-2 [&>*:last-child:nth-child(odd)]:col-span-2 md:[&>*:last-child:nth-child(odd)]:col-span-1">
                 {PIPELINE_STAGES.map(stage => {
                   const count = memberProspects.filter(p => p.stage === stage.id).length
                   const isHighlight = stage.id === 'won'
                   return (
                     <div key={stage.id} className={cn(
-                      'flex flex-col items-center p-4 rounded-xl',
+                      'flex flex-col items-center p-4 md:max-xl:px-1.5 rounded-xl max-sm:flex-row max-sm:justify-between max-sm:gap-2 max-sm:px-3 max-sm:py-2.5 max-sm:min-w-0',
                       isHighlight ? 'bg-[#6cf8bb]/15' : 'bg-stone-50 dark:bg-neutral-800',
                       stage.id === 'lost' && 'border-2 border-dashed border-stone-200 dark:border-neutral-700'
                     )}>
-                      <span className={cn('text-xs font-bold mb-1', isHighlight ? 'text-[#006c49] dark:text-[#6ffbbe]' : 'text-stone-400 dark:text-neutral-500')}>{stage.name}</span>
-                      <span className={cn('text-xl font-business-display font-extrabold', isHighlight ? 'text-[#006c49] dark:text-[#6ffbbe]' : count > 0 ? 'text-stone-900 dark:text-white' : 'text-stone-300 dark:text-neutral-600')}>{count}</span>
+                      <span className={cn('text-xs font-bold mb-1 max-sm:mb-0 max-xl:truncate max-xl:max-w-full', isHighlight ? 'text-[#006c49] dark:text-[#6ffbbe]' : 'text-stone-400 dark:text-neutral-500')}>{stage.name}</span>
+                      <span className={cn('text-xl max-sm:text-lg font-business-display font-extrabold', isHighlight ? 'text-[#006c49] dark:text-[#6ffbbe]' : count > 0 ? 'text-stone-900 dark:text-white' : 'text-stone-300 dark:text-neutral-600')}>{count}</span>
                     </div>
                   )
                 })}
@@ -1477,10 +1488,10 @@ function IndividualView({
           )}
 
           {/* Slots + Absences side by side */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
             {/* Disponibilité */}
-            <div className={cn(WHITE_CARD, 'p-6')}>
-              <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+            <div className={cn(WHITE_CARD, 'p-4 sm:p-6')}>
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4 sm:mb-6">
                 <h3 className={SECTION_TITLE}>
                   <Clock className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
                   {availTab === 'weekly' ? t.team_weekly_slots : t.temp_avail_title}
@@ -1564,10 +1575,10 @@ function IndividualView({
                               {DAYS.map((day, idx) => {
                                 const daySlots = (period.slots || []).filter(s => s.day_of_week === idx)
                                 return (
-                                  <div key={idx} className="flex items-center justify-between text-sm">
+                                  <div key={idx} className="flex items-center justify-between gap-3 text-sm">
                                     <span className="text-stone-500 dark:text-neutral-400 font-medium">{day}</span>
                                     {daySlots.length > 0 ? (
-                                      <span className="font-bold text-stone-900 dark:text-white">
+                                      <span className="font-bold text-stone-900 dark:text-white text-right">
                                         {daySlots.map(s => `${s.start_time?.slice(0, 5)} — ${s.end_time?.slice(0, 5)}`).join(', ')}
                                       </span>
                                     ) : (
@@ -1593,10 +1604,10 @@ function IndividualView({
                   {DAYS.map((day, idx) => {
                     const daySlots = slots.filter(s => s.day_of_week === idx)
                     return (
-                      <div key={idx} className="flex items-center justify-between text-sm">
+                      <div key={idx} className="flex items-center justify-between gap-3 text-sm">
                         <span className="text-stone-500 dark:text-neutral-400 font-medium">{day}</span>
                         {daySlots.length > 0 ? (
-                          <span className="font-bold text-stone-900 dark:text-white">
+                          <span className="font-bold text-stone-900 dark:text-white text-right">
                             {daySlots.map(s => `${s.start_time?.slice(0, 5)} — ${s.end_time?.slice(0, 5)}`).join(', ')}
                           </span>
                         ) : (
@@ -1610,8 +1621,8 @@ function IndividualView({
             </div>
 
             {/* Absences */}
-            <div className={cn(WHITE_CARD, 'p-6')}>
-              <h3 className={cn(SECTION_TITLE, 'mb-6')}>
+            <div className={cn(WHITE_CARD, 'p-4 sm:p-6')}>
+              <h3 className={cn(SECTION_TITLE, 'mb-4 sm:mb-6')}>
                 <Calendar className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
                 {t.team_planned_absences}
               </h3>
@@ -1652,8 +1663,8 @@ function IndividualView({
           <BookingLinksSection memberId={member.id} />
 
           {/* Upcoming Appointments (table format) */}
-          <div className={cn(WHITE_CARD, 'p-8')}>
-            <h3 className={cn(SECTION_TITLE, 'mb-8')}>
+          <div className={cn(WHITE_CARD, 'p-4 sm:p-8')}>
+            <h3 className={cn(SECTION_TITLE, 'mb-4 sm:mb-8')}>
               <CalendarDays className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
               {t.team_upcoming_appointments}
             </h3>
@@ -1664,30 +1675,30 @@ function IndividualView({
               </div>
             ) : (
               <div className="overflow-hidden">
-                <table className="w-full text-left">
-                  <thead>
+                <table className="w-full text-left max-sm:block">
+                  <thead className="max-sm:hidden">
                     <tr className="border-b border-stone-100 dark:border-neutral-800">
                       <th className={cn(LABEL_STYLE, 'pb-4')}>{t.team_th_prospect}</th>
                       <th className={cn(LABEL_STYLE, 'pb-4')}>{t.team_th_date}</th>
                       <th className={cn(LABEL_STYLE, 'pb-4 text-right')}>{t.team_th_status}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-stone-50 dark:divide-neutral-800">
+                  <tbody className="divide-y divide-stone-50 dark:divide-neutral-800 max-sm:block max-sm:divide-stone-100">
                     {upcomingAppts.map(appt => {
                       const prospect = prospects.find(p => p.id === appt.prospect_id)
                       const prospectName = prospect ? (prospect.contact || prospect.company || `Prospect #${prospect.id}`) : t.team_appt_appointment
                       const initials = prospectName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
                       return (
-                        <tr key={appt.id} className="group hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors">
-                          <td className="py-4">
+                        <tr key={appt.id} className="group hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors max-sm:grid max-sm:grid-cols-[minmax(0,1fr)_auto] max-sm:items-center max-sm:gap-x-3 max-sm:py-3">
+                          <td className="py-4 max-sm:py-0 max-sm:min-w-0">
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-full bg-stone-200 dark:bg-neutral-700 flex items-center justify-center text-xs font-bold text-stone-500 dark:text-neutral-300 shrink-0">
                                 {initials}
                               </div>
-                              <span className="text-sm font-bold text-stone-900 dark:text-white truncate">{prospectName}</span>
+                              <span className="text-sm font-bold text-stone-900 dark:text-white truncate min-w-0">{prospectName}</span>
                             </div>
                           </td>
-                          <td className="py-4">
+                          <td className="py-4 max-sm:py-0 max-sm:col-start-1 max-sm:row-start-2 max-sm:pl-11 max-sm:min-w-0 max-sm:[&>p]:truncate">
                             {(() => {
                               const localDt = appt.datetime_utc ? fromUTC(appt.datetime_utc, userTimezone) : { date: appt.date, time: appt.time?.slice(0, 5) || '00:00' }
                               const showMemberTz = memberTz !== userTimezone && appt.datetime_utc
@@ -1708,9 +1719,9 @@ function IndividualView({
                               <p className="text-xs text-stone-400 dark:text-neutral-500">{prospect.company || prospect.contact || ''}</p>
                             )}
                           </td>
-                          <td className="py-4 text-right">
+                          <td className="py-4 text-right max-sm:py-0 max-sm:col-start-2 max-sm:row-start-1 max-sm:row-span-2">
                             <span className={cn(
-                              'text-xs font-bold px-3 py-1 rounded-full',
+                              'text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap max-sm:text-[11px] max-sm:px-2 max-sm:py-0.5',
                               appt.status === 'confirmed' ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300' :
                               appt.status === 'done' ? 'bg-[#6ffbbe]/20 dark:bg-[#6ffbbe]/10 text-[#005236] dark:text-[#6ffbbe]' :
                               'bg-[#ffddb8]/40 dark:bg-amber-500/10 text-[#653e00] dark:text-amber-300'

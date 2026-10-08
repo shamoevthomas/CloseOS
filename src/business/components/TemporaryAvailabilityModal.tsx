@@ -150,20 +150,22 @@ export function TemporaryAvailabilityModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl">
+      {/* Téléphone : feuille du bas (poignée, en-tête et pied collants, contenu défilant) */}
+      <div className="relative w-full max-w-2xl max-h-[92dvh] sm:max-h-[90vh] overflow-y-auto overscroll-contain rounded-t-3xl sm:rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl">
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-white dark:bg-neutral-900 px-6 md:px-8 pt-7 pb-5 border-b border-stone-100 dark:border-white/10">
-          <button onClick={onClose} className="absolute top-6 right-6 text-stone-300 dark:text-neutral-600 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
+        <div className="sticky top-0 z-10 bg-white dark:bg-neutral-900 px-5 sm:px-6 md:px-8 pt-3 sm:pt-7 pb-4 sm:pb-5 border-b border-stone-100 dark:border-white/10">
+          <div className="sm:hidden mx-auto mb-3 h-1 w-10 rounded-full bg-stone-300 dark:bg-neutral-700" />
+          <button onClick={onClose} aria-label={t.availability_cancel} className="absolute top-6 right-6 max-sm:top-6 max-sm:right-4 max-sm:p-1 text-stone-300 dark:text-neutral-600 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
             <X className="h-5 w-5" strokeWidth={1.5} />
           </button>
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#006c49]/10 shrink-0">
+          <div className="flex items-center gap-3 max-sm:pr-8">
+            <div className="flex h-11 w-11 max-sm:h-10 max-sm:w-10 items-center justify-center rounded-2xl bg-[#006c49]/10 shrink-0">
               <CalendarRange className="h-5 w-5 text-[#006c49]" strokeWidth={1.5} />
             </div>
-            <div>
-              <h2 className="text-lg md:text-xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-lg md:text-xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">
                 {editing ? t.temp_avail_modal_edit_title : t.temp_avail_modal_new_title}
               </h2>
               <p className="text-xs text-stone-500 dark:text-neutral-400 mt-0.5">{t.temp_avail_override_note}</p>
@@ -171,15 +173,15 @@ export function TemporaryAvailabilityModal({
           </div>
         </div>
 
-        <div className="px-6 md:px-8 py-6 space-y-6">
+        <div className="px-5 sm:px-6 md:px-8 py-5 sm:py-6 space-y-5 sm:space-y-6">
           {/* Dates + label */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className="block text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold mb-2">{t.availability_start_date}</label>
               <input
                 type="date" value={startDate}
                 onChange={e => { setStartDate(e.target.value); if (endDate && e.target.value > endDate) setEndDate(e.target.value) }}
-                className="w-full rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-4 py-2.5 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20"
+                className="w-full min-w-0 rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-4 max-sm:px-3 py-2.5 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20"
               />
             </div>
             <div>
@@ -187,7 +189,7 @@ export function TemporaryAvailabilityModal({
               <input
                 type="date" value={endDate} min={startDate || undefined}
                 onChange={e => setEndDate(e.target.value)}
-                className="w-full rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-4 py-2.5 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20"
+                className="w-full min-w-0 rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-4 max-sm:px-3 py-2.5 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20"
               />
             </div>
           </div>
@@ -205,7 +207,7 @@ export function TemporaryAvailabilityModal({
             <button
               onClick={copyFromBase}
               disabled={baseSlots.length === 0}
-              className="flex items-center gap-2 rounded-full bg-stone-100 dark:bg-white/5 px-4 py-2 text-xs font-bold text-stone-700 dark:text-neutral-200 hover:bg-stone-200 dark:hover:bg-white/10 transition-colors disabled:opacity-40"
+              className="flex items-center gap-2 rounded-full bg-stone-100 dark:bg-white/5 px-4 py-2 max-sm:min-h-[36px] text-xs font-bold text-stone-700 dark:text-neutral-200 hover:bg-stone-200 dark:hover:bg-white/10 transition-colors disabled:opacity-40"
             >
               <Copy className="h-3.5 w-3.5" strokeWidth={1.5} />
               {t.temp_avail_copy_base}
@@ -213,7 +215,7 @@ export function TemporaryAvailabilityModal({
             <button
               onClick={() => setSlots([])}
               disabled={slots.length === 0}
-              className="flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold text-stone-500 dark:text-neutral-400 hover:text-[#ba1a1a] transition-colors disabled:opacity-40"
+              className="flex items-center gap-2 rounded-full px-4 py-2 max-sm:min-h-[36px] text-xs font-bold text-stone-500 dark:text-neutral-400 hover:text-[#ba1a1a] transition-colors disabled:opacity-40"
             >
               <Eraser className="h-3.5 w-3.5" strokeWidth={1.5} />
               {t.temp_avail_clear_all}
@@ -221,12 +223,12 @@ export function TemporaryAvailabilityModal({
           </div>
 
           {/* Créneaux par jour */}
-          <div className="space-y-2">
+          <div className="space-y-2 max-sm:space-y-0 max-sm:rounded-2xl max-sm:bg-[#f5f3f2] dark:max-sm:bg-white/5 max-sm:divide-y max-sm:divide-white dark:max-sm:divide-neutral-900">
             {DAYS.map((day, idx) => {
               const daySlots = slots.filter(s => s.day_of_week === idx)
               return (
-                <div key={idx} className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-3 md:p-4 flex flex-col md:flex-row md:items-center gap-3">
-                  <div className="flex items-center gap-3 md:w-32 shrink-0">
+                <div key={idx} className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-3 md:p-4 flex flex-col md:flex-row md:items-center gap-3 max-sm:gap-2 max-sm:rounded-none max-sm:bg-transparent dark:max-sm:bg-transparent max-sm:px-4">
+                  <div className="flex items-center gap-3 md:w-32 shrink-0 max-sm:gap-2">
                     <div className={cn('h-2 w-2 rounded-full', daySlots.length > 0 ? 'bg-[#006c49]' : 'bg-[#c4c7c7]/40 dark:bg-neutral-600')} />
                     <span className={cn(
                       'text-sm font-bold',
@@ -236,9 +238,9 @@ export function TemporaryAvailabilityModal({
 
                   <div className="flex flex-wrap items-center gap-2 flex-grow">
                     {daySlots.map((slot, i) => (
-                      <div key={`${idx}-${i}`} className="flex items-center gap-2 bg-[#ffddb8] dark:bg-amber-900/30 text-[#2a1700] dark:text-amber-400 px-3 py-1.5 rounded-full text-xs font-semibold">
+                      <div key={`${idx}-${i}`} className="flex items-center gap-2 max-sm:gap-0.5 bg-[#ffddb8] dark:bg-amber-900/30 text-[#2a1700] dark:text-amber-400 px-3 py-1.5 max-sm:pr-1 max-sm:py-0 max-sm:min-h-[36px] rounded-full text-xs font-semibold tabular-nums">
                         {slot.start_time} - {slot.end_time}
-                        <button onClick={() => removeSlot(idx, i)} className="hover:text-[#ba1a1a] dark:hover:text-red-400 transition-colors">
+                        <button onClick={() => removeSlot(idx, i)} aria-label={lang === 'en' ? 'Delete' : 'Supprimer'} className="hover:text-[#ba1a1a] dark:hover:text-red-400 transition-colors max-sm:min-h-[36px] max-sm:min-w-[32px] max-sm:flex max-sm:items-center max-sm:justify-center">
                           <X className="h-3 w-3" strokeWidth={2} />
                         </button>
                       </div>
@@ -248,19 +250,19 @@ export function TemporaryAvailabilityModal({
                     )}
 
                     {addingDay === idx ? (
-                      <div className="flex flex-wrap items-center gap-2">
-                        <input type="time" value={newStart} onChange={e => handleStartChange(e.target.value)} className="rounded-full bg-white dark:bg-neutral-800 border-none px-3 py-1.5 text-xs font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
+                      <div className="flex flex-wrap items-center gap-2 max-sm:w-full max-sm:grid max-sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+                        <input type="time" value={newStart} onChange={e => handleStartChange(e.target.value)} className="rounded-full bg-white dark:bg-neutral-800 border-none px-3 py-1.5 text-xs font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 max-sm:min-h-[40px] max-sm:w-full max-sm:min-w-0" />
                         <span className="text-xs text-stone-400 dark:text-neutral-500">{t.availability_to_time}</span>
-                        <input type="time" value={newEnd} onChange={e => handleEndChange(e.target.value)} className="rounded-full bg-white dark:bg-neutral-800 border-none px-3 py-1.5 text-xs font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
-                        <button onClick={() => addSlot(idx)} className="rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 px-3 py-1.5 text-xs font-bold text-white hover:opacity-90">OK</button>
-                        <button onClick={() => setAddingDay(null)} className="text-stone-400 dark:text-neutral-500 hover:text-stone-700 dark:hover:text-neutral-200">
+                        <input type="time" value={newEnd} onChange={e => handleEndChange(e.target.value)} className="rounded-full bg-white dark:bg-neutral-800 border-none px-3 py-1.5 text-xs font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 max-sm:min-h-[40px] max-sm:w-full max-sm:min-w-0" />
+                        <button onClick={() => addSlot(idx)} className="rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 px-3 py-1.5 text-xs font-bold text-white hover:opacity-90 max-sm:min-h-[40px] max-sm:row-start-2 max-sm:col-start-3">OK</button>
+                        <button onClick={() => setAddingDay(null)} aria-label={t.availability_cancel} className="text-stone-400 dark:text-neutral-500 hover:text-stone-700 dark:hover:text-neutral-200 max-sm:h-10 max-sm:w-10 max-sm:flex max-sm:items-center max-sm:justify-center max-sm:row-start-2 max-sm:col-start-1 max-sm:col-span-2 max-sm:justify-self-end">
                           <X className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     ) : (
                       <button
                         onClick={() => handleStartAdding(idx)}
-                        className="flex items-center gap-1.5 border border-dashed border-[#c4c7c7] dark:border-neutral-700/50 px-3 py-1.5 rounded-full text-xs text-stone-500 dark:text-neutral-400 hover:bg-white dark:hover:bg-white/5 hover:border-stone-400 transition-all"
+                        className="flex items-center gap-1.5 border border-dashed border-[#c4c7c7] dark:border-neutral-700/50 px-3 py-1.5 max-sm:min-h-[36px] rounded-full text-xs text-stone-500 dark:text-neutral-400 hover:bg-white dark:hover:bg-white/5 hover:border-stone-400 transition-all"
                       >
                         <Plus className="h-3 w-3" strokeWidth={1.5} />
                         {t.availability_add_short}
@@ -274,16 +276,16 @@ export function TemporaryAvailabilityModal({
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-white dark:bg-neutral-900 px-6 md:px-8 py-5 border-t border-stone-100 dark:border-white/10 flex gap-3">
+        <div className="sticky bottom-0 bg-white dark:bg-neutral-900 px-5 sm:px-6 md:px-8 pt-3 sm:py-5 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-stone-100 dark:border-white/10 flex gap-3">
           <button
             onClick={handleSave}
             disabled={saving || !startDate || !endDate}
-            className="flex-1 rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 py-3.5 text-sm font-business-display font-extrabold text-white hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            className="flex-1 rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 py-3.5 max-sm:py-3 text-sm font-business-display font-extrabold text-white hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             {t.temp_avail_save}
           </button>
-          <button onClick={onClose} className="px-6 py-3.5 text-sm font-bold text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors">
+          <button onClick={onClose} className="px-6 max-sm:px-4 py-3.5 max-sm:py-3 text-sm font-bold text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors">
             {t.availability_cancel}
           </button>
         </div>

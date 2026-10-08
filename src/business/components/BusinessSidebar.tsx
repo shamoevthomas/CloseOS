@@ -36,6 +36,7 @@ import { signSupabase } from '../../lib/signSupabase'
 import { trustDeviceFromSession } from '../../lib/signDevice'
 import type { BusinessTranslations } from '../i18n/translations'
 import { usePendingApprovalsCount } from '../hooks/usePendingApprovalsCount'
+import { useIsDesktopNav } from '../hooks/useIsDesktopNav'
 
 interface NavItem {
   name: string
@@ -137,6 +138,7 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
   const isHeadOfSales = isTeamMember && teamMember?.role === 'Head of Sales'
   const isAdmin = isTeamMember && teamMember?.role === 'Admin'
   const pendingApprovalsCount = usePendingApprovalsCount()
+  const isDesktopNav = useIsDesktopNav()
 
   const SOLO_HIDDEN_ROUTES = ['/business/team', '/business/factures', '/business/report']
   const ACQUISITION_ROUTES = ['/business/campagnes', '/business/formulaires', '/business/acquisition']
@@ -252,23 +254,23 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
 
   // Auto-collapse after 3 seconds on desktop
   useEffect(() => {
-    if (window.innerWidth < 1024) return
+    if (!isDesktopNav) return
     const timer = setTimeout(() => {
       onCollapseChange?.(true)
     }, 3000)
     return () => clearTimeout(timer)
-  }, [])
+  }, [isDesktopNav])
 
   const handleMouseEnter = useCallback(() => {
-    if (window.innerWidth < 1024) return
+    if (!isDesktopNav) return
     onCollapseChange?.(false)
-  }, [onCollapseChange])
+  }, [onCollapseChange, isDesktopNav])
 
   const handleMouseLeave = useCallback(() => {
-    if (window.innerWidth < 1024) return
+    if (!isDesktopNav) return
     onCollapseChange?.(true)
     setIsMenuOpen(false)
-  }, [onCollapseChange])
+  }, [onCollapseChange, isDesktopNav])
 
   const fullName = isTeamMember
     ? `${teamMember?.first_name || ''} ${teamMember?.last_name || ''}`.trim() || user?.user_metadata?.full_name || user?.user_metadata?.name || t.sidebar_member
@@ -279,14 +281,14 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
     ? (teamMember?.avatar_url || user?.user_metadata?.avatar_url)
     : (dbAvatarUrl || businessProfile?.avatar_url || user?.user_metadata?.avatar_url);
 
-  const collapsed = isCollapsed && window.innerWidth >= 1024
+  const collapsed = isCollapsed && isDesktopNav
 
   return (
     <>
-      {/* Mobile overlay */}
-      {isOpen && (
+      {/* Mobile / tablette : voile derrière le tiroir */}
+      {isOpen && !isDesktopNav && (
         <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
           onClick={onClose}
         />
       )}
@@ -297,14 +299,18 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
         onMouseLeave={handleMouseLeave}
         className={cn(
           "fixed z-50 flex flex-col transition-all duration-300 ease-in-out",
-          collapsed
-            ? (dark
-              ? "lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-24 lg:items-center lg:py-4 bg-[#141211] lg:border-r lg:border-neutral-800"
-              : "lg:fixed lg:left-4 lg:top-4 lg:h-[calc(100vh-2rem)] lg:w-20 lg:rounded-[3rem] lg:border lg:border-neutral-200 lg:items-center lg:py-4 bg-[#f4f2f1] shadow-[0_20px_40px_rgba(27,28,27,0.04)]"
-            )
-            : "shadow-[0_20px_40px_rgba(27,28,27,0.04)] backdrop-blur-xl inset-y-0 left-0 lg:static lg:w-72 bg-white/60 dark:bg-neutral-900/80 border-r border-neutral-900/5 dark:border-neutral-800",
-          // Mobile: fixed slide-in
-          isOpen ? "translate-x-0 w-72" : "-translate-x-full lg:translate-x-0"
+          !isDesktopNav
+            // Mobile / tablette tactile : tiroir coulissant
+            ? cn(
+                "inset-y-0 left-0 w-72 max-w-[85vw] bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-r border-neutral-900/5 dark:border-neutral-800 shadow-[0_20px_40px_rgba(27,28,27,0.08)] pb-[env(safe-area-inset-bottom)]",
+                isOpen ? "translate-x-0" : "-translate-x-full"
+              )
+            : collapsed
+              ? (dark
+                ? "fixed left-0 top-0 h-screen w-24 items-center py-4 bg-[#141211] border-r border-neutral-800"
+                : "fixed left-4 top-4 h-[calc(100vh-2rem)] w-20 rounded-[3rem] border border-neutral-200 items-center py-4 bg-[#f4f2f1] shadow-[0_20px_40px_rgba(27,28,27,0.04)]"
+              )
+              : "shadow-[0_20px_40px_rgba(27,28,27,0.04)] backdrop-blur-xl inset-y-0 left-0 static w-72 bg-white/60 dark:bg-neutral-900/80 border-r border-neutral-900/5 dark:border-neutral-800"
         )}
       >
         {/* Header */}
@@ -333,9 +339,11 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
                 <img src="/closeos-business-logo-ecrit.png" alt="CloseOS Business" className="h-14 w-auto object-contain dark:hidden" />
                 <img src="/closeos-business-logo-ecrit-dark.png" alt="CloseOS Business" className="h-14 w-auto object-contain hidden dark:block" />
               </div>
-              <button onClick={onClose} className="lg:hidden ml-auto p-2 text-neutral-400 hover:text-neutral-900">
+              {!isDesktopNav && (
+              <button onClick={onClose} aria-label="Fermer le menu" className="ml-auto p-2 text-neutral-400 hover:text-neutral-900 dark:hover:text-white">
                 <X className="h-5 w-5" />
               </button>
+              )}
             </>
           )}
         </div>
@@ -343,7 +351,7 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
         {/* Organisation block */}
         {!collapsed && (
           <button
-            onClick={() => { navigate('/business/organisation'); if (window.innerWidth < 1024) onClose?.(); }}
+            onClick={() => { navigate('/business/organisation'); if (!isDesktopNav) onClose?.(); }}
             className="mx-4 mt-4 flex items-center gap-3 rounded-xl bg-neutral-900/5 dark:bg-white/5 px-3 py-2.5 transition-colors hover:bg-neutral-900/10 dark:hover:bg-white/10"
           >
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-neutral-100 dark:bg-neutral-800 overflow-hidden shrink-0">
@@ -381,7 +389,7 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
                 key={item.name + item.href}
                 to={item.href}
                 onClick={() => {
-                  if (window.innerWidth < 1024) onClose?.();
+                  if (!isDesktopNav) onClose?.();
                 }}
                 className={({ isActive }) =>
                   cn(

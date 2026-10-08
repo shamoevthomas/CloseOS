@@ -117,6 +117,43 @@ select option:disabled {
   }
 }
 
+/* iPhone : Safari zoome la page dès qu'on touche un champ dont la police fait moins de 16px.
+   On garde donc 16px sur les champs de saisie des petits écrans iOS (n'affecte ni Android ni le bureau). */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 767px) {
+    /* Les champs déjà plus grands (titres en text-lg…text-4xl) gardent leur taille. */
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([class~="text-lg"]):not([class~="text-xl"]):not([class~="text-2xl"]):not([class~="text-3xl"]):not([class~="text-4xl"]),
+    select:not([class~="text-lg"]):not([class~="text-xl"]):not([class~="text-2xl"]),
+    textarea:not([class~="text-lg"]):not([class~="text-xl"]):not([class~="text-2xl"]):not([class~="text-3xl"]):not([class~="text-4xl"]) {
+      font-size: 16px !important;
+    }
+  }
+}
+
+/* Les classes font-['Manrope'] / font-['Inter'] n'ont pas de police de secours : tant que la
+   police web n'est pas chargée (réseau lent, Google Fonts bloqué), le navigateur affichait du Times.
+   On ajoute une pile sans-serif (règle placée après les utilitaires Tailwind, donc prioritaire). */
+[class*="font-['Manrope']"] {
+  font-family: 'Manrope', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+[class*="font-['Inter']"] {
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+/* CloseOS Business : fond du body assorti (rebond de défilement iOS, pages plus courtes que l'écran). */
+body:has(.business-app) {
+  background-color: #f4f2f1;
+}
+html.dark body:has(.business-app) {
+  background-color: #141211;
+}
+
+/* CloseOS Business : pas de flash gris au toucher (les éléments ont leurs propres états actifs). */
+.business-app,
+.business-app * {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* Hero blob animation */
 @keyframes blob {
   0%, 100% { transform: translate(0, 0) scale(1); }

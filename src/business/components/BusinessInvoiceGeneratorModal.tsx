@@ -796,32 +796,35 @@ export function BusinessInvoiceGeneratorModal({
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={handleClose}
     >
+      {/* Mobile : feuille du bas (colonne : poignée + contenu qui défile) ; dès sm : modale centrée inchangée */}
       <div
         className={cn(
-          "relative bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700 w-full",
-          step === 2 ? 'max-h-[90vh] overflow-hidden w-full max-w-4xl' : 'max-w-4xl max-h-[90vh] overflow-y-auto'
+          "relative bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-2xl shadow-2xl ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700 w-full flex flex-col sm:block",
+          step === 2 ? 'max-h-[92dvh] sm:max-h-[90vh] overflow-hidden w-full max-w-4xl' : 'max-w-4xl max-h-[92dvh] sm:max-h-[90vh] overflow-hidden sm:overflow-y-auto'
         )}
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="sm:hidden mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-stone-300 dark:bg-neutral-700" />
         {/* Close button */}
         <button
           onClick={handleClose}
-          className="absolute right-4 top-4 z-10 rounded-lg p-2 text-[#444748] hover:bg-[#eae8e7] dark:hover:bg-neutral-800 dark:text-neutral-400 transition-colors"
+          aria-label="Fermer"
+          className="absolute right-2 top-3 sm:right-4 sm:top-4 z-10 rounded-lg p-2 text-[#444748] hover:bg-[#eae8e7] dark:hover:bg-neutral-800 dark:text-neutral-400 transition-colors"
         >
           <X className="h-5 w-5" />
         </button>
 
         {/* ==================== STEP 1: CONFIGURATION ==================== */}
         {step === 1 && (
-          <div className="p-4 md:p-8">
-            <h2 className="mb-6 text-2xl font-bold text-[#1b1c1b] dark:text-white">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain sm:overflow-visible px-5 pt-0 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:p-4 md:p-8">
+            <h2 className="sticky top-0 z-[5] -mx-5 px-5 pt-3 pb-3 pr-14 mb-3 bg-white dark:bg-neutral-900 text-xl sm:static sm:mx-0 sm:p-0 sm:mb-6 sm:bg-transparent sm:dark:bg-transparent sm:text-2xl font-bold text-[#1b1c1b] dark:text-white">
               {t.invoice_gen_config_title}
             </h2>
 
-            <div className="space-y-6">
+            <div className="space-y-5 sm:space-y-6">
               {/* Invoice Number */}
               <div>
                 <label className={labelCls}>{t.invoice_gen_invoice_number}</label>
@@ -860,7 +863,7 @@ export function BusinessInvoiceGeneratorModal({
                     <label className={labelCls}>{t.invoice_gen_issuer_name}</label>
                     <input type="text" value={issuerCompanyName} onChange={(e) => setIssuerCompanyName(e.target.value)} className={inputCls} placeholder="Ex: ACME SARL, Jean Dupont EI..." />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className={labelCls}>{t.invoice_gen_address}</label>
                       <input type="text" value={issuerAddress} onChange={(e) => setIssuerAddress(e.target.value)} className={inputCls} placeholder="123 Rue de la Paix" />
@@ -870,7 +873,7 @@ export function BusinessInvoiceGeneratorModal({
                       <input type="text" value={issuerCity} onChange={(e) => setIssuerCity(e.target.value)} className={inputCls} placeholder="Paris" />
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     <div>
                       <label className={labelCls}>{t.invoice_gen_zip}</label>
                       <input type="text" value={issuerZip} onChange={(e) => setIssuerZip(e.target.value)} className={inputCls} placeholder="75001" />
@@ -879,12 +882,12 @@ export function BusinessInvoiceGeneratorModal({
                       <label className={labelCls}>{t.invoice_gen_country}</label>
                       <input type="text" value={issuerCountry} onChange={(e) => setIssuerCountry(e.target.value)} className={inputCls} placeholder="France" />
                     </div>
-                    <div>
+                    <div className="col-span-2 sm:col-span-1">
                       <label className={labelCls}>{t.invoice_gen_siret}</label>
                       <input type="text" value={issuerSiret} onChange={(e) => setIssuerSiret(e.target.value)} className={inputCls} placeholder="123 456 789 00012" />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className={labelCls}>{t.invoice_gen_email}</label>
                       <input type="email" value={issuerEmail} onChange={(e) => setIssuerEmail(e.target.value)} className={inputCls} placeholder="contact@entreprise.com" />
@@ -898,7 +901,7 @@ export function BusinessInvoiceGeneratorModal({
               )}
 
               {/* Payment Method Section */}
-              <div className="space-y-4 rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-white/5 p-5">
+              <div className="space-y-3 sm:space-y-4 rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-white/5 p-4 sm:p-5">
                 <h3 className="text-sm font-bold text-[#1b1c1b] dark:text-white flex items-center gap-2">
                   <Download className="h-4 w-4 text-[#006c49]" />
                   {t.invoice_gen_payment_method}
@@ -987,7 +990,7 @@ export function BusinessInvoiceGeneratorModal({
                 <h3 className="text-xs font-bold uppercase tracking-widest text-[#444748] dark:text-neutral-400 mb-3">
                   {t.invoice_gen_late_penalties}
                 </h3>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3 items-end">
                   <div>
                     <label className={labelCls}>{t.invoice_gen_annual_rate}</label>
                     <input
@@ -1018,7 +1021,7 @@ export function BusinessInvoiceGeneratorModal({
                 type="button"
                 onClick={handlePreview}
                 disabled={isGeneratingLink}
-                className="w-full rounded-xl bg-[#006c49] px-6 py-3.5 font-bold text-white transition-all hover:bg-[#005a3d] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full rounded-xl bg-[#006c49] px-6 py-3.5 font-bold text-white transition-all hover:bg-[#005a3d] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 max-sm:sticky max-sm:bottom-0 max-sm:z-[5] max-sm:shadow-lg max-sm:shadow-black/15 active:scale-[0.98]"
               >
                 {isGeneratingLink ? (
                   <>
@@ -1035,12 +1038,12 @@ export function BusinessInvoiceGeneratorModal({
 
         {/* ==================== STEP 2: EDIT + LIVE PREVIEW ==================== */}
         {step === 2 && (
-          <div className="flex flex-col h-[90vh]">
+          <div className="flex flex-col h-[92dvh] sm:h-[90vh] min-h-0 flex-1 sm:flex-none">
             {/* Actions bar */}
-            <div className="px-6 py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-800 flex items-center justify-between shrink-0">
+            <div className="pl-4 pr-14 sm:pl-6 sm:pr-16 xl:px-6 py-3 sm:py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-800 flex items-center justify-between gap-2 shrink-0">
               <button
                 onClick={() => setStep(1)}
-                className="flex items-center gap-2 rounded-full border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-2 text-sm font-semibold text-[#444748] dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors"
+                className="flex items-center gap-1.5 sm:gap-2 rounded-full border border-[#c4c7c7]/20 dark:border-neutral-700 px-3 sm:px-4 py-2 text-sm font-semibold text-[#444748] dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors shrink-0"
               >
                 <ChevronLeft className="h-4 w-4" />
                 {t.invoice_gen_back}
@@ -1049,7 +1052,7 @@ export function BusinessInvoiceGeneratorModal({
               <button
                 onClick={handleValidate}
                 disabled={isValidating}
-                className="flex items-center gap-2 bg-[#006c49] text-white rounded-full px-8 py-2.5 font-bold hover:bg-[#005a3d] transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 bg-[#006c49] text-white rounded-full px-4 sm:px-8 py-2.5 text-sm sm:text-base font-bold hover:bg-[#005a3d] transition-colors disabled:opacity-50 whitespace-nowrap active:scale-[0.98]"
               >
                 {isValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                 {isValidating ? t.invoice_gen_validating : t.invoice_gen_validate}
@@ -1057,9 +1060,9 @@ export function BusinessInvoiceGeneratorModal({
             </div>
 
             {/* Split: Edit Left | Preview Right */}
-            <div className="flex flex-col md:flex-row flex-1 min-h-0">
+            <div className="flex flex-col md:flex-row flex-1 min-h-0 max-md:overflow-y-auto max-md:overscroll-contain">
               {/* ─── LEFT: EDIT PANEL ─── */}
-              <div className="w-full md:w-[340px] shrink-0 md:border-r border-b md:border-b-0 border-[#c4c7c7]/10 dark:border-neutral-800 overflow-y-auto p-4 space-y-4">
+              <div className="w-full md:w-[340px] shrink-0 md:border-r border-b md:border-b-0 border-[#c4c7c7]/10 dark:border-neutral-800 md:overflow-y-auto p-4 space-y-4">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-[#444748] dark:text-neutral-500 flex items-center gap-2">
                   <Pencil className="h-3.5 w-3.5" />
                   {t.invoice_gen_edit_invoice}
@@ -1352,7 +1355,7 @@ export function BusinessInvoiceGeneratorModal({
               </div>
 
               {/* ─── RIGHT: LIVE PREVIEW ─── */}
-              <div className="overflow-y-auto overflow-x-auto bg-white dark:bg-neutral-950 flex-1 min-w-0">
+              <div className="overflow-y-auto overflow-x-auto bg-white dark:bg-neutral-950 flex-1 min-w-0 max-md:flex-none max-md:pb-[env(safe-area-inset-bottom)]">
                   <div
                     id="invoice-preview-content"
                     ref={invoiceRef}

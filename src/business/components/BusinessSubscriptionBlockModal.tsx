@@ -11,24 +11,24 @@ export function BusinessSubscriptionBlockModal({ deadline }: Props) {
   const daysLeft = Math.max(0, Math.ceil((new Date(deadline).getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 sm:p-10 shadow-2xl text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-50 mb-5">
-          <Lock className="h-7 w-7 text-red-500" />
+    <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
+      <div className="w-full sm:max-w-md max-h-[92dvh] sm:max-h-none overflow-y-auto overscroll-contain sm:overflow-visible rounded-t-3xl sm:rounded-2xl bg-white px-6 pt-8 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-10 shadow-2xl text-center">
+        <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-red-50 mb-4 sm:mb-5">
+          <Lock className="h-6 w-6 sm:h-7 sm:w-7 text-red-500" />
         </div>
 
         <h2
-          className="text-2xl font-extrabold text-stone-900 tracking-tight mb-3"
+          className="text-xl sm:text-2xl font-extrabold text-stone-900 tracking-tight mb-2 sm:mb-3"
           style={{ fontFamily: 'Manrope, sans-serif' }}
         >
           {t.block_access_blocked || 'Accès bloqué'}
         </h2>
 
-        <p className="text-stone-500 mb-4 leading-relaxed">
+        <p className="text-sm sm:text-base text-stone-500 mb-4 leading-relaxed sm:leading-relaxed">
           {t.block_renewal_failed || 'Le renouvellement de votre abonnement a échoué. Veuillez mettre à jour votre moyen de paiement pour continuer à utiliser CloseOS Business.'}
         </p>
 
-        <div className="rounded-xl bg-red-50 p-4 mb-6 flex items-center gap-3">
+        <div className="rounded-xl bg-red-50 p-3.5 sm:p-4 mb-5 sm:mb-6 flex items-center gap-3">
           <AlertTriangle className="h-5 w-5 text-red-500 shrink-0" />
           <p className="text-sm text-red-700 font-semibold text-left">
             {daysLeft > 0
@@ -45,7 +45,7 @@ export function BusinessSubscriptionBlockModal({ deadline }: Props) {
           {t.block_update_payment || 'Mettre à jour le paiement'}
         </Link>
 
-        <p className="mt-4 text-xs text-stone-400">
+        <p className="mt-3 sm:mt-4 text-xs text-stone-400">
           {t.block_need_help || 'Besoin d\'aide ?'}{' '}
           <a href="mailto:support@closeos.fr" className="text-stone-600 hover:underline">
             support@closeos.fr

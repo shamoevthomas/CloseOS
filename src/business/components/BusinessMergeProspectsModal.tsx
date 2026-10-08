@@ -55,13 +55,13 @@ export function BusinessMergeProspectsModal({ isOpen, left, right, onClose, onMe
         type="button"
         onClick={() => setKeepSide(side)}
         className={cn(
-          'flex-1 min-w-0 text-left rounded-2xl border p-5 transition-all',
+          'flex-1 min-w-0 text-left rounded-2xl border p-4 sm:p-5 transition-all active:scale-[0.99]',
           kept
             ? 'border-[#006c49] ring-2 ring-[#006c49]/25 bg-[#006c49]/5'
             : 'border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/40 hover:border-stone-300'
         )}
       >
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
           <span className={cn(
             'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-widest',
             kept ? 'bg-[#006c49] text-white' : 'bg-stone-100 dark:bg-neutral-800 text-stone-400 dark:text-neutral-500'
@@ -69,7 +69,7 @@ export function BusinessMergeProspectsModal({ isOpen, left, right, onClose, onMe
             {kept ? <><Check className="h-3 w-3" /> {fr ? 'Conservée' : 'Kept'}</> : (fr ? 'Cliquer pour conserver' : 'Click to keep')}
           </span>
         </div>
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-3 mb-3 sm:mb-4">
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-stone-100 dark:bg-neutral-800 text-sm font-bold text-stone-900 dark:text-white uppercase shrink-0">
             {displayName(p).charAt(0) || <User className="h-5 w-5" />}
           </div>
@@ -104,12 +104,13 @@ export function BusinessMergeProspectsModal({ isOpen, left, right, onClose, onMe
   }
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
       <div className="absolute inset-0 bg-stone-900/40 backdrop-blur-md" onClick={onClose} />
-      <div className="relative w-full max-w-3xl max-h-[92vh] flex flex-col rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-stone-200 dark:border-neutral-700">
-        <div className="flex items-center justify-between border-b border-stone-200 dark:border-neutral-700 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#006c49]/15">
+      <div className="relative w-full max-w-3xl max-h-[94dvh] sm:max-h-[92vh] flex flex-col rounded-t-3xl sm:rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-stone-200 dark:border-neutral-700">
+        <div className="relative flex items-center justify-between gap-3 border-b border-stone-200 dark:border-neutral-700 px-4 sm:px-6 pt-5 pb-3 sm:py-4">
+          <div className="sm:hidden absolute left-1/2 top-1.5 h-1 w-10 -translate-x-1/2 rounded-full bg-stone-300 dark:bg-neutral-700" />
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#006c49]/15">
               <GitMerge className="h-4 w-4 text-[#006c49]" />
             </div>
             <div>
@@ -117,13 +118,13 @@ export function BusinessMergeProspectsModal({ isOpen, left, right, onClose, onMe
               <p className="text-[11px] text-stone-400 dark:text-neutral-500">{fr ? 'Choisissez la fiche à conserver' : 'Choose the record to keep'}</p>
             </div>
           </div>
-          <button onClick={onClose} className="rounded-lg p-2 text-stone-400 dark:text-neutral-500 hover:bg-stone-100 dark:hover:bg-neutral-800 hover:text-stone-900">
+          <button onClick={onClose} aria-label={fr ? 'Fermer' : 'Close'} className="shrink-0 rounded-full sm:rounded-lg p-2 bg-stone-100 dark:bg-neutral-800 sm:bg-transparent sm:dark:bg-transparent text-stone-400 dark:text-neutral-500 hover:bg-stone-100 dark:hover:bg-neutral-800 hover:text-stone-900">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="flex flex-col lg:flex-row items-stretch gap-4">
+        <div className="flex-1 overflow-y-auto overscroll-contain p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6">
+          <div className="flex flex-col lg:flex-row items-stretch gap-3 sm:gap-4">
             <Card p={left} side="left" />
             <div className="flex lg:flex-col items-center justify-center gap-2 shrink-0">
               <div className="hidden lg:block w-px flex-1 bg-stone-200 dark:bg-neutral-700" />

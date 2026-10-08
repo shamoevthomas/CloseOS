@@ -111,17 +111,20 @@ export function InviteMemberModal({ isOpen, onClose, onSeatLimitReached }: Props
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 backdrop-blur-md p-4">
-      <div className="w-full max-w-md bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 dark:border-neutral-700 p-6 relative animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-stone-900/40 backdrop-blur-md p-0 sm:p-4">
+      {/* Téléphone : feuille du bas */}
+      <div className="w-full max-w-md max-sm:max-w-none max-h-[92dvh] sm:max-h-[90vh] overflow-y-auto overscroll-contain bg-white/95 dark:bg-neutral-900/95 max-sm:bg-white max-sm:dark:bg-neutral-900 backdrop-blur-xl rounded-t-3xl sm:rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 dark:border-neutral-700 max-sm:border-x-0 max-sm:border-b-0 p-6 max-sm:px-5 max-sm:pt-3 max-sm:pb-[max(1.25rem,env(safe-area-inset-bottom))] relative animate-in zoom-in-95 duration-200">
+        <div className="sm:hidden mx-auto mb-4 h-1 w-10 rounded-full bg-stone-300 dark:bg-neutral-700" />
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 text-stone-400 dark:text-neutral-500 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors"
+          aria-label={t.invite_close}
+          className="absolute top-4 right-4 max-sm:top-6 max-sm:p-1 text-stone-400 dark:text-neutral-500 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors"
         >
           <X className="h-5 w-5" />
         </button>
 
-        <h2 className="text-xl font-['Manrope'] font-extrabold tracking-tight text-stone-900 dark:text-white mb-2">{t.invite_title}</h2>
-        <p className="text-stone-500 dark:text-neutral-400 text-sm mb-6">{t.invite_desc}</p>
+        <h2 className="text-xl max-sm:text-lg max-sm:pr-8 font-['Manrope'] font-extrabold tracking-tight text-stone-900 dark:text-white mb-2 max-sm:mb-1">{t.invite_title}</h2>
+        <p className="text-stone-500 dark:text-neutral-400 text-sm mb-6 max-sm:mb-5">{t.invite_desc}</p>
 
         {!generatedLink ? (
           <>
@@ -132,7 +135,7 @@ export function InviteMemberModal({ isOpen, onClose, onSeatLimitReached }: Props
                   <button
                     key={role}
                     onClick={() => setSelectedRole(role)}
-                    className={`rounded-full border py-2 px-3 text-sm font-medium transition-all ${
+                    className={`rounded-full border py-2 px-3 max-sm:min-h-[40px] text-sm font-medium transition-all ${
                       selectedRole === role
                         ? 'border-stone-900 bg-stone-900 text-white'
                         : 'border-stone-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-700'
@@ -154,8 +157,8 @@ export function InviteMemberModal({ isOpen, onClose, onSeatLimitReached }: Props
 
             {selectedRole === 'Head of Sales' && (
               <div className="mb-4 rounded-xl border border-stone-200/20 dark:border-neutral-700 bg-stone-100/50 dark:bg-neutral-800/50 p-4">
-                <div className="flex items-center justify-between">
-                  <div>
+                <div className="flex items-center justify-between max-sm:gap-3">
+                  <div className="max-sm:min-w-0">
                     <p className="text-sm font-semibold text-stone-900 dark:text-white">{t.invite_hos_campaign_mgmt}</p>
                     <p className="text-xs text-stone-500 dark:text-neutral-400 mt-0.5">{t.invite_hos_campaign_desc}</p>
                   </div>
@@ -215,7 +218,7 @@ export function InviteMemberModal({ isOpen, onClose, onSeatLimitReached }: Props
             <button
               onClick={handleGenerate}
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 rounded-full bg-stone-900 py-3 font-bold text-white shadow-lg hover:bg-stone-800 active:scale-95 transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 rounded-full bg-stone-900 max-sm:mt-1 py-3 font-bold text-white shadow-lg hover:bg-stone-800 active:scale-95 transition-all disabled:opacity-50"
             >
               {loading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -236,11 +239,12 @@ export function InviteMemberModal({ isOpen, onClose, onSeatLimitReached }: Props
                   type="text"
                   value={generatedLink}
                   readOnly
-                  className="flex-1 rounded-full bg-stone-100/50 dark:bg-neutral-800 border-none py-2 px-3 text-xs text-stone-700 dark:text-neutral-200 font-mono focus:ring-2 focus:ring-emerald-600/20"
+                  className="flex-1 min-w-0 rounded-full bg-stone-100/50 dark:bg-neutral-800 border-none py-2 px-3 text-xs text-stone-700 dark:text-neutral-200 font-mono focus:ring-2 focus:ring-emerald-600/20"
                 />
                 <button
                   onClick={handleCopy}
-                  className="rounded-full bg-emerald-600 p-2 text-white hover:bg-emerald-500 active:scale-95 transition-all"
+                  aria-label={lang === 'en' ? 'Copy' : 'Copier'}
+                  className="shrink-0 rounded-full bg-emerald-600 p-2 max-sm:p-2.5 text-white hover:bg-emerald-500 active:scale-95 transition-all"
                 >
                   {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 </button>
@@ -257,7 +261,7 @@ export function InviteMemberModal({ isOpen, onClose, onSeatLimitReached }: Props
               {emailSent ? (
                 <div className="flex items-center gap-2 text-emerald-600">
                   <Check className="h-4 w-4" />
-                  <p className="text-sm font-medium">{t.invite_email_sent.replace('{email}', inviteEmail)}</p>
+                  <p className="text-sm font-medium min-w-0 break-words">{t.invite_email_sent.replace('{email}', inviteEmail)}</p>
                 </div>
               ) : (
                 <>
@@ -267,12 +271,13 @@ export function InviteMemberModal({ isOpen, onClose, onSeatLimitReached }: Props
                       value={inviteEmail}
                       onChange={(e) => { setInviteEmail(e.target.value); setEmailError(null); }}
                       placeholder={t.invite_email_placeholder}
-                      className="flex-1 rounded-full bg-white dark:bg-neutral-800 border border-stone-300 dark:border-neutral-600 py-2.5 px-4 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 dark:placeholder:text-neutral-500 outline-none focus:ring-2 focus:ring-stone-900/10"
+                      className="flex-1 min-w-0 rounded-full bg-white dark:bg-neutral-800 border border-stone-300 dark:border-neutral-600 py-2.5 px-4 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 dark:placeholder:text-neutral-500 outline-none focus:ring-2 focus:ring-stone-900/10"
                     />
                     <button
                       onClick={handleSendEmail}
                       disabled={emailSending || !inviteEmail}
-                      className="rounded-full bg-stone-900 dark:bg-white dark:text-black p-2.5 text-white hover:bg-stone-800 active:scale-95 transition-all disabled:opacity-50"
+                      aria-label={t.invite_send_by_email}
+                      className="shrink-0 rounded-full bg-stone-900 dark:bg-white dark:text-black p-2.5 text-white hover:bg-stone-800 active:scale-95 transition-all disabled:opacity-50"
                     >
                       {emailSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     </button>

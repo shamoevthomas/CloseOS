@@ -42,6 +42,10 @@ const getRoleColor = (role: string) =>
 
 const ROLE_ORDER = ['Head of Sales', 'Admin', 'Setter', 'Closer', 'Setter-Closer']
 
+// Kanban tactile : colonnes à fleur d'écran et aimantées sur téléphone ; actions au survol visibles au doigt
+const KANBAN_COL = 'min-w-[min(82vw,280px)] sm:min-w-[280px] max-w-[320px] w-[82vw] sm:w-[320px] shrink-0 snap-start'
+const HOVER_REVEAL = '[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100'
+
 const isReallyOnline = (member: TeamMember) => {
   if (!member.is_online) return false
   if (!member.last_heartbeat_at) return member.is_online
@@ -75,6 +79,8 @@ export function TeamKanban({ members, onMemberTeamChange }: Props) {
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null)
   const [editTeamName, setEditTeamName] = useState('')
   const [addMemberDropdown, setAddMemberDropdown] = useState<string | null>(null)
+  // Aimantation (scroll-snap) coupée pendant un drag : sinon elle annule l'auto-défilement de la rangée
+  const [isDragging, setIsDragging] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const loadTeams = useCallback(async () => {
@@ -151,6 +157,7 @@ export function TeamKanban({ members, onMemberTeamChange }: Props) {
   }
 
   const onDragEnd = async (result: DropResult) => {
+    setIsDragging(false)
     if (!result.destination || !canEdit) return
     const memberId = result.draggableId
     const member = members.find(m => m.id === memberId)
@@ -198,18 +205,18 @@ export function TeamKanban({ members, onMemberTeamChange }: Props) {
   if (loading) return null
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
           <LayoutGrid className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
-          <h3 className="font-business-display text-lg font-extrabold tracking-tight text-stone-900 dark:text-white">
+          <h3 className="font-business-display text-base sm:text-lg font-extrabold tracking-tight text-stone-900 dark:text-white truncate">
             {t.kanban_title}
           </h3>
         </div>
         {canEdit && !creatingTeam && (
           <button
             onClick={() => setCreatingTeam(true)}
-            className="flex items-center gap-2 rounded-full bg-stone-900 dark:bg-white/10 px-5 py-2.5 text-sm font-bold text-white font-business-display hover:opacity-90 transition-all"
+            className="flex items-center gap-2 rounded-full bg-stone-900 dark:bg-white/10 px-5 py-2.5 max-sm:px-4 max-sm:py-0 max-sm:h-10 text-sm font-bold text-white font-business-display hover:opacity-90 transition-all shrink-0 active:scale-95"
           >
             <Plus className="h-4 w-4" strokeWidth={1.5} />
             {t.kanban_new_team}
@@ -218,26 +225,32 @@ export function TeamKanban({ members, onMemberTeamChange }: Props) {
       </div>
 
       {creatingTeam && (
-        <div className="flex items-center gap-3 bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700 rounded-2xl p-4">
+        <div className="flex items-center gap-2 sm:gap-3 bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700 rounded-2xl p-4 max-sm:py-2 max-sm:pr-2">
           <input
             autoFocus
             value={newTeamName}
             onChange={e => setNewTeamName(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleCreateTeam(); if (e.key === 'Escape') setCreatingTeam(false) }}
             placeholder={t.kanban_team_name_placeholder}
-            className="flex-1 bg-transparent text-sm font-bold text-stone-900 dark:text-white placeholder:text-stone-300 dark:placeholder:text-neutral-600 outline-none"
+            className="flex-1 min-w-0 bg-transparent text-sm font-bold text-stone-900 dark:text-white placeholder:text-stone-300 dark:placeholder:text-neutral-600 outline-none"
           />
-          <button onClick={handleCreateTeam} className="p-2 rounded-full bg-[#006c49] text-white hover:opacity-90 transition-all">
+          <button onClick={handleCreateTeam} aria-label="OK" className="p-2 max-sm:p-3 shrink-0 rounded-full bg-[#006c49] text-white hover:opacity-90 transition-all">
             <Check className="h-4 w-4" strokeWidth={1.5} />
           </button>
-          <button onClick={() => { setCreatingTeam(false); setNewTeamName('') }} className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-neutral-800 text-stone-400 transition-all">
+          <button onClick={() => { setCreatingTeam(false); setNewTeamName('') }} aria-label={lang === 'en' ? 'Cancel' : 'Annuler'} className="p-2 max-sm:p-3 shrink-0 rounded-full hover:bg-stone-100 dark:hover:bg-neutral-800 text-stone-400 transition-all">
             <X className="h-4 w-4" strokeWidth={1.5} />
           </button>
         </div>
       )}
 
-      <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex gap-5 overflow-x-auto pb-4" style={{ minHeight: 200 }}>
+      <DragDropContext onDragStart={() => setIsDragging(true)} onDragEnd={onDragEnd}>
+        <div
+          className={cn(
+            'flex gap-3 sm:gap-5 overflow-x-auto pb-4 max-sm:-mx-4 max-sm:px-4 max-sm:scroll-px-4 max-sm:no-scrollbar [@media(pointer:coarse)]:overscroll-x-contain',
+            !isDragging && '[@media(pointer:coarse)]:snap-x [@media(pointer:coarse)]:snap-mandatory'
+          )}
+          style={{ minHeight: 200 }}
+        >
           {/* Unassigned pool */}
           <Droppable droppableId="unassigned" isDropDisabled={!canEdit}>
             {(provided, snapshot) => (
@@ -245,7 +258,7 @@ export function TeamKanban({ members, onMemberTeamChange }: Props) {
                 ref={provided.innerRef}
                 {...provided.droppableProps}
                 className={cn(
-                  'min-w-[280px] max-w-[320px] w-[320px] shrink-0 rounded-2xl p-4 transition-colors',
+                  'rounded-2xl p-4 max-sm:p-3.5 transition-colors', KANBAN_COL,
                   'bg-stone-100/60 dark:bg-neutral-800/40 ring-1 ring-stone-200/50 dark:ring-neutral-700/50',
                   snapshot.isDraggingOver && 'ring-[#006c49]/40 bg-[#006c49]/5'
                 )}
@@ -284,7 +297,7 @@ export function TeamKanban({ members, onMemberTeamChange }: Props) {
                     ref={provided.innerRef}
                     {...provided.droppableProps}
                     className={cn(
-                      'min-w-[280px] max-w-[320px] w-[320px] shrink-0 rounded-2xl p-4 transition-colors',
+                      'rounded-2xl p-4 max-sm:p-3.5 transition-colors', KANBAN_COL,
                       'bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700',
                       snapshot.isDraggingOver && 'ring-[#006c49]/40 bg-[#006c49]/5'
                     )}
@@ -298,7 +311,7 @@ export function TeamKanban({ members, onMemberTeamChange }: Props) {
                             value={editTeamName}
                             onChange={e => setEditTeamName(e.target.value)}
                             onKeyDown={e => { if (e.key === 'Enter') handleRenameTeam(team.id); if (e.key === 'Escape') setEditingTeamId(null) }}
-                            className="flex-1 bg-transparent text-sm font-bold text-stone-900 dark:text-white outline-none"
+                            className="flex-1 min-w-0 bg-transparent text-sm font-bold text-stone-900 dark:text-white outline-none"
                           />
                           <button onClick={() => handleRenameTeam(team.id)} className="text-[#006c49]">
                             <Check className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -309,7 +322,7 @@ export function TeamKanban({ members, onMemberTeamChange }: Props) {
                         </div>
                       ) : (
                         <>
-                          <span className="font-business-display text-sm font-extrabold tracking-tight text-stone-900 dark:text-white">
+                          <span className="font-business-display text-sm font-extrabold tracking-tight text-stone-900 dark:text-white truncate min-w-0">
                             {team.name}
                           </span>
                           <span className="text-xs font-bold text-stone-400 dark:text-neutral-500 bg-stone-100/80 dark:bg-neutral-700/60 px-2 py-0.5 rounded-full">
@@ -319,13 +332,15 @@ export function TeamKanban({ members, onMemberTeamChange }: Props) {
                             <div className="ml-auto flex items-center gap-1">
                               <button
                                 onClick={() => { setEditingTeamId(team.id); setEditTeamName(team.name) }}
-                                className="p-1.5 rounded-full hover:bg-stone-100 dark:hover:bg-neutral-800 text-stone-300 dark:text-neutral-600 hover:text-stone-600 dark:hover:text-neutral-300 transition-all"
+                                aria-label={lang === 'en' ? 'Rename' : 'Renommer'}
+                                className="p-1.5 max-sm:p-2 rounded-full hover:bg-stone-100 dark:hover:bg-neutral-800 text-stone-300 dark:text-neutral-600 hover:text-stone-600 dark:hover:text-neutral-300 transition-all"
                               >
                                 <Pencil className="h-3 w-3" strokeWidth={1.5} />
                               </button>
                               <button
                                 onClick={() => handleDeleteTeam(team.id)}
-                                className="p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-500/10 text-stone-300 dark:text-neutral-600 hover:text-red-500 transition-all"
+                                aria-label={lang === 'en' ? 'Delete' : 'Supprimer'}
+                                className="p-1.5 max-sm:p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-500/10 text-stone-300 dark:text-neutral-600 hover:text-red-500 transition-all"
                               >
                                 <Trash2 className="h-3 w-3" strokeWidth={1.5} />
                               </button>
@@ -348,7 +363,7 @@ export function TeamKanban({ members, onMemberTeamChange }: Props) {
                       <div className="relative mt-3" ref={addMemberDropdown === team.id ? dropdownRef : undefined}>
                         <button
                           onClick={() => setAddMemberDropdown(addMemberDropdown === team.id ? null : team.id)}
-                          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-stone-200 dark:border-neutral-700 text-stone-400 dark:text-neutral-500 hover:border-[#006c49]/40 hover:text-[#006c49] dark:hover:border-[#6ffbbe]/30 dark:hover:text-[#6ffbbe] transition-all text-xs font-bold"
+                          className="w-full flex items-center justify-center gap-2 py-2.5 max-sm:min-h-[40px] rounded-xl border-2 border-dashed border-stone-200 dark:border-neutral-700 text-stone-400 dark:text-neutral-500 hover:border-[#006c49]/40 hover:text-[#006c49] dark:hover:border-[#6ffbbe]/30 dark:hover:text-[#6ffbbe] transition-all text-xs font-bold"
                         >
                           <Plus className="h-3.5 w-3.5" strokeWidth={2} />
                           {t.kanban_add}
@@ -483,7 +498,7 @@ function RoleGroupedMembers({
                         )}
                       >
                         {draggable && (
-                          <GripVertical className="h-3 w-3 text-stone-200 dark:text-neutral-600 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={1.5} />
+                          <GripVertical className={cn('h-3 w-3 text-stone-200 dark:text-neutral-600 shrink-0 transition-opacity', HOVER_REVEAL)} strokeWidth={1.5} />
                         )}
                         <MiniAvatar member={member} />
                         <div className="min-w-0">
@@ -500,7 +515,7 @@ function RoleGroupedMembers({
                         {onRemove && canDragRole(member.role) && (
                           <button
                             onClick={(e) => { e.stopPropagation(); onRemove(member.id) }}
-                            className="p-0.5 rounded-full text-stone-200 dark:text-neutral-700 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+                            className={cn('p-0.5 max-sm:p-1.5 max-sm:-my-1 max-sm:-mr-1.5 rounded-full text-stone-200 dark:text-neutral-700 max-sm:text-stone-400 hover:text-red-400 transition-colors shrink-0', HOVER_REVEAL)}
                           >
                             <X className="h-3 w-3" strokeWidth={2} />
                           </button>

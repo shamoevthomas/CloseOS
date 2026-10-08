@@ -102,22 +102,25 @@ export function CreateTrackingModal({ isOpen, onClose, userId, onCreated }: Prop
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 backdrop-blur-md p-4">
-      <div className="w-full max-w-md bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 dark:border-neutral-700 p-6 relative animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-stone-900/40 backdrop-blur-md p-0 sm:p-4">
+      {/* Mobile : feuille du bas (poignée, fond opaque, marge de sécurité en bas) */}
+      <div className="w-full sm:max-w-md max-h-[92dvh] sm:max-h-none overflow-y-auto overscroll-contain sm:overflow-visible bg-white sm:bg-white/95 dark:bg-neutral-900 sm:dark:bg-neutral-900/95 sm:backdrop-blur-xl rounded-t-3xl sm:rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 dark:border-neutral-700 px-5 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:p-6 relative animate-in zoom-in-95 duration-200">
+        <div className="sm:hidden mx-auto mb-3 h-1 w-10 rounded-full bg-stone-300 dark:bg-neutral-700" />
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 text-stone-400 dark:text-neutral-500 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors"
+          aria-label="Fermer"
+          className="absolute top-4 right-3 p-2 sm:p-0 sm:top-4 sm:right-4 text-stone-400 dark:text-neutral-500 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors"
         >
           <X className="h-5 w-5" />
         </button>
 
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center">
+        <div className="flex items-center gap-2 mb-2 pr-10 sm:pr-0">
+          <div className="w-8 h-8 shrink-0 rounded-full bg-red-500/10 flex items-center justify-center">
             <Radar className="h-4 w-4 text-red-600" />
           </div>
-          <h2 className="text-xl font-['Manrope'] font-extrabold tracking-tight text-stone-900 dark:text-white">{t.title}</h2>
+          <h2 className="text-lg sm:text-xl font-['Manrope'] font-extrabold tracking-tight text-stone-900 dark:text-white">{t.title}</h2>
         </div>
-        <p className="text-stone-500 dark:text-neutral-400 text-sm mb-6 leading-relaxed">{t.desc}</p>
+        <p className="text-stone-500 dark:text-neutral-400 text-[13px] sm:text-sm mb-5 sm:mb-6 leading-relaxed sm:leading-relaxed">{t.desc}</p>
 
         {!created ? (
           <div className="space-y-4">
@@ -128,7 +131,7 @@ export function CreateTrackingModal({ isOpen, onClose, userId, onCreated }: Prop
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t.name_ph}
-                className="w-full rounded-xl bg-white dark:bg-neutral-800 border border-stone-300 dark:border-neutral-600 py-2.5 px-4 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 dark:placeholder:text-neutral-500 outline-none focus:ring-2 focus:ring-stone-900/10"
+                className="w-full rounded-xl bg-white dark:bg-neutral-800 border border-stone-300 dark:border-neutral-600 py-3 sm:py-2.5 px-4 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 dark:placeholder:text-neutral-500 outline-none focus:ring-2 focus:ring-stone-900/10"
               />
             </div>
             <div>
@@ -138,7 +141,7 @@ export function CreateTrackingModal({ isOpen, onClose, userId, onCreated }: Prop
                 value={dest}
                 onChange={(e) => setDest(e.target.value)}
                 placeholder={t.dest_ph}
-                className="w-full rounded-xl bg-white dark:bg-neutral-800 border border-stone-300 dark:border-neutral-600 py-2.5 px-4 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 dark:placeholder:text-neutral-500 outline-none focus:ring-2 focus:ring-stone-900/10 font-mono"
+                className="w-full rounded-xl bg-white dark:bg-neutral-800 border border-stone-300 dark:border-neutral-600 py-3 sm:py-2.5 px-4 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 dark:placeholder:text-neutral-500 outline-none focus:ring-2 focus:ring-stone-900/10 font-mono"
               />
               <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1.5">{t.dest_hint}</p>
             </div>
@@ -162,11 +165,12 @@ export function CreateTrackingModal({ isOpen, onClose, userId, onCreated }: Prop
                   type="text"
                   value={shortUrl}
                   readOnly
-                  className="flex-1 rounded-full bg-stone-100/50 dark:bg-neutral-800 border-none py-2 px-3 text-xs text-stone-700 dark:text-neutral-200 font-mono focus:ring-2 focus:ring-red-600/20"
+                  className="flex-1 min-w-0 rounded-full bg-stone-100/50 dark:bg-neutral-800 border-none py-2 px-3 text-xs text-stone-700 dark:text-neutral-200 font-mono focus:ring-2 focus:ring-red-600/20"
                 />
                 <button
                   onClick={handleCopy}
-                  className="rounded-full bg-red-600 p-2 text-white hover:bg-red-500 active:scale-95 transition-all"
+                  aria-label="Copier"
+                  className="shrink-0 rounded-full bg-red-600 p-2.5 sm:p-2 text-white hover:bg-red-500 active:scale-95 transition-all"
                 >
                   {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 </button>

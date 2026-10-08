@@ -16,6 +16,14 @@ export function BusinessThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('closeos-dark', dark ? '1' : '0')
   }, [dark])
 
+  // Les pop-ups rendues hors de la mise en page (portails, onboarding, nouveautés)
+  // ne sont pas sous la div qui porte `dark` : on la pose aussi sur <html> tant
+  // que l'espace Business est affiché, pour qu'elles suivent le thème.
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', dark)
+    return () => { document.documentElement.classList.remove('dark') }
+  }, [dark])
+
   const toggle = () => setDark(prev => !prev)
 
   return (

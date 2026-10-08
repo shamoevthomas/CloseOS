@@ -75,20 +75,21 @@ export function StripeMatchModal({ isOpen, onClose, prospectId, prospectEmail }:
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700 w-full max-w-lg relative overflow-hidden max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-2xl shadow-2xl ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700 w-full max-w-lg relative overflow-hidden max-h-[92dvh] sm:max-h-[90vh] flex flex-col">
 
         {/* Header */}
-        <div className="p-6 border-b border-[#c4c7c7]/10 dark:border-neutral-800 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-[#635BFF]/10 rounded-xl">
-              <Link2 className="h-6 w-6 text-[#635BFF]" />
+        <div className="relative px-4 pt-5 pb-3 sm:p-6 border-b border-[#c4c7c7]/10 dark:border-neutral-800 flex items-center justify-between gap-3 shrink-0">
+          <div className="sm:hidden absolute left-1/2 top-1.5 h-1 w-10 -translate-x-1/2 rounded-full bg-stone-300 dark:bg-neutral-700" />
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="shrink-0 p-2 bg-[#635BFF]/10 rounded-xl">
+              <Link2 className="h-5 w-5 sm:h-6 sm:w-6 text-[#635BFF]" />
             </div>
             <h2 className="text-lg font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">
               {t.stripe_match_title}
             </h2>
           </div>
-          <button onClick={onClose} className="text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white transition-colors">
+          <button onClick={onClose} className="shrink-0 flex h-9 w-9 items-center justify-center rounded-full bg-[#f5f3f2] dark:bg-neutral-800 sm:block sm:h-auto sm:w-auto sm:rounded-none sm:bg-transparent sm:dark:bg-transparent text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -112,7 +113,7 @@ export function StripeMatchModal({ isOpen, onClose, prospectId, prospectEmail }:
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto flex-1">
+        <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6 overflow-y-auto overscroll-contain flex-1">
           {mode === 'search' ? (
             <div className="space-y-4">
               {/* Search input */}
@@ -148,7 +149,7 @@ export function StripeMatchModal({ isOpen, onClose, prospectId, prospectEmail }:
               )}
 
               {results.map(customer => (
-                <div key={customer.id} className="bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl p-4 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                <div key={customer.id} className="bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl p-3 sm:p-4 border border-[#c4c7c7]/10 dark:border-neutral-700">
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">{customer.name || customer.email}</p>
@@ -179,7 +180,7 @@ export function StripeMatchModal({ isOpen, onClose, prospectId, prospectEmail }:
                           {matching ? (
                             <Loader2 className="h-4 w-4 animate-spin text-[#635BFF]" />
                           ) : (
-                            <CheckCircle2 className="h-5 w-5 text-[#635BFF] opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <CheckCircle2 className="h-5 w-5 text-[#635BFF] [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity" />
                           )}
                         </button>
                       ))}

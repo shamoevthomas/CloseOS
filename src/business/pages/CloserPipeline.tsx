@@ -22,6 +22,16 @@ import { phoneMatches } from '../../lib/phone'
 const GLASS_CARD = 'bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700'
 const LABEL_STYLE = 'text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold'
 
+// Kanban tactile : sur téléphone la rangée de colonnes déborde à fleur d'écran et se balaye au doigt,
+// colonnes aimantées (écran tactile uniquement). Au bureau : rendu d'origine.
+const HSCROLL_ROW = 'flex overflow-x-auto gap-3 sm:gap-6 pb-2 max-sm:-mx-4 max-sm:px-4 max-sm:scroll-px-4 max-sm:no-scrollbar [@media(pointer:coarse)]:overscroll-x-contain'
+const SNAP_ROW = '[@media(pointer:coarse)]:snap-x [@media(pointer:coarse)]:snap-mandatory'
+const KANBAN_COL = 'min-w-[min(82vw,320px)] sm:min-w-[280px] shrink-0 flex-1 snap-start space-y-3 sm:space-y-4'
+// Écran tactile : pas de portail pendant le drag. Le portail démonte l'élément touché, le navigateur cesse
+// alors d'envoyer touchmove/touchend et le glisser-déposer reste bloqué. (Les couloirs n'ont pas de
+// backdrop-blur au doigt, la carte en position fixe reste donc bien placée sans portail.)
+const isCoarsePointer = () => typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches
+
 const ACTIVE_STAGES = [
   { id: 'prospect', dot: 'bg-[#ffb95f]', border: 'border-l-[#ffb95f]' },
   { id: 'contacted', dot: 'bg-sky-400', border: 'border-l-sky-400' },
@@ -134,9 +144,12 @@ export function CloserPipeline() {
   const animFrameRef = useRef<number>(0)
   const lastMouseY = useRef(0)
   const lastMouseX = useRef(0)
+  // Aimantation (scroll-snap) des colonnes coupée pendant un drag : sinon elle annule l'auto-défilement horizontal
+  const [isDragging, setIsDragging] = useState(false)
 
   const onDragStart = useCallback(() => {
     isDraggingRef.current = true
+    setIsDragging(true)
     const tick = () => {
       if (!isDraggingRef.current) return
       const y = lastMouseY.current
@@ -178,6 +191,7 @@ export function CloserPipeline() {
 
   const onDragEnd = (result: DropResult) => {
     isDraggingRef.current = false
+    setIsDragging(false)
     cancelAnimationFrame(animFrameRef.current)
     const { destination, source, draggableId } = result
     if (!destination) return
@@ -245,31 +259,33 @@ export function CloserPipeline() {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div className="flex h-full flex-col overflow-hidden max-sm:overflow-visible">
       {/* HEADER */}
-      <div className="mb-6 shrink-0">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="mb-4 sm:mb-6 shrink-0">
+        <div className="flex flex-col gap-3 md:gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">{t.closer_pipeline_title}</h1>
             <p className={cn(LABEL_STYLE, 'mt-1')}>{myProspects.length} {t.closer_pipeline_assigned_prospects}</p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="relative hidden md:block">
+          <div className="flex items-center gap-2 md:gap-3">
+            {/* Recherche : visible aussi au téléphone, pleine largeur */}
+            <div className="relative max-md:flex-1 max-md:min-w-0">
               <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" strokeWidth={1.5} />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t.closer_pipeline_search_placeholder}
-                className="w-64 rounded-full bg-stone-100/50 dark:bg-neutral-800/50 border border-stone-200/20 dark:border-neutral-700/30 py-2 pl-10 pr-4 text-sm text-stone-900 dark:text-white placeholder-stone-400 dark:placeholder-neutral-500 font-medium focus:outline-none focus:ring-1 focus:ring-[#006c49]/30"
+                className="w-full md:w-64 rounded-full bg-stone-100/50 dark:bg-neutral-800/50 max-md:bg-white dark:max-md:bg-neutral-800 border border-stone-200/20 max-md:border-stone-200/70 dark:border-neutral-700/30 py-2 max-md:py-2.5 pl-10 pr-4 text-sm text-stone-900 dark:text-white placeholder-stone-400 dark:placeholder-neutral-500 font-medium focus:outline-none focus:ring-1 focus:ring-[#006c49]/30"
               />
             </div>
 
             {/* À relancer & à suivre (mes leads uniquement) */}
             <button
               onClick={() => setShowWorklist(true)}
-              className="relative flex items-center gap-2 rounded-full border border-sky-200 dark:border-sky-500/30 bg-sky-50 dark:bg-sky-500/10 px-4 py-2.5 text-sm font-bold text-sky-700 dark:text-sky-300 hover:border-sky-300 transition-all shrink-0"
+              aria-label={lang === 'en' ? 'Follow-ups' : 'Relances'}
+              className="relative flex items-center gap-2 rounded-full border border-sky-200 dark:border-sky-500/30 bg-sky-50 dark:bg-sky-500/10 px-4 max-sm:px-3 py-2.5 max-sm:py-0 max-sm:h-10 text-sm font-bold text-sky-700 dark:text-sky-300 hover:border-sky-300 transition-all shrink-0"
               title={lang === 'en' ? 'To follow up & track' : 'À relancer & à suivre'}
             >
               <Bell className="h-4 w-4" />
@@ -290,22 +306,22 @@ export function CloserPipeline() {
         </div>
       ) : (
         <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
-          <div className="flex-1 h-full flex flex-col space-y-12 overflow-y-auto pr-2 custom-scrollbar">
+          <div className="flex-1 h-full flex flex-col space-y-8 sm:space-y-12 overflow-y-auto pr-2 max-sm:-mx-4 max-sm:px-4 custom-scrollbar">
             {/* FLUX ACTIF */}
             <section>
-              <div className="flex items-baseline space-x-3 mb-8">
-                <h2 className="font-business-display text-2xl md:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white">{t.pipeline_active_flow}</h2>
+              <div className="flex items-baseline space-x-3 mb-3 sm:mb-8">
+                <h2 className="font-business-display text-lg sm:text-2xl md:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white whitespace-nowrap">{t.pipeline_active_flow}</h2>
                 <div className="h-1 w-1 rounded-full bg-stone-300 dark:bg-neutral-600" />
-                <span className={LABEL_STYLE}>{t.pipeline_priority_ops}</span>
+                <span className={cn(LABEL_STYLE, 'truncate')}>{t.pipeline_priority_ops}</span>
               </div>
 
-              <div data-pipeline-hscroll className="flex overflow-x-auto gap-6 pb-2">
+              <div data-pipeline-hscroll className={cn(HSCROLL_ROW, !isDragging && SNAP_ROW)}>
                 {ACTIVE_STAGES.map((stage) => {
                   const stageDeals = getDealsForStage(stage.id)
                   const stageTotal = getTotalForStage(stage.id)
 
                   return (
-                    <div key={stage.id} className="min-w-[260px] sm:min-w-[280px] shrink-0 flex-1 space-y-4">
+                    <div key={stage.id} className={KANBAN_COL}>
                       {/* Column header */}
                       <div className="flex justify-between items-center px-2">
                         <div className="flex items-center space-x-2">
@@ -325,7 +341,7 @@ export function CloserPipeline() {
                             ref={provided.innerRef}
                             {...provided.droppableProps}
                             className={cn(
-                              'space-y-3 min-h-[200px] max-h-[295px] overflow-y-auto custom-scrollbar rounded-lg border-2 border-dashed border-stone-200/30 dark:border-neutral-700/30 p-1 transition-colors',
+                              'space-y-3 min-h-[140px] sm:min-h-[200px] max-h-[62dvh] sm:max-h-[295px] overflow-y-auto overscroll-contain custom-scrollbar rounded-lg border-2 border-dashed border-stone-200/30 dark:border-neutral-700/30 p-1 transition-colors',
                               snapshot.isDraggingOver && 'bg-stone-100/30 dark:bg-neutral-800/30'
                             )}
                           >
@@ -346,13 +362,13 @@ export function CloserPipeline() {
                                         onClick={() => setSelectedProspect(deal)}
                                         className={cn(
                                           GLASS_CARD,
-                                          'rounded-xl p-5 border-l-4 group cursor-grab active:cursor-grabbing hover:scale-[1.02] transition-all shadow-[0_20px_40px_rgba(27,28,27,0.04)]',
+                                          'rounded-xl p-4 sm:p-5 border-l-4 group cursor-grab active:cursor-grabbing hover:scale-[1.02] [@media(pointer:coarse)]:active:scale-[0.98] transition-all shadow-[0_20px_40px_rgba(27,28,27,0.04)]',
                                           stage.border,
                                           snapshot.isDragging && 'rotate-2 scale-105 z-[9999] shadow-2xl'
                                         )}
                                         style={provided.draggableProps.style}
                                       >
-                                        <div className="flex justify-between items-start mb-4">
+                                        <div className="flex justify-between items-start mb-3 sm:mb-4">
                                           <div className="flex items-center space-x-2">
                                             <div className="w-8 h-8 rounded-full bg-stone-50 dark:bg-neutral-800 flex items-center justify-center">
                                               {isB2B
@@ -360,7 +376,7 @@ export function CloserPipeline() {
                                                 : <User className="h-4 w-4 text-stone-400 dark:text-neutral-500" strokeWidth={1.5} />
                                               }
                                             </div>
-                                            <span className="font-bold text-sm tracking-tight text-stone-900 dark:text-white truncate max-w-[140px]">
+                                            <span className="font-bold text-sm tracking-tight text-stone-900 dark:text-white truncate max-w-[200px] sm:max-w-[140px]">
                                               {mainTitle || t.closer_pipeline_no_name}
                                             </span>
                                           </div>
@@ -413,7 +429,7 @@ export function CloserPipeline() {
                                         )}
                                       </div>
                                     )
-                                    return snapshot.isDragging ? createPortal(child, document.body) : child
+                                    return snapshot.isDragging && !isCoarsePointer() ? createPortal(child, document.body) : child
                                   }}
                                 </Draggable>
                               )
@@ -429,20 +445,20 @@ export function CloserPipeline() {
             </section>
 
             {/* FLUX INACTIF */}
-            <section className="opacity-60 hover:opacity-100 transition-opacity">
-              <div className="flex items-baseline space-x-3 mb-8">
-                <h2 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-600 dark:text-neutral-300">{t.pipeline_inactive_flow}</h2>
+            <section className="[@media(hover:hover)]:opacity-60 hover:opacity-100 transition-opacity">
+              <div className="flex items-baseline space-x-3 mb-3 sm:mb-8">
+                <h2 className="font-business-display text-base sm:text-2xl font-extrabold tracking-tight text-stone-600 dark:text-neutral-300 whitespace-nowrap">{t.pipeline_inactive_flow}</h2>
                 <div className="h-1 w-1 rounded-full bg-stone-300 dark:bg-neutral-600" />
-                <span className={LABEL_STYLE}>{t.pipeline_archives}</span>
+                <span className={cn(LABEL_STYLE, 'truncate')}>{t.pipeline_archives}</span>
               </div>
 
-              <div data-pipeline-hscroll className="flex overflow-x-auto gap-6 pb-2">
+              <div data-pipeline-hscroll className={cn(HSCROLL_ROW, !isDragging && SNAP_ROW)}>
                 {INACTIVE_STAGES.map((stage) => {
                   const stageDeals = getDealsForStage(stage.id)
                   const isCollapsed = collapsedColumns.has(stage.id)
 
                   return (
-                    <div key={stage.id} className="min-w-[260px] sm:min-w-[280px] shrink-0 flex-1 space-y-4">
+                    <div key={stage.id} className={KANBAN_COL}>
                       <div
                         className="flex items-center space-x-2 px-2 cursor-pointer"
                         onClick={() => toggleColumn(stage.id)}
@@ -466,7 +482,7 @@ export function CloserPipeline() {
                               ref={provided.innerRef}
                               {...provided.droppableProps}
                               className={cn(
-                                'space-y-2 min-h-[100px] max-h-[295px] overflow-y-auto custom-scrollbar rounded-lg border-2 border-dashed border-stone-200/30 dark:border-neutral-700/30 p-1 transition-colors',
+                                'space-y-2 min-h-[100px] max-h-[62dvh] sm:max-h-[295px] overflow-y-auto overscroll-contain custom-scrollbar rounded-lg border-2 border-dashed border-stone-200/30 dark:border-neutral-700/30 p-1 transition-colors',
                                 snapshot.isDraggingOver && 'bg-stone-100/30 dark:bg-neutral-800/30'
                               )}
                             >
@@ -491,7 +507,7 @@ export function CloserPipeline() {
                                         ) : null}
                                       </div>
                                     )
-                                    return snapshot.isDragging ? createPortal(child, document.body) : child
+                                    return snapshot.isDragging && !isCoarsePointer() ? createPortal(child, document.body) : child
                                   }}
                                 </Draggable>
                               ))}
@@ -509,20 +525,20 @@ export function CloserPipeline() {
             {/* CUSTOM STAGES */}
             {customStages.length > 0 && (
               <section>
-                <div className="flex items-baseline space-x-3 mb-8">
-                  <h2 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">{t.pipeline_custom_stages}</h2>
+                <div className="flex items-baseline space-x-3 mb-3 sm:mb-8">
+                  <h2 className="font-business-display text-lg sm:text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white whitespace-nowrap">{t.pipeline_custom_stages}</h2>
                   <div className="h-1 w-1 rounded-full bg-stone-300 dark:bg-neutral-600" />
-                  <span className={LABEL_STYLE}>{t.pipeline_created_by_team}</span>
+                  <span className={cn(LABEL_STYLE, 'truncate')}>{t.pipeline_created_by_team}</span>
                 </div>
 
-                <div data-pipeline-hscroll className="flex overflow-x-auto gap-6 pb-2">
+                <div data-pipeline-hscroll className={cn(HSCROLL_ROW, !isDragging && SNAP_ROW)}>
                   {customStages.map((cs) => {
                     const stageId = `custom_${cs.id}`
                     const stageDeals = filteredProspects.filter(d => d.stage === stageId)
                     const stageTotal = stageDeals.reduce((sum, d) => sum + (d.value || 0), 0)
 
                     return (
-                      <div key={stageId} className="min-w-[260px] sm:min-w-[280px] shrink-0 flex-1 space-y-4">
+                      <div key={stageId} className={KANBAN_COL}>
                         <div className="flex justify-between items-center px-2">
                           <div className="flex items-center space-x-2">
                             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: cs.color }} />
@@ -540,7 +556,7 @@ export function CloserPipeline() {
                               ref={provided.innerRef}
                               {...provided.droppableProps}
                               className={cn(
-                                'space-y-3 min-h-[200px] max-h-[295px] overflow-y-auto custom-scrollbar rounded-lg border-2 border-dashed border-stone-200/30 dark:border-neutral-700/30 p-1 transition-colors',
+                                'space-y-3 min-h-[140px] sm:min-h-[200px] max-h-[62dvh] sm:max-h-[295px] overflow-y-auto overscroll-contain custom-scrollbar rounded-lg border-2 border-dashed border-stone-200/30 dark:border-neutral-700/30 p-1 transition-colors',
                                 snapshot.isDraggingOver && 'bg-stone-100/30 dark:bg-neutral-800/30'
                               )}
                               style={{ borderTop: `3px solid ${cs.color}` }}
@@ -562,12 +578,12 @@ export function CloserPipeline() {
                                           onClick={() => setSelectedProspect(deal)}
                                           className={cn(
                                             GLASS_CARD,
-                                            'rounded-xl p-5 group cursor-grab active:cursor-grabbing hover:scale-[1.02] transition-all shadow-[0_20px_40px_rgba(27,28,27,0.04)]',
+                                            'rounded-xl p-4 sm:p-5 group cursor-grab active:cursor-grabbing hover:scale-[1.02] [@media(pointer:coarse)]:active:scale-[0.98] transition-all shadow-[0_20px_40px_rgba(27,28,27,0.04)]',
                                             snapshot.isDragging && 'rotate-2 scale-105 z-[9999] shadow-2xl'
                                           )}
                                           style={provided.draggableProps.style}
                                         >
-                                          <div className="flex justify-between items-start mb-4">
+                                          <div className="flex justify-between items-start mb-3 sm:mb-4">
                                             <div className="flex items-center space-x-2">
                                               <div className="w-8 h-8 rounded-full bg-stone-50 dark:bg-neutral-800 flex items-center justify-center">
                                                 {isB2B
@@ -575,7 +591,7 @@ export function CloserPipeline() {
                                                   : <User className="h-4 w-4 text-stone-400 dark:text-neutral-500" strokeWidth={1.5} />
                                                 }
                                               </div>
-                                              <span className="font-bold text-sm tracking-tight text-stone-900 dark:text-white truncate max-w-[140px]">
+                                              <span className="font-bold text-sm tracking-tight text-stone-900 dark:text-white truncate max-w-[200px] sm:max-w-[140px]">
                                                 {mainTitle || t.closer_pipeline_no_name}
                                               </span>
                                             </div>
@@ -588,7 +604,7 @@ export function CloserPipeline() {
                                           </div>
                                         </div>
                                       )
-                                      return snapshot.isDragging ? createPortal(child, document.body) : child
+                                      return snapshot.isDragging && !isCoarsePointer() ? createPortal(child, document.body) : child
                                     }}
                                   </Draggable>
                                 )

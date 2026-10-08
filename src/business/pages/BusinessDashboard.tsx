@@ -116,6 +116,16 @@ const CAMPAIGN_ICON_CLASSES: Record<string, { bg: string; text: string }> = {
 
 const glassCard = "bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-neutral-900/5 dark:border-neutral-700 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]"
 
+// Tuiles KPI : sous lg, grille compacte (icône à côté du libellé, valeur dessous, badge à droite) ;
+// à partir de lg, les enveloppes `contents` redeviennent des blocs → disposition d'origine (icône, libellé, valeur en colonne).
+const KPI_TILE_LAYOUT = 'p-3 sm:p-4 grid grid-cols-[auto_minmax(0,1fr)_auto] content-start items-center gap-x-2 gap-y-1.5 lg:flex lg:flex-col lg:justify-between lg:items-stretch lg:gap-0 h-full'
+const KPI_TILE = `${KPI_TILE_LAYOUT} hover:scale-[1.02] active:scale-[0.98] transition-transform cursor-pointer`
+const KPI_TOP = 'contents lg:flex lg:justify-between lg:items-start'
+const KPI_ICON = 'col-start-1 row-start-1 w-fit'
+const KPI_LABEL = 'col-start-2 col-span-2 row-start-1 min-w-0 max-lg:line-clamp-2 max-lg:leading-tight text-[10px] lg:text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-wide lg:tracking-[0.15em] lg:mb-0.5'
+const KPI_VALUE = 'col-start-1 col-span-2 row-start-2 min-w-0 truncate lg:overflow-visible lg:whitespace-normal'
+const KPI_BADGE = 'col-start-3 row-start-2 justify-self-end'
+
 function KpiTooltip({ children, text }: { children: React.ReactNode; text: string }) {
   const [show, setShow] = useState(false)
   const [pos, setPos] = useState<'bottom' | 'top'>('bottom')
@@ -133,7 +143,8 @@ function KpiTooltip({ children, text }: { children: React.ReactNode; text: strin
     <div className="relative" ref={ref} onMouseEnter={handleEnter} onMouseLeave={() => setShow(false)}>
       {children}
       {show && (
-        <div className={`absolute z-50 left-1/2 -translate-x-1/2 w-56 px-3 py-2.5 rounded-xl bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-[11px] leading-relaxed font-medium shadow-xl pointer-events-none ${pos === 'bottom' ? 'top-full mt-2' : 'bottom-full mb-2'}`} style={{ fontFamily: 'Inter, sans-serif' }}>
+        // Infobulle réservée aux écrans à survol (au doigt, le tap ouvre directement la page liée)
+        <div className={`[@media(hover:none)]:hidden absolute z-50 left-1/2 -translate-x-1/2 w-56 px-3 py-2.5 rounded-xl bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-[11px] leading-relaxed font-medium shadow-xl pointer-events-none ${pos === 'bottom' ? 'top-full mt-2' : 'bottom-full mb-2'}`} style={{ fontFamily: 'Inter, sans-serif' }}>
           {text}
           <div className={`absolute left-1/2 -translate-x-1/2 w-2.5 h-2.5 rotate-45 bg-neutral-900 dark:bg-neutral-100 ${pos === 'bottom' ? '-top-1' : '-bottom-1'}`} />
         </div>
@@ -474,12 +485,12 @@ export function BusinessDashboard() {
   }
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-10">
 
-      {/* ─── Header ─── */}
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 md:w-14 md:h-14 rounded-full overflow-hidden shrink-0 border-2 border-neutral-200 dark:border-neutral-700">
+      {/* ─── Header ─── (une seule ligne compacte sur mobile : avatar + salutation | thème + export) */}
+      <header className="flex flex-row justify-between items-center gap-3 md:gap-6">
+        <div className="flex items-center gap-3 md:gap-4 min-w-0">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full overflow-hidden shrink-0 border-2 border-neutral-200 dark:border-neutral-700">
             {(isTeamMember ? teamMember?.avatar_url : (businessProfile?.avatar_url || user?.user_metadata?.avatar_url)) ? (
               <img src={isTeamMember ? teamMember.avatar_url : (businessProfile?.avatar_url || user?.user_metadata?.avatar_url)} alt="" className="w-full h-full object-cover" />
             ) : (
@@ -488,116 +499,118 @@ export function BusinessDashboard() {
               </div>
             )}
           </div>
-          <div className="space-y-1">
-            <h2 className="text-3xl md:text-4xl font-black tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <div className="min-w-0 space-y-0.5 sm:space-y-1">
+            <h2 className="text-lg sm:text-3xl md:text-4xl font-black tracking-tight text-neutral-900 dark:text-white max-sm:truncate" style={{ fontFamily: 'Manrope, sans-serif' }}>
               {t.dashboard_hello}, {scrambledName}.
             </h2>
-            <p className="text-neutral-500 dark:text-neutral-400 text-lg">
+            <p className="text-neutral-500 dark:text-neutral-400 text-xs sm:text-base md:text-lg max-sm:truncate">
               {t.dashboard_subtitle}
-              {dashboardPeriod !== 'all' && <span className="ml-1 text-sm font-bold text-neutral-400">· {PERIOD_LABELS[dashboardPeriod]}</span>}
+              {dashboardPeriod !== 'all' && <span className="ml-1 text-xs sm:text-sm font-bold text-neutral-400">· {PERIOD_LABELS[dashboardPeriod]}</span>}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <ThemeToggle />
           <div className="hidden sm:flex">
             <BusinessReminderBell />
           </div>
+          {/* Export : icône seule sur téléphone */}
           <button
             onClick={() => { setShowExportModal(true); setExportDone(false); setExportError('') }}
-            className="bg-neutral-900 dark:bg-white dark:text-neutral-900 text-white px-8 py-3 rounded-full font-bold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
+            aria-label={t.dashboard_export_report}
+            className="bg-neutral-900 dark:bg-white dark:text-neutral-900 text-white h-10 w-10 justify-center sm:h-auto sm:w-auto sm:px-8 sm:py-3 rounded-full font-bold text-sm hover:opacity-90 active:scale-95 transition flex items-center gap-2"
             style={{ fontFamily: 'Manrope, sans-serif' }}
           >
             <FileDown className="h-4 w-4" />
-            {t.dashboard_export_report}
+            <span className="hidden sm:inline">{t.dashboard_export_report}</span>
           </button>
         </div>
       </header>
 
-      {/* ─── KPI Row ─── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-4">
+      {/* ─── KPI Row ─── (8 tuiles sous lg : la tuile DMR complète la grille, pas de tuile orpheline) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4">
 
         {/* Revenue */}
         <KpiTooltip text={t.dashboard_tooltip_revenue}>
-          <Link to="/business/report" className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
-            <div className="flex justify-between items-start mb-2">
-              <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30">
+          <Link to="/business/report" className={`${glassCard} rounded-2xl ${KPI_TILE}`}>
+            <div className={`${KPI_TOP} lg:mb-2`}>
+              <div className={`${KPI_ICON} p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30`}>
                 <DollarSign className="h-3.5 w-3.5 text-emerald-600" />
               </div>
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${revenueDelta >= 0 ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30' : 'text-red-500 bg-red-50 dark:bg-red-900/30'}`}>
+              <span className={`${KPI_BADGE} text-[10px] font-bold px-1.5 py-0.5 rounded-full ${revenueDelta >= 0 ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30' : 'text-red-500 bg-red-50 dark:bg-red-900/30'}`}>
                 {revenueDelta >= 0 ? '+' : ''}{revenueDelta.toFixed(0)}%
               </span>
             </div>
-            <div>
-              <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Revenue</p>
-              <p className="text-lg font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalRevenue, lang)}</p>
+            <div className="contents lg:block">
+              <p className={KPI_LABEL}>Revenue</p>
+              <p className={`${KPI_VALUE} text-lg font-black text-neutral-900 dark:text-white tracking-tight`} style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalRevenue, lang)}</p>
             </div>
           </Link>
         </KpiTooltip>
 
         {/* Total Pipeline */}
         <KpiTooltip text={t.dashboard_tooltip_pipeline}>
-          <Link to="/business/pipeline-owner" className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
-            <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 w-fit">
+          <Link to="/business/pipeline-owner" className={`${glassCard} rounded-2xl ${KPI_TILE}`}>
+            <div className={`${KPI_ICON} p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30`}>
               <GitBranch className="h-3.5 w-3.5 text-blue-600" />
             </div>
-            <div className="mt-2">
-              <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Pipeline</p>
-              <p className="text-lg font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalPipeline, lang)}</p>
+            <div className="contents lg:block lg:mt-2">
+              <p className={KPI_LABEL}>Pipeline</p>
+              <p className={`${KPI_VALUE} text-lg font-black text-neutral-900 dark:text-white tracking-tight`} style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalPipeline, lang)}</p>
             </div>
           </Link>
         </KpiTooltip>
 
         {/* Closing */}
         <KpiTooltip text={t.dashboard_tooltip_closing}>
-          <Link to="/business/acquisition" className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
-            <div className="p-1.5 rounded-lg bg-stone-100 dark:bg-neutral-800 w-fit">
+          <Link to="/business/acquisition" className={`${glassCard} rounded-2xl ${KPI_TILE}`}>
+            <div className={`${KPI_ICON} p-1.5 rounded-lg bg-stone-100 dark:bg-neutral-800`}>
               <TrendingUp className="h-3.5 w-3.5 text-neutral-600 dark:text-neutral-400" />
             </div>
-            <div className="mt-2">
-              <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Closing</p>
-              <p className="text-lg font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(closingRate)}</p>
+            <div className="contents lg:block lg:mt-2">
+              <p className={KPI_LABEL}>Closing</p>
+              <p className={`${KPI_VALUE} text-lg font-black text-neutral-900 dark:text-white tracking-tight`} style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(closingRate)}</p>
             </div>
           </Link>
         </KpiTooltip>
 
         {/* Rendez-vous */}
         <KpiTooltip text={t.dashboard_tooltip_appointments}>
-          <Link to="/business/rendez-vous" className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
-            <div className="p-1.5 rounded-lg bg-stone-100 dark:bg-neutral-800 w-fit">
+          <Link to="/business/rendez-vous" className={`${glassCard} rounded-2xl ${KPI_TILE}`}>
+            <div className={`${KPI_ICON} p-1.5 rounded-lg bg-stone-100 dark:bg-neutral-800`}>
               <CalendarDays className="h-3.5 w-3.5 text-neutral-600 dark:text-neutral-400" />
             </div>
-            <div className="mt-2">
-              <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">{t.sidebar_appointments}</p>
-              <p className="text-lg font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{totalAppts.toLocaleString()}</p>
+            <div className="contents lg:block lg:mt-2">
+              <p className={KPI_LABEL}>{t.sidebar_appointments}</p>
+              <p className={`${KPI_VALUE} text-lg font-black text-neutral-900 dark:text-white tracking-tight`} style={{ fontFamily: 'Manrope, sans-serif' }}>{totalAppts.toLocaleString()}</p>
             </div>
           </Link>
         </KpiTooltip>
 
         {/* Objectif */}
         <KpiTooltip text={t.dashboard_tooltip_objective}>
-          <Link to="/business/objectifs" className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
-            <div className="flex justify-between items-start">
-              <div className="p-1.5 rounded-lg bg-stone-100 dark:bg-neutral-800">
+          <Link to="/business/objectifs" className={`${glassCard} rounded-2xl ${KPI_TILE}`}>
+            <div className={KPI_TOP}>
+              <div className={`${KPI_ICON} p-1.5 rounded-lg bg-stone-100 dark:bg-neutral-800`}>
                 <Target className="h-3.5 w-3.5 text-neutral-600 dark:text-neutral-400" />
               </div>
               {objectiveProgress !== null && (
-                <span className="text-[10px] font-bold text-neutral-600 dark:text-neutral-300">{objectiveProgress.toFixed(0)}%</span>
+                <span className={`${KPI_BADGE} text-[10px] font-bold text-neutral-600 dark:text-neutral-300`}>{objectiveProgress.toFixed(0)}%</span>
               )}
             </div>
-            <div className="mt-2">
-              <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">{t.dashboard_objective_ca}</p>
+            <div className="contents lg:block lg:mt-2">
+              <p className={KPI_LABEL}>{t.dashboard_objective_ca}</p>
               {revenueObjective ? (
                 <>
-                  <div className="w-full bg-stone-100 dark:bg-neutral-800 h-1 rounded-full mt-1.5 mb-1.5 overflow-hidden">
+                  <div className="col-span-3 row-start-3 w-full bg-stone-100 dark:bg-neutral-800 h-1 rounded-full lg:mt-1.5 lg:mb-1.5 overflow-hidden">
                     <div className="bg-neutral-900 dark:bg-white h-full rounded-full transition-all" style={{ width: `${objectiveProgress}%` }} />
                   </div>
-                  <p className="text-sm font-extrabold text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                  <p className={`${KPI_VALUE} text-sm font-extrabold text-neutral-900 dark:text-white tracking-tight`} style={{ fontFamily: 'Manrope, sans-serif' }}>
                     {objectiveProgress! >= 80 ? t.dashboard_on_track : t.dashboard_in_progress}
                   </p>
                 </>
               ) : (
-                <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">{t.objectives_no_objectives}</p>
+                <p className="col-start-1 col-span-3 row-start-2 min-w-0 truncate lg:overflow-visible lg:whitespace-normal text-xs text-neutral-400 dark:text-neutral-500 lg:mt-1">{t.objectives_no_objectives}</p>
               )}
             </div>
           </Link>
@@ -605,20 +618,20 @@ export function BusinessDashboard() {
 
         {/* No-Show */}
         <KpiTooltip text={t.dashboard_tooltip_noshow}>
-          <Link to="/business/crm" className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
-            <div className="flex justify-between items-start">
-              <div className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/30">
+          <Link to="/business/crm" className={`${glassCard} rounded-2xl ${KPI_TILE}`}>
+            <div className={KPI_TOP}>
+              <div className={`${KPI_ICON} p-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/30`}>
                 <UserX className="h-3.5 w-3.5 text-amber-600" />
               </div>
               {noshowRate > 0 && (
-                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full">
+                <span className={`${KPI_BADGE} text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full`}>
                   {noshowRate > 5 ? '!' : '-'}
                 </span>
               )}
             </div>
-            <div className="mt-2">
-              <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">No-Show</p>
-              <p className="text-lg font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(noshowRate)}</p>
+            <div className="contents lg:block lg:mt-2">
+              <p className={KPI_LABEL}>No-Show</p>
+              <p className={`${KPI_VALUE} text-lg font-black text-neutral-900 dark:text-white tracking-tight`} style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(noshowRate)}</p>
             </div>
           </Link>
         </KpiTooltip>
@@ -627,69 +640,79 @@ export function BusinessDashboard() {
         <KpiTooltip text={`${t.dashboard_tooltip_health} (${closingRate.toFixed(1)}%)`}>
           <Link
             to="/business/report"
-            className={`rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform bg-white/60 dark:bg-white/5 backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] cursor-pointer h-full ${healthOk ? 'border border-emerald-500/20' : healthWarn ? 'border border-amber-500/20' : 'border border-red-500/20'}`}
+            className={`rounded-2xl ${KPI_TILE} bg-white/60 dark:bg-white/5 backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] ${healthOk ? 'border border-emerald-500/20' : healthWarn ? 'border border-amber-500/20' : 'border border-red-500/20'}`}
           >
-            <div className="flex justify-between items-start">
-              <div className={`p-1.5 rounded-lg ${healthOk ? 'bg-emerald-50 dark:bg-emerald-900/30' : healthWarn ? 'bg-amber-50 dark:bg-amber-900/30' : 'bg-red-50 dark:bg-red-900/30'}`}>
+            <div className={KPI_TOP}>
+              <div className={`${KPI_ICON} p-1.5 rounded-lg ${healthOk ? 'bg-emerald-50 dark:bg-emerald-900/30' : healthWarn ? 'bg-amber-50 dark:bg-amber-900/30' : 'bg-red-50 dark:bg-red-900/30'}`}>
                 <Activity className={`h-3.5 w-3.5 ${healthOk ? 'text-emerald-600' : healthWarn ? 'text-amber-600' : 'text-red-600'}`} />
               </div>
-              <div className="flex items-center gap-1">
+              <div className={`${KPI_BADGE} flex items-center gap-1`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${healthOk ? 'bg-emerald-500' : healthWarn ? 'bg-amber-500' : 'bg-red-500'}`} />
                 <span className={`text-[9px] font-bold uppercase ${healthOk ? 'text-emerald-600' : healthWarn ? 'text-amber-600' : 'text-red-600'}`}>
                   {healthOk ? 'Healthy' : healthWarn ? 'Warning' : 'Low'}
                 </span>
               </div>
             </div>
-            <div className="mt-2">
-              <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">{t.dashboard_kpi_health}</p>
-              <p className="text-base font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{healthLabel}</p>
+            <div className="contents lg:block lg:mt-2">
+              <p className={KPI_LABEL}>{t.dashboard_kpi_health}</p>
+              <p className={`${KPI_VALUE} text-base font-black text-neutral-900 dark:text-white tracking-tight`} style={{ fontFamily: 'Manrope, sans-serif' }}>{healthLabel}</p>
             </div>
           </Link>
         </KpiTooltip>
+
+        {/* DMR moyen — tuile mobile/tablette (au bureau : ligne sous la grille, inchangée) */}
+        <div className={`${glassCard} rounded-2xl ${KPI_TILE_LAYOUT} lg:hidden`}>
+          <div className={`${KPI_ICON} p-1.5 rounded-lg bg-red-50 dark:bg-red-900/30`}>
+            <Clock className="h-3.5 w-3.5 text-red-500" />
+          </div>
+          <p className={KPI_LABEL}>DMR en moyenne</p>
+          <p className={`${KPI_VALUE} text-lg font-black text-red-500 tracking-tight`} style={{ fontFamily: 'Manrope, sans-serif' }}>{avgDMR.toFixed(1)}j</p>
+        </div>
       </div>
 
-      <p className="text-xs text-neutral-400 dark:text-neutral-500 -mt-2">
+      <p className="hidden lg:block text-xs text-neutral-400 dark:text-neutral-500 -mt-2">
         DMR en moyenne&nbsp;: <span className="text-red-500 font-bold">{avgDMR.toFixed(1)}j</span>
       </p>
 
       {/* ─── Campaigns + Objectives ─── */}
-      <div className="grid grid-cols-12 gap-6">
-        {/* Campagnes actives */}
-        <div className={`col-span-12 lg:col-span-7 ${glassCard} rounded-2xl p-8`}>
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.dashboard_active_campaigns}</h3>
-              <p className="text-neutral-400 dark:text-neutral-500 text-sm mt-0.5">{t.dashboard_active_campaigns_desc}</p>
+      <div className="grid grid-cols-12 gap-4 sm:gap-6">
+        {/* Campagnes actives — sous lg : lignes à fleur de carte (pas de carte dans la carte) */}
+        <div className={`col-span-12 lg:col-span-7 ${glassCard} rounded-2xl p-4 sm:p-6 lg:p-8`}>
+          <div className="flex justify-between items-center gap-3 mb-2 sm:mb-6 lg:mb-8">
+            <div className="min-w-0">
+              <h3 className="text-base sm:text-lg lg:text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.dashboard_active_campaigns}</h3>
+              <p className="text-neutral-400 dark:text-neutral-500 text-xs sm:text-sm mt-0.5 truncate sm:whitespace-normal">{t.dashboard_active_campaigns_desc}</p>
             </div>
-            <Link to="/business/campagnes" className="text-sm font-bold text-neutral-900 dark:text-white border-b-2 border-neutral-900 dark:border-white pb-0.5 hover:opacity-70 transition-opacity uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            <Link to="/business/campagnes" className="shrink-0 text-xs sm:text-sm font-bold text-neutral-900 dark:text-white border-b-2 border-neutral-900 dark:border-white pb-0.5 hover:opacity-70 transition-opacity uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
               {t.common_all}
             </Link>
           </div>
           {activeCampaigns.length === 0 ? (
             <p className="text-sm text-neutral-400 dark:text-neutral-500 text-center py-8">{t.campaigns_no_campaigns}</p>
           ) : (
-            <div className="space-y-4">
+            <div className="divide-y divide-neutral-900/5 dark:divide-white/10 lg:divide-y-0 lg:space-y-4">
               {activeCampaigns.map((c, idx) => {
                 const colorKey = CAMPAIGN_ICONS[idx % CAMPAIGN_ICONS.length]
                 const colors = CAMPAIGN_ICON_CLASSES[colorKey]
                 return (
-                  <Link key={c.id} to="/business/campagnes" className="flex items-center justify-between p-5 bg-neutral-50/80 dark:bg-neutral-800/80 rounded-2xl group hover:bg-white dark:hover:bg-neutral-700 transition-all cursor-pointer">
-                    <div className="flex items-center gap-5">
-                      <div className={`w-11 h-11 ${colors.bg} ${colors.text} rounded-full flex items-center justify-center`}>
-                        <Megaphone className="h-5 w-5" />
+                  <Link key={c.id} to="/business/campagnes" className="flex items-center justify-between gap-3 -mx-4 px-4 py-3 sm:-mx-6 sm:px-6 lg:mx-0 lg:gap-0 lg:p-5 lg:bg-neutral-50/80 lg:dark:bg-neutral-800/80 lg:rounded-2xl group active:bg-neutral-100/70 dark:active:bg-white/5 lg:hover:bg-white lg:dark:hover:bg-neutral-700 transition-all cursor-pointer">
+                    <div className="flex items-center gap-3 lg:gap-5 min-w-0 flex-1">
+                      <div className={`w-9 h-9 lg:w-11 lg:h-11 shrink-0 lg:shrink ${colors.bg} ${colors.text} rounded-full flex items-center justify-center`}>
+                        <Megaphone className="h-4 w-4 lg:h-5 lg:w-5" />
                       </div>
-                      <div>
-                        <h4 className="font-bold text-neutral-900 dark:text-white">{c.name}</h4>
+                      <div className="min-w-0">
+                        <h4 className="text-sm lg:text-base font-bold text-neutral-900 dark:text-white truncate lg:overflow-visible lg:whitespace-normal">{c.name}</h4>
                         <p className="text-neutral-400 dark:text-neutral-500 text-[10px] font-semibold uppercase tracking-wider">
                           {c.leadCount} lead{c.leadCount !== 1 ? 's' : ''}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
+                    <div className="flex items-center gap-3 lg:gap-6 shrink-0">
+                      {/* Nombre de leads déjà en méta sous lg */}
+                      <div className="hidden lg:block text-right">
                         <p className="font-black text-lg text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{c.leadCount.toLocaleString()}</p>
                       </div>
-                      <span className={`text-[10px] px-3 py-1.5 rounded-full font-black tracking-widest ${c.is_active ? 'bg-emerald-600 text-white' : 'bg-neutral-400 text-white'}`}>
+                      <span className={`text-[10px] px-2 py-0.5 lg:px-3 lg:py-1.5 rounded-full font-black tracking-widest whitespace-nowrap ${c.is_active ? 'bg-emerald-600 text-white' : 'bg-neutral-400 text-white'}`}>
                         {c.is_active ? 'LIVE' : 'PAUSED'}
                       </span>
                     </div>
@@ -701,24 +724,24 @@ export function BusinessDashboard() {
         </div>
 
         {/* Objectifs de vente */}
-        <Link to="/business/objectifs" className={`col-span-12 lg:col-span-5 ${glassCard} rounded-2xl p-8 flex flex-col cursor-pointer hover:scale-[1.01] transition-transform`}>
-          <div className="mb-8">
-            <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.dashboard_sales_objectives}</h3>
-            <p className="text-neutral-400 dark:text-neutral-500 text-sm mt-0.5">{t.dashboard_objectives_desc}</p>
+        <Link to="/business/objectifs" className={`col-span-12 lg:col-span-5 ${glassCard} rounded-2xl p-4 sm:p-6 lg:p-8 flex flex-col cursor-pointer hover:scale-[1.01] active:scale-[0.99] transition-transform`}>
+          <div className="mb-4 sm:mb-6 lg:mb-8 min-w-0">
+            <h3 className="text-base sm:text-lg lg:text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.dashboard_sales_objectives}</h3>
+            <p className="text-neutral-400 dark:text-neutral-500 text-xs sm:text-sm mt-0.5 truncate sm:whitespace-normal">{t.dashboard_objectives_desc}</p>
           </div>
           {objectivesWithProgress.length === 0 ? (
             <p className="text-sm text-neutral-400 dark:text-neutral-500 text-center py-8 flex-1 flex items-center justify-center">{t.dashboard_no_objectives}</p>
           ) : (
-            <div className="flex-1 space-y-8">
+            <div className="flex-1 space-y-4 sm:space-y-6 lg:space-y-8">
               {objectivesWithProgress.map(obj => (
-                <div key={obj.id} className="space-y-2.5">
-                  <div className="flex justify-between items-end">
-                    <span className="font-bold text-neutral-900 dark:text-white text-sm">{obj.label}</span>
-                    <span className="text-xs font-black text-neutral-500 dark:text-neutral-400">
+                <div key={obj.id} className="space-y-2 sm:space-y-2.5">
+                  <div className="flex justify-between items-end gap-3">
+                    <span className="min-w-0 truncate lg:overflow-visible lg:whitespace-normal font-bold text-neutral-900 dark:text-white text-sm">{obj.label}</span>
+                    <span className="shrink-0 text-xs font-black text-neutral-500 dark:text-neutral-400">
                       {obj.progress.toFixed(0)}% ({obj.metric === 'revenue' ? formatCurrency(obj.current, lang) : obj.current.toFixed(obj.metric.includes('rate') ? 1 : 0)} / {obj.metric === 'revenue' ? formatCurrency(obj.target_value, lang) : obj.target_value})
                     </span>
                   </div>
-                  <div className="w-full bg-neutral-100 dark:bg-neutral-700 h-2.5 rounded-full overflow-hidden">
+                  <div className="w-full bg-neutral-100 dark:bg-neutral-700 h-2 sm:h-2.5 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${
                         obj.progress >= 80 ? 'bg-gradient-to-r from-emerald-600 to-emerald-400'
@@ -748,30 +771,31 @@ export function BusinessDashboard() {
       </div>
 
       {/* ─── Team + Reminders ─── */}
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-12 gap-4 sm:gap-6">
         {/* Performance équipe */}
-        {!isSolo && <div className={`col-span-12 lg:col-span-8 ${glassCard} rounded-2xl p-8`}>
-          <div className="flex justify-between items-center mb-6 px-1">
-            <div className="flex items-center gap-4">
-              <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.sidebar_team}</h3>
+        {!isSolo && <div className={`col-span-12 lg:col-span-8 ${glassCard} rounded-2xl p-4 sm:p-6 lg:p-8`}>
+          {/* Sur téléphone : titre + lien sur une ligne, contrôle segmenté pleine largeur dessous */}
+          <div className="flex flex-wrap sm:flex-nowrap justify-between items-center gap-3 mb-3 sm:mb-6 sm:px-1">
+            <div className="contents sm:flex sm:items-center sm:gap-4">
+              <h3 className="text-base sm:text-lg lg:text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.sidebar_team}</h3>
               {teams.length > 0 && (
-                <div className="flex bg-neutral-100 dark:bg-neutral-800 rounded-full p-0.5">
+                <div className="order-last w-full grid grid-cols-2 sm:order-none sm:w-auto sm:flex bg-neutral-100 dark:bg-neutral-800 rounded-full p-0.5">
                   <button
                     onClick={() => setTeamTab('all')}
-                    className={`px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${teamTab === 'all' ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}`}
+                    className={`px-3.5 py-2 sm:py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${teamTab === 'all' ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}`}
                   >
                     {t.common_all}
                   </button>
                   <button
                     onClick={() => setTeamTab('teams')}
-                    className={`px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${teamTab === 'teams' ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}`}
+                    className={`px-3.5 py-2 sm:py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${teamTab === 'teams' ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}`}
                   >
                     {t.dashboard_teams}
                   </button>
                 </div>
               )}
             </div>
-            <Link to="/business/team" className="px-5 py-2.5 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-full text-xs font-bold text-neutral-900 dark:text-white transition-colors uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            <Link to="/business/team" className="shrink-0 whitespace-nowrap px-3 py-1.5 sm:px-5 sm:py-2.5 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-full text-[11px] sm:text-xs font-bold text-neutral-900 dark:text-white transition-colors uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
               {t.dashboard_view_team}
             </Link>
           </div>
@@ -782,7 +806,52 @@ export function BusinessDashboard() {
               {visibleMembers.length === 0 ? (
                 <p className="text-sm text-neutral-400 dark:text-neutral-500 text-center py-8">{t.dashboard_no_members}</p>
               ) : (
-                <div className="overflow-x-auto">
+                <>
+                {/* Téléphone : liste de membres (mêmes clics que le tableau) */}
+                <div className="md:hidden -mx-4 sm:-mx-6">
+                  {visibleMembers.map(m => {
+                    const online = isReallyOnline(m)
+                    const com = getMemberCommission(m.id, m.role, (m as any).count_setter_commission !== false)
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() => navigate(`/business/team?member=${m.id}`)}
+                        className="w-full flex items-center gap-3 px-4 sm:px-6 py-3 text-left border-t first:border-t-0 border-neutral-900/5 dark:border-white/10 active:bg-neutral-100/70 dark:active:bg-white/5 transition-colors"
+                      >
+                        <div className="w-9 h-9 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center text-xs font-bold text-neutral-600 dark:text-neutral-300 overflow-hidden shrink-0">
+                          {m.avatar_url ? (
+                            <img src={m.avatar_url} alt={`${m.first_name} ${m.last_name}`} className="h-full w-full object-cover" />
+                          ) : (
+                            <>{m.first_name[0]}{m.last_name[0]}</>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-sm text-neutral-900 dark:text-white truncate">{m.first_name} {m.last_name}</p>
+                          <div className="mt-0.5 flex items-center gap-2 min-w-0">
+                            <span className={`shrink-0 whitespace-nowrap text-[11px] font-semibold px-2 py-0.5 rounded-full ${ROLE_COLORS[m.role] || 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'}`}>
+                              {m.role}
+                            </span>
+                            {com > 0 && <span className="truncate text-xs font-bold text-emerald-600">{com.toLocaleString()} €</span>}
+                          </div>
+                        </div>
+                        {isMemberAbsent(m.id) ? (
+                          <div className="shrink-0 flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-[#ffb95f]" />
+                            <span className="text-[10px] font-bold uppercase text-[#ffb95f]">Absent</span>
+                          </div>
+                        ) : (
+                          <div className="shrink-0 flex items-center gap-1.5">
+                            <span className={`w-2 h-2 rounded-full ${online ? 'bg-emerald-500 animate-pulse' : 'bg-neutral-300'}`} />
+                            <span className={`text-[10px] font-bold uppercase ${online ? 'text-emerald-600' : 'text-neutral-400'}`}>
+                              {online ? 'Online' : 'Offline'}
+                            </span>
+                          </div>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+                <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-left">
                     <thead className="text-[10px] uppercase font-black text-neutral-400 dark:text-neutral-500 tracking-[0.15em]">
                       <tr>
@@ -848,13 +917,14 @@ export function BusinessDashboard() {
                     </tbody>
                   </table>
                 </div>
+                </>
               )}
             </>
           )}
 
           {/* Teams tab */}
           {teamTab === 'teams' && (
-            <div className="space-y-5">
+            <div className="-mx-4 sm:-mx-6 md:mx-0 md:space-y-5">
               {teams.map(team => {
                 const teamMembersList = visibleMembers.filter(m => m.team_id === team.id)
                 const teamCA = teamMembersList.reduce((total, m) => {
@@ -862,19 +932,19 @@ export function BusinessDashboard() {
                   return total + memberWon.reduce((s, p) => s + getProspectCA(p, formulaBillingTypes), 0)
                 }, 0)
                 return (
-                  <div key={team.id} className="rounded-2xl bg-neutral-50/80 dark:bg-neutral-800/50 p-5">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">
+                  <div key={team.id} className="px-4 py-3 sm:px-6 border-t first:border-t-0 border-neutral-900/5 dark:border-white/10 md:border-t-0 md:rounded-2xl md:bg-neutral-50/80 md:dark:bg-neutral-800/50 md:p-5">
+                    <div className="flex items-center justify-between gap-3 mb-3 md:mb-4">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 shrink-0 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">
                           <Users className="h-3.5 w-3.5 text-neutral-500 dark:text-neutral-400" />
                         </div>
-                        <div>
-                          <h4 className="font-bold text-sm text-neutral-900 dark:text-white">{team.name}</h4>
+                        <div className="min-w-0">
+                          <h4 className="font-bold text-sm text-neutral-900 dark:text-white truncate">{team.name}</h4>
                           <p className="text-[10px] text-neutral-400 dark:text-neutral-500">{teamMembersList.length} membre{teamMembersList.length !== 1 ? 's' : ''}</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-lg font-black text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(teamCA, lang)}</p>
+                      <div className="text-right shrink-0">
+                        <p className="text-base md:text-lg font-black text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(teamCA, lang)}</p>
                         <p className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase font-bold tracking-wider">{t.dashboard_revenue_generated}</p>
                       </div>
                     </div>
@@ -884,7 +954,7 @@ export function BusinessDashboard() {
                           <button
                             key={m.id}
                             onClick={() => navigate(`/business/team?member=${m.id}`)}
-                            className="flex items-center gap-2 bg-white dark:bg-neutral-800 rounded-full px-3 py-1.5 hover:shadow-md transition-all"
+                            className="flex items-center gap-2 bg-white dark:bg-neutral-800 ring-1 ring-neutral-900/5 dark:ring-white/10 md:ring-0 rounded-full px-3 py-1.5 hover:shadow-md active:scale-[0.97] transition-all"
                           >
                             <div className="w-6 h-6 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center text-[9px] font-bold text-neutral-500 dark:text-neutral-400 overflow-hidden shrink-0">
                               {m.avatar_url ? (
@@ -913,9 +983,9 @@ export function BusinessDashboard() {
         </div>}
 
         {/* Rappels & Tâches */}
-        <div className={`col-span-12 ${isSolo ? '' : 'lg:col-span-4'} ${glassCard} rounded-2xl p-8 flex flex-col`}>
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.reminders_title}</h3>
+        <div className={`col-span-12 ${isSolo ? '' : 'lg:col-span-4'} ${glassCard} rounded-2xl p-4 sm:p-6 lg:p-8 flex flex-col`}>
+          <div className="flex justify-between items-center mb-2 sm:mb-4 lg:mb-6">
+            <h3 className="text-base sm:text-lg lg:text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.reminders_title}</h3>
             {reminders.length > 0 && (
               <span className="w-6 h-6 bg-neutral-900 dark:bg-neutral-200 text-white dark:text-neutral-900 text-[10px] flex items-center justify-center rounded-full font-bold">
                 {reminders.length}
@@ -925,7 +995,8 @@ export function BusinessDashboard() {
           {reminders.length === 0 ? (
             <p className="text-sm text-neutral-400 dark:text-neutral-500 text-center py-8 flex-1 flex items-center justify-center">{t.reminders_no_reminders}</p>
           ) : (
-            <div className="space-y-3 flex-1 overflow-y-auto">
+            // Sous lg : lignes à fleur de carte séparées par un filet ; au bureau : cartes à liseré (inchangé)
+            <div className="-mx-4 sm:-mx-6 lg:mx-0 lg:space-y-3 flex-1 overflow-y-auto">
               {reminders.map(r => {
                 const rDate = new Date(r.reminder_date)
                 const isOverdue = rDate < now
@@ -935,16 +1006,16 @@ export function BusinessDashboard() {
                   <div
                     key={r.id}
                     onClick={() => setSelectedReminder(r)}
-                    className={`p-4 rounded-2xl cursor-pointer ${isOverdue ? 'border-l-4 border-red-500 bg-red-50/50 dark:bg-red-900/20 hover:bg-red-50 dark:hover:bg-red-900/30' : 'border-l-4 border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-800 hover:bg-white dark:hover:bg-neutral-700'} transition-all`}
+                    className={`px-4 py-3 sm:px-6 lg:p-4 lg:rounded-2xl cursor-pointer max-lg:border-t max-lg:first:border-t-0 max-lg:border-neutral-900/5 max-lg:dark:border-white/10 ${isOverdue ? 'lg:border-l-4 lg:border-red-500 bg-red-50/50 dark:bg-red-900/20 hover:bg-red-50 dark:hover:bg-red-900/30' : 'lg:border-l-4 lg:border-neutral-300 lg:dark:border-neutral-600 lg:bg-neutral-50 lg:dark:bg-neutral-800 active:bg-neutral-100/70 dark:active:bg-white/5 lg:hover:bg-white lg:dark:hover:bg-neutral-700'} transition-all`}
                   >
-                    <div className="flex justify-between items-start mb-1">
-                      <h4 className="text-sm font-bold text-neutral-900 dark:text-white">{r.title}</h4>
-                      <span className={`text-[10px] font-black uppercase ${isOverdue ? 'text-red-500' : 'text-neutral-400'}`}>
+                    <div className="flex justify-between items-start gap-2 mb-0.5 lg:mb-1">
+                      <h4 className="min-w-0 truncate lg:overflow-visible lg:whitespace-normal text-sm font-bold text-neutral-900 dark:text-white">{r.title}</h4>
+                      <span className={`shrink-0 whitespace-nowrap text-[10px] font-black uppercase ${isOverdue ? 'text-red-500' : 'text-neutral-400'}`}>
                         {isOverdue ? t.reminders_overdue : t.dashboard_upcoming}
                       </span>
                     </div>
                     {r.description && (
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2 line-clamp-2">{r.description}</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1 lg:mb-2 line-clamp-1 lg:line-clamp-2">{r.description}</p>
                     )}
                     <div className="flex items-center gap-1 text-[10px] font-bold text-neutral-400 dark:text-neutral-500">
                       <Clock className="h-3 w-3" />
@@ -957,7 +1028,7 @@ export function BusinessDashboard() {
           )}
           <Link
             to="/business/rappels"
-            className="mt-4 w-full py-3 border-2 border-dashed border-neutral-200 dark:border-neutral-700 rounded-2xl text-neutral-400 dark:text-neutral-500 text-sm font-bold hover:border-neutral-900 hover:text-neutral-900 dark:hover:border-neutral-400 dark:hover:text-white transition-all text-center block"
+            className="mt-3 lg:mt-4 w-full py-2.5 lg:py-3 border-2 border-dashed border-neutral-200 dark:border-neutral-700 rounded-2xl text-neutral-400 dark:text-neutral-500 text-sm font-bold hover:border-neutral-900 hover:text-neutral-900 dark:hover:border-neutral-400 dark:hover:text-white transition-all text-center block"
           >
             + {t.reminders_add}
           </Link>
@@ -966,29 +1037,30 @@ export function BusinessDashboard() {
 
       {/* ─── Loss Reason Pie Chart ─── */}
       {lossReasonData.length > 0 && (
-      <div className={`${glassCard} rounded-2xl p-8`}>
-        <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white mb-6" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.dashboard_loss_reasons}</h3>
-        <div className="flex flex-col lg:flex-row items-center gap-8">
-          <div className="w-56 h-56">
+      <div className={`${glassCard} rounded-2xl p-4 sm:p-6 lg:p-8`}>
+        <h3 className="text-base sm:text-lg lg:text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white mb-3 sm:mb-6" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.dashboard_loss_reasons}</h3>
+        <div className="flex flex-col lg:flex-row items-center gap-4 sm:gap-6 lg:gap-8">
+          {/* Rayons en % du rayon max (conteneur − marges 5px) : identiques au bureau (224px → 50/85), plus petits sur téléphone */}
+          <div className="w-44 h-44 sm:w-56 sm:h-56 shrink-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={lossReasonData} cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={3} dataKey="value">
+                <Pie data={lossReasonData} cx="50%" cy="50%" innerRadius="46.729%" outerRadius="79.439%" paddingAngle={3} dataKey="value">
                   {lossReasonData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                 </Pie>
                 <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e7e5e4', fontSize: 12 }} formatter={(v: number) => [v, 'Deals']} />
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex-1 space-y-3">
+          <div className="w-full lg:w-auto flex-1 space-y-3">
             {lossReasonData.map(d => {
               const total = lossReasonData.reduce((s, r) => s + r.value, 0)
               return (
-                <div key={d.name} className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
+                <div key={d.name} className="flex justify-between items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
-                    <span className="text-sm font-medium text-stone-700 dark:text-neutral-200">{d.name}</span>
+                    <span className="text-sm font-medium text-stone-700 dark:text-neutral-200 truncate lg:overflow-visible lg:whitespace-normal">{d.name}</span>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 shrink-0">
                     <span className="text-sm font-bold text-stone-900 dark:text-white">{d.value}</span>
                     <span className="text-xs text-stone-400 dark:text-neutral-500 w-10 text-right">{total > 0 ? Math.round((d.value / total) * 100) : 0}%</span>
                   </div>
@@ -1002,12 +1074,14 @@ export function BusinessDashboard() {
 
       {/* Export Modal */}
       {showExportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        // Feuille du bas sur téléphone, fenêtre centrée à partir de sm
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowExportModal(false)} />
-          <div className="relative w-full max-w-md bg-white dark:bg-neutral-900 rounded-3xl overflow-hidden" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.12)' }}>
-            <div className="px-8 pt-8 pb-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-extrabold text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <div className="relative w-full sm:max-w-md max-h-[92dvh] sm:max-h-[90vh] overflow-y-auto overscroll-contain bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-3xl" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.12)' }}>
+            <div className="sm:hidden mx-auto mt-2 h-1 w-10 rounded-full bg-stone-300 dark:bg-neutral-700" />
+            <div className="px-5 pt-3 sm:px-8 sm:pt-8 pb-4">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-xl sm:text-2xl font-extrabold text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
                   {t.dashboard_export_modal_title}
                 </h2>
                 <button onClick={() => setShowExportModal(false)} className="p-2 text-neutral-400 hover:text-neutral-700 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition-colors">
@@ -1018,7 +1092,7 @@ export function BusinessDashboard() {
             </div>
 
             {exportDone ? (
-              <div className="px-8 pb-8 pt-4 text-center">
+              <div className="px-5 sm:px-8 pb-[max(2rem,env(safe-area-inset-bottom))] sm:pb-8 pt-4 text-center">
                 <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Mail className="h-7 w-7 text-emerald-600" />
                 </div>
@@ -1026,7 +1100,7 @@ export function BusinessDashboard() {
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{t.dashboard_export_success_desc}</p>
               </div>
             ) : (
-              <div className="px-8 pb-8 space-y-6">
+              <div className="px-5 sm:px-8 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:pb-8 space-y-5 sm:space-y-6">
                 {/* Format selection */}
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-500 dark:text-neutral-400 mb-3">{t.dashboard_export_format}</label>
@@ -1100,12 +1174,13 @@ export function BusinessDashboard() {
 
       {/* Reminder Detail Modal */}
       {selectedReminder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setSelectedReminder(null)} />
-          <div className="relative w-full max-w-md bg-white dark:bg-neutral-900 rounded-3xl overflow-hidden" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.12)' }}>
-            <div className="px-8 pt-8 pb-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-extrabold text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <div className="relative w-full sm:max-w-md max-h-[92dvh] sm:max-h-[90vh] overflow-y-auto overscroll-contain bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-3xl" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.12)' }}>
+            <div className="sm:hidden mx-auto mt-2 h-1 w-10 rounded-full bg-stone-300 dark:bg-neutral-700" />
+            <div className="px-5 pt-3 sm:px-8 sm:pt-8 pb-4">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-xl sm:text-2xl font-extrabold text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
                   {t.dashboard_reminder_detail}
                 </h2>
                 <button onClick={() => setSelectedReminder(null)} className="p-2 text-neutral-400 hover:text-neutral-700 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition-colors">
@@ -1113,7 +1188,7 @@ export function BusinessDashboard() {
                 </button>
               </div>
             </div>
-            <div className="px-8 pb-8 space-y-5">
+            <div className="px-5 sm:px-8 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:pb-8 space-y-5">
               {/* Status */}
               {(() => {
                 const isOverdue = new Date(selectedReminder.reminder_date) < now
@@ -1158,17 +1233,17 @@ export function BusinessDashboard() {
               })()}
 
               {/* Actions */}
-              <div className="flex gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
                 <button
                   onClick={() => { handleMarkDone(selectedReminder.id); setSelectedReminder(null) }}
-                  className="flex-1 py-3 bg-emerald-600 text-white rounded-full font-bold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto sm:flex-1 py-3 bg-emerald-600 text-white rounded-full font-bold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2"
                 >
                   <CheckCircle2 className="h-4 w-4" />
                   {t.dashboard_mark_done}
                 </button>
                 <button
                   onClick={() => { handleDeleteReminder(selectedReminder.id); setSelectedReminder(null) }}
-                  className="flex-1 py-3 bg-neutral-100 dark:bg-neutral-800 text-red-600 rounded-full font-bold text-sm hover:bg-red-50 transition-all flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto sm:flex-1 py-3 bg-neutral-100 dark:bg-neutral-800 text-red-600 rounded-full font-bold text-sm hover:bg-red-50 transition-all flex items-center justify-center gap-2"
                 >
                   <Trash2 className="h-4 w-4" />
                   {t.common_delete}

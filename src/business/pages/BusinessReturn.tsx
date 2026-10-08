@@ -131,7 +131,7 @@ export default function BusinessReturn() {
 
   if (loadingStripe) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+      <div className="min-h-screen min-h-dvh bg-stone-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-stone-400" />
           <p className="text-stone-400 text-sm">{t.return_payment_checking}</p>
@@ -141,30 +141,30 @@ export default function BusinessReturn() {
   }
 
   return (
-    <div className="relative min-h-screen bg-stone-50 flex items-center justify-center p-4 overflow-hidden">
-      {/* Ambient blobs */}
-      <div className="absolute top-[-10%] left-[20%] w-[600px] h-[600px] bg-emerald-100/30 blur-[120px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[10%] w-[500px] h-[500px] bg-stone-200/30 blur-[120px] rounded-full pointer-events-none" />
+    <div className="relative min-h-screen min-h-dvh bg-stone-50 flex items-center justify-center px-4 py-6 sm:p-4 overflow-hidden">
+      {/* Ambient blobs (masqués sur mobile : décor lourd) */}
+      <div className="hidden lg:block absolute top-[-10%] left-[20%] w-[600px] h-[600px] bg-emerald-100/30 blur-[120px] rounded-full pointer-events-none" />
+      <div className="hidden lg:block absolute bottom-[-10%] right-[10%] w-[500px] h-[500px] bg-stone-200/30 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="relative z-10 w-full max-w-lg">
         {/* Brand */}
-        <div className="mb-8 flex justify-center">
+        <div className="mb-6 sm:mb-8 flex justify-center">
           <Link to="/business">
-            <img src="/closeos-business-logo-ecrit.png" alt="CloseOS Business" className="h-9 w-auto" />
+            <img src="/closeos-business-logo-ecrit.png" alt="CloseOS Business" className="h-8 sm:h-9 w-auto" />
           </Link>
         </div>
 
         {/* Glass card */}
-        <div className="rounded-2xl bg-white/70 backdrop-blur-xl p-8 sm:p-10 shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+        <div className="rounded-2xl bg-white/70 lg:backdrop-blur-xl p-6 sm:p-10 shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
           {/* Success header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-50 mb-4">
-              <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+          <div className="text-center mb-6 sm:mb-8">
+            <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-emerald-50 mb-3 sm:mb-4">
+              <CheckCircle2 className="w-7 h-7 sm:w-8 sm:h-8 text-emerald-600" />
             </div>
-            <h1 className="text-2xl font-extrabold text-stone-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-stone-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
               {t.return_payment_confirmed}
             </h1>
-            <p className="text-stone-500 mt-2">
+            <p className="text-sm sm:text-base text-stone-500 mt-1.5 sm:mt-2">
               {t.return_finalize_account} {PLAN_LABELS[planFromSession || plan] || 'Business'}.
             </p>
           </div>
@@ -176,7 +176,7 @@ export default function BusinessReturn() {
             </div>
           )}
 
-          <form onSubmit={handleRegister} className="space-y-5">
+          <form onSubmit={handleRegister} className="space-y-4 sm:space-y-5">
             {/* Email (locked to Stripe session email) */}
             <div>
               <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">
@@ -232,7 +232,7 @@ export default function BusinessReturn() {
             <button
               type="submit"
               disabled={authLoading}
-              className="flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 py-5 font-bold text-white shadow-lg transition-all hover:bg-stone-800 active:scale-95 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 py-4 sm:py-5 font-bold text-white shadow-lg transition-all hover:bg-stone-800 active:scale-[0.98] sm:active:scale-95 disabled:opacity-50"
               style={{ fontFamily: 'Manrope, sans-serif' }}
             >
               {authLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : t.return_activate}
@@ -248,7 +248,7 @@ export default function BusinessReturn() {
           </p>
         </div>
 
-        <p className="mt-8 text-center text-xs text-stone-400">
+        <p className="mt-6 sm:mt-8 pb-[env(safe-area-inset-bottom)] text-center text-xs text-stone-400">
           &copy; {new Date().getFullYear()} CloseOS. {t.return_copyright}
         </p>
       </div>

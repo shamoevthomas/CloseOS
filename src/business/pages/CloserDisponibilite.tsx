@@ -32,6 +32,11 @@ const DAYS_SHORT_FR = ['Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.', 'Dim.']
 const DAYS_SHORT_EN = ['Mon.', 'Tue.', 'Wed.', 'Thu.', 'Fri.', 'Sat.', 'Sun.']
 
 const GLASS_PANEL = 'bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/5 dark:ring-white/10 shadow-sm'
+// Téléphone : les jours forment une seule carte, une ligne par jour (pas une carte par jour)
+const MOBILE_LIST = 'max-sm:rounded-2xl max-sm:bg-white/70 dark:max-sm:bg-white/5 max-sm:ring-1 max-sm:ring-[#c4c7c7]/20 dark:max-sm:ring-white/10 max-sm:shadow-sm max-sm:divide-y max-sm:divide-stone-100 dark:max-sm:divide-white/10'
+const MOBILE_ROW = 'max-sm:rounded-none max-sm:bg-transparent dark:max-sm:bg-transparent max-sm:ring-0 max-sm:shadow-none max-sm:backdrop-blur-none'
+// Ligne de liste à fleur de carte sur téléphone (périodes, absences)
+const MOBILE_FLAT_ITEM = 'max-sm:rounded-none max-sm:bg-transparent dark:max-sm:bg-transparent max-sm:ring-0 max-sm:px-0 max-sm:py-3'
 
 export function CloserDisponibilite() {
   const { teamMember, ownerUserId, isTeamMember, user } = useBusinessAuth()
@@ -360,28 +365,29 @@ export function CloserDisponibilite() {
   }
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-6 sm:space-y-10">
       {/* Header */}
-      <header className="space-y-2">
-        <div className="flex items-center gap-4 text-[#006c49] mb-2">
+      <header className="space-y-1 sm:space-y-2">
+        <div className="flex items-center gap-4 text-[#006c49] mb-2 max-sm:hidden">
           <Clock className="h-6 w-6" strokeWidth={1.5} />
           <span className="h-px w-10 bg-[#c4c7c7]/30" />
           <span className="text-[10px] uppercase tracking-[0.2em] font-bold">Workspace</span>
         </div>
-        <h1 className="text-2xl md:text-4xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">{t.sidebar_availability}</h1>
-        <p className="text-stone-500 dark:text-neutral-400 text-base max-w-2xl font-light italic opacity-80">{t.availability_subtitle}</p>
+        <h1 className="text-xl sm:text-2xl md:text-4xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">{t.sidebar_availability}</h1>
+        <p className="text-stone-500 dark:text-neutral-400 text-sm sm:text-base max-w-2xl font-light italic opacity-80">{t.availability_subtitle}</p>
       </header>
 
       {/* Bento Grid */}
-      <div className="grid grid-cols-12 gap-4 md:gap-8">
+      <div className="grid grid-cols-12 gap-6 md:gap-8">
         {/* ─── Left: Weekly Slots ─── */}
-        <section className="col-span-12 xl:col-span-8 space-y-6">
-          <h3 className="font-business-display font-extrabold text-lg md:text-2xl tracking-tight flex items-center gap-3 text-stone-900 dark:text-white">
+        <section className="col-span-12 xl:col-span-8 space-y-3 sm:space-y-6">
+          <h3 className="font-business-display font-extrabold text-base sm:text-lg md:text-2xl tracking-tight flex items-center gap-3 text-stone-900 dark:text-white">
             {t.availability_weekly_slots}
           </h3>
 
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {/* Weekdays (Mon-Fri) */}
+            <div className={cn('space-y-4 max-sm:space-y-0', MOBILE_LIST)}>
             {DAYS.slice(0, 5).map((day, idx) => {
               const daySlots = slots.filter(s => s.day_of_week === idx)
               const hasSlots = daySlots.length > 0
@@ -390,12 +396,15 @@ export function CloserDisponibilite() {
                   key={idx}
                   className={cn(
                     GLASS_PANEL,
-                    'rounded-2xl p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:shadow-md transition-shadow'
+                    'rounded-2xl p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:shadow-md transition-shadow',
+                    // Téléphone : ligne « jour … copier » puis créneaux en dessous
+                    'max-sm:flex-row max-sm:flex-wrap max-sm:items-center max-sm:gap-x-3 max-sm:gap-y-2 max-sm:px-4 max-sm:py-3',
+                    MOBILE_ROW
                   )}
                 >
-                  <div className="flex items-center gap-3 md:gap-6 min-w-[100px] md:min-w-[140px]">
+                  <div className="flex items-center gap-3 md:gap-6 min-w-[100px] md:min-w-[140px] max-sm:flex-1 max-sm:gap-2">
                     <span className={cn(
-                      'font-business-display font-extrabold text-base md:text-xl w-12',
+                      'font-business-display font-extrabold text-base md:text-xl w-12 max-sm:w-auto',
                       hasSlots ? 'text-stone-900 dark:text-white' : 'text-stone-300 dark:text-neutral-600'
                     )}>
                       {DAYS_SHORT[idx]}
@@ -403,34 +412,36 @@ export function CloserDisponibilite() {
                     <div className={cn('h-2 w-2 rounded-full', hasSlots ? 'bg-[#006c49]' : 'bg-[#c4c7c7]/30 dark:bg-neutral-600')} />
                   </div>
 
-                  <div className="flex flex-wrap gap-2 flex-grow items-center">
+                  <div className="flex flex-wrap gap-2 flex-grow items-center max-sm:order-last max-sm:basis-full">
                     {daySlots.map(slot => (
-                      <div key={slot.id} className="flex items-center gap-2 bg-[#ffddb8] dark:bg-amber-900/30 text-[#2a1700] dark:text-amber-400 px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-semibold min-h-[44px]">
+                      <div key={slot.id} className="flex items-center gap-2 max-sm:gap-0.5 bg-[#ffddb8] dark:bg-amber-900/30 text-[#2a1700] dark:text-amber-400 px-3 md:px-4 max-sm:pl-3 max-sm:pr-1 py-2 max-xl:py-0 rounded-full text-xs md:text-sm font-semibold min-h-[44px] max-sm:min-h-[36px] tabular-nums">
                         {slot.start_time?.slice(0, 5)} - {slot.end_time?.slice(0, 5)}
-                        <button onClick={() => handleDeleteSlot(slot.id)} className="hover:text-[#ba1a1a] dark:hover:text-red-400 transition-colors min-h-[44px] min-w-[28px] flex items-center justify-center">
+                        <button onClick={() => handleDeleteSlot(slot.id)} aria-label={lang === 'en' ? 'Delete' : 'Supprimer'} className="hover:text-[#ba1a1a] dark:hover:text-red-400 transition-colors min-h-[44px] min-w-[28px] max-sm:min-h-[36px] max-sm:min-w-[32px] flex items-center justify-center">
                           <X className="h-3 w-3" strokeWidth={2} />
                         </button>
                       </div>
                     ))}
                     {!hasSlots && !addingDay && (
-                      <span className="text-sm text-stone-400/50 dark:text-neutral-500/50 italic py-2">{t.availability_unavailable}</span>
+                      <span className="text-sm text-stone-400/50 dark:text-neutral-500/50 italic py-2 max-sm:py-0 max-sm:text-xs">{t.availability_unavailable}</span>
                     )}
 
                     {addingDay === idx ? (
-                      <div className="flex flex-wrap items-center gap-2">
-                        <input type="time" value={newStart} onChange={e => handleStartChange(e.target.value)} className="rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-2 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 min-h-[44px]" />
+                      <div className="flex flex-wrap items-center gap-2 max-sm:w-full max-sm:grid max-sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+                        <input type="time" value={newStart} onChange={e => handleStartChange(e.target.value)} className="rounded-full bg-stone-50 max-sm:bg-stone-100 dark:bg-neutral-800 border-none px-3 py-2 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 min-h-[44px] max-sm:min-h-[40px] max-sm:w-full max-sm:min-w-0" />
                         <span className="text-xs text-stone-400 dark:text-neutral-500">{t.availability_to_time}</span>
-                        <input type="time" value={newEnd} onChange={e => handleEndChange(e.target.value)} className="rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-2 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 min-h-[44px]" />
-                        <button onClick={() => handleAddSlot(idx)} className="rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 px-4 py-2 text-xs font-bold text-white hover:opacity-90 transition-all min-h-[44px]">OK</button>
-                        <button onClick={() => setAddingDay(null)} className="text-xs text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300 min-h-[44px]">{t.availability_cancel}</button>
+                        <input type="time" value={newEnd} onChange={e => handleEndChange(e.target.value)} className="rounded-full bg-stone-50 max-sm:bg-stone-100 dark:bg-neutral-800 border-none px-3 py-2 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 min-h-[44px] max-sm:min-h-[40px] max-sm:w-full max-sm:min-w-0" />
+                        <button onClick={() => handleAddSlot(idx)} className="rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 px-4 py-2 text-xs font-bold text-white hover:opacity-90 transition-all min-h-[44px] max-sm:min-h-[40px] max-sm:row-start-2 max-sm:col-start-3">OK</button>
+                        <button onClick={() => setAddingDay(null)} className="text-xs text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300 min-h-[44px] max-sm:min-h-[40px] max-sm:px-3 max-sm:row-start-2 max-sm:col-start-1 max-sm:col-span-2 max-sm:justify-self-end">{t.availability_cancel}</button>
                       </div>
                     ) : (
                       <button
                         onClick={() => handleStartAdding(idx)}
-                        className="flex items-center gap-2 border border-dashed border-[#c4c7c7] dark:border-neutral-700/50 px-4 py-2 rounded-full text-xs md:text-sm text-stone-500 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-white/5 hover:border-stone-400 transition-all min-h-[44px]"
+                        aria-label={t.availability_add_slot_btn}
+                        className="flex items-center gap-2 border border-dashed border-[#c4c7c7] dark:border-neutral-700/50 px-4 py-2 rounded-full text-xs md:text-sm text-stone-500 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-white/5 hover:border-stone-400 transition-all min-h-[44px] max-sm:min-h-[36px] max-sm:px-3 max-sm:py-0 max-sm:gap-1.5"
                       >
                         <Plus className="h-3.5 w-3.5" strokeWidth={1.5} />
-                        {t.availability_add_slot_btn}
+                        <span className="sm:hidden">{t.availability_add_short}</span>
+                        <span className="hidden sm:inline">{t.availability_add_slot_btn}</span>
                       </button>
                     )}
                   </div>
@@ -440,14 +451,15 @@ export function CloserDisponibilite() {
                     <div className="relative">
                       <button
                         onClick={() => { setCopyingDay(copyingDay === idx ? null : idx); setSelectedCopyTargets([]) }}
-                        className="text-stone-400 hover:text-[#006c49] p-2 transition-colors"
+                        aria-label={lang === 'en' ? 'Copy to other days' : 'Copier vers d’autres jours'}
+                        className="text-stone-400 hover:text-[#006c49] p-2 transition-colors max-sm:-my-1 max-sm:-mr-2 max-sm:h-9 max-sm:w-9 max-sm:flex max-sm:items-center max-sm:justify-center"
                       >
                         <Copy className="h-4 w-4" strokeWidth={1.5} />
                       </button>
                       {copyingDay === idx && (
                         <>
                           <div className="fixed inset-0 z-40" onClick={() => { setCopyingDay(null); setSelectedCopyTargets([]) }} />
-                          <div className="absolute bottom-full right-0 mb-1 z-50 rounded-2xl bg-white dark:bg-white/5 shadow-xl ring-1 ring-black/5 dark:ring-white/10 py-2 min-w-[180px] dark:backdrop-blur-xl">
+                          <div className="absolute bottom-full max-sm:bottom-auto max-sm:top-full right-0 mb-1 max-sm:mb-0 max-sm:mt-1 z-50 rounded-2xl bg-white dark:bg-white/5 max-sm:dark:bg-neutral-900 shadow-xl ring-1 ring-black/5 dark:ring-white/10 py-2 min-w-[180px] max-w-[calc(100vw-2rem)] dark:backdrop-blur-xl">
                             {DAYS.map((targetDay, targetIdx) => {
                               if (targetIdx === idx) return null
                               const isSelected = selectedCopyTargets.includes(targetIdx)
@@ -488,6 +500,7 @@ export function CloserDisponibilite() {
                 </div>
               )
             })}
+            </div>
 
             {/* Weekend separator */}
             <div className="flex items-center gap-4 py-2 text-stone-300 dark:text-neutral-500">
@@ -497,7 +510,7 @@ export function CloserDisponibilite() {
             </div>
 
             {/* Weekend (Sat-Sun) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={cn('grid grid-cols-1 md:grid-cols-2 gap-4 max-sm:gap-0', MOBILE_LIST)}>
               {DAYS.slice(5).map((day, i) => {
                 const idx = i + 5
                 const daySlots = slots.filter(s => s.day_of_week === idx)
@@ -507,19 +520,20 @@ export function CloserDisponibilite() {
                     key={idx}
                     className={cn(
                       GLASS_PANEL,
-                      'rounded-2xl p-5',
+                      'rounded-2xl p-5 max-sm:px-4 max-sm:py-3',
+                      MOBILE_ROW,
                       !hasSlots && 'opacity-60'
                     )}
                   >
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="font-business-display font-extrabold text-lg text-stone-900 dark:text-white">{DAYS_SHORT[idx]}</span>
+                    <div className="flex items-center justify-between mb-3 max-sm:mb-2">
+                      <span className="font-business-display font-extrabold text-lg max-sm:text-base text-stone-900 dark:text-white">{DAYS_SHORT[idx]}</span>
                       <div className={cn('h-2 w-2 rounded-full', hasSlots ? 'bg-[#006c49]' : 'bg-[#c4c7c7]/30 dark:bg-neutral-600')} />
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {daySlots.map(slot => (
-                        <div key={slot.id} className="flex items-center gap-2 bg-[#ffddb8] dark:bg-amber-900/30 text-[#2a1700] dark:text-amber-400 px-3 py-1.5 rounded-full text-xs font-bold">
+                        <div key={slot.id} className="flex items-center gap-2 max-sm:gap-0.5 bg-[#ffddb8] dark:bg-amber-900/30 text-[#2a1700] dark:text-amber-400 px-3 py-1.5 max-sm:pr-1 max-sm:py-0 max-sm:min-h-[36px] rounded-full text-xs font-bold tabular-nums">
                           {slot.start_time?.slice(0, 5)} - {slot.end_time?.slice(0, 5)}
-                          <button onClick={() => handleDeleteSlot(slot.id)} className="hover:text-[#ba1a1a] dark:hover:text-red-400 transition-colors">
+                          <button onClick={() => handleDeleteSlot(slot.id)} aria-label={lang === 'en' ? 'Delete' : 'Supprimer'} className="hover:text-[#ba1a1a] dark:hover:text-red-400 transition-colors max-sm:min-h-[36px] max-sm:min-w-[32px] max-sm:flex max-sm:items-center max-sm:justify-center">
                             <X className="h-3 w-3" strokeWidth={2} />
                           </button>
                         </div>
@@ -529,19 +543,19 @@ export function CloserDisponibilite() {
                       )}
                     </div>
                     {addingDay === idx ? (
-                      <div className="flex items-center gap-2 mt-3">
-                        <input type="time" value={newStart} onChange={e => handleStartChange(e.target.value)} className="rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-1.5 text-xs font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
+                      <div className="flex items-center gap-2 mt-3 max-sm:mt-2 max-sm:grid max-sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+                        <input type="time" value={newStart} onChange={e => handleStartChange(e.target.value)} className="rounded-full bg-stone-50 max-sm:bg-stone-100 dark:bg-neutral-800 border-none px-3 py-1.5 text-xs font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 max-sm:min-h-[40px] max-sm:w-full max-sm:min-w-0" />
                         <span className="text-xs text-stone-400 dark:text-neutral-500">{t.availability_to_time}</span>
-                        <input type="time" value={newEnd} onChange={e => handleEndChange(e.target.value)} className="rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-1.5 text-xs font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
-                        <button onClick={() => handleAddSlot(idx)} className="rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 px-3 py-1.5 text-xs font-bold text-white hover:opacity-90">OK</button>
-                        <button onClick={() => setAddingDay(null)} className="text-xs text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300">
+                        <input type="time" value={newEnd} onChange={e => handleEndChange(e.target.value)} className="rounded-full bg-stone-50 max-sm:bg-stone-100 dark:bg-neutral-800 border-none px-3 py-1.5 text-xs font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 max-sm:min-h-[40px] max-sm:w-full max-sm:min-w-0" />
+                        <button onClick={() => handleAddSlot(idx)} className="rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 px-3 py-1.5 text-xs font-bold text-white hover:opacity-90 max-sm:min-h-[40px] max-sm:row-start-2 max-sm:col-start-3">OK</button>
+                        <button onClick={() => setAddingDay(null)} aria-label={t.availability_cancel} className="text-xs text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300 max-sm:h-10 max-sm:w-10 max-sm:flex max-sm:items-center max-sm:justify-center max-sm:row-start-2 max-sm:col-start-1 max-sm:col-span-2 max-sm:justify-self-end">
                           <X className="h-3 w-3" />
                         </button>
                       </div>
                     ) : (
                       <button
                         onClick={() => handleStartAdding(idx)}
-                        className="mt-3 flex items-center gap-1.5 text-xs text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300 transition-colors"
+                        className="mt-3 max-sm:mt-2 max-sm:min-h-[32px] flex items-center gap-1.5 text-xs text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300 transition-colors"
                       >
                         <Plus className="h-3 w-3" strokeWidth={1.5} />
                         {t.availability_add_short}
@@ -555,19 +569,19 @@ export function CloserDisponibilite() {
         </section>
 
         {/* ─── Right: Absences ─── */}
-        <aside className="col-span-12 xl:col-span-4 space-y-8">
+        <aside className="col-span-12 xl:col-span-4 space-y-4 sm:space-y-8">
           {/* Temporary availability Card */}
-          <div className={cn(GLASS_PANEL, 'rounded-2xl p-5 md:p-8 shadow-lg relative overflow-hidden')}>
-            <div className="absolute -right-8 -top-8 w-32 h-32 bg-[#006c49]/5 rounded-full blur-3xl" />
-            <h3 className="font-business-display font-extrabold text-lg md:text-2xl mb-2 relative z-10 flex items-center gap-3 text-stone-900 dark:text-white">
+          <div className={cn(GLASS_PANEL, 'rounded-2xl p-4 sm:p-5 md:p-8 shadow-lg max-sm:shadow-sm relative overflow-hidden')}>
+            <div className="absolute -right-8 -top-8 w-32 h-32 bg-[#006c49]/5 rounded-full blur-3xl hidden lg:block" />
+            <h3 className="font-business-display font-extrabold text-base sm:text-lg md:text-2xl mb-1 sm:mb-2 relative z-10 flex items-center gap-2 sm:gap-3 text-stone-900 dark:text-white">
               <CalendarRange className="h-5 w-5 text-[#006c49]" strokeWidth={1.5} />
               {t.temp_avail_title}
             </h3>
-            <p className="text-xs text-stone-400 dark:text-neutral-500 mb-6 relative z-10">{t.temp_avail_subtitle}</p>
+            <p className="text-xs text-stone-400 dark:text-neutral-500 mb-3 sm:mb-6 relative z-10">{t.temp_avail_subtitle}</p>
 
-            <div className="space-y-3 mb-6 relative z-10">
+            <div className="space-y-3 mb-4 sm:mb-6 relative z-10 max-sm:space-y-0 max-sm:divide-y max-sm:divide-stone-100 dark:max-sm:divide-white/10">
               {tempPeriods.length === 0 ? (
-                <div className="text-center py-6">
+                <div className="text-center py-6 max-sm:py-4">
                   <p className="text-sm text-stone-400 dark:text-neutral-500">{t.temp_avail_none}</p>
                   <p className="text-xs text-stone-400/70 dark:text-neutral-500/70 mt-1">{t.temp_avail_none_desc}</p>
                 </div>
@@ -580,7 +594,8 @@ export function CloserDisponibilite() {
                       'p-4 rounded-2xl ring-1 transition-colors',
                       status === 'past'
                         ? 'bg-stone-100 dark:bg-white/5 ring-stone-200/50 dark:ring-white/5 opacity-60'
-                        : 'bg-[#efedec] dark:bg-white/5 ring-[#c4c7c7]/10 dark:ring-white/10'
+                        : 'bg-[#efedec] dark:bg-white/5 ring-[#c4c7c7]/10 dark:ring-white/10',
+                      MOBILE_FLAT_ITEM
                     )}>
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
@@ -607,13 +622,15 @@ export function CloserDisponibilite() {
                         <div className="flex items-center gap-1 shrink-0">
                           <button
                             onClick={() => { setEditingPeriod(period); setShowTempModal(true) }}
-                            className="text-stone-300 dark:text-neutral-600 hover:text-[#006c49] transition-colors p-1"
+                            aria-label={lang === 'en' ? 'Edit' : 'Modifier'}
+                            className="text-stone-300 dark:text-neutral-600 hover:text-[#006c49] transition-colors p-1 max-sm:p-2 max-sm:text-stone-400"
                           >
                             <Pencil className="h-4 w-4" strokeWidth={1.5} />
                           </button>
                           <button
                             onClick={() => handleDeleteTempPeriod(period)}
-                            className="text-stone-300 dark:text-neutral-600 hover:text-[#ba1a1a] transition-colors p-1"
+                            aria-label={lang === 'en' ? 'Delete' : 'Supprimer'}
+                            className="text-stone-300 dark:text-neutral-600 hover:text-[#ba1a1a] transition-colors p-1 max-sm:p-2 max-sm:-mr-2 max-sm:text-stone-400"
                           >
                             <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                           </button>
@@ -627,7 +644,7 @@ export function CloserDisponibilite() {
 
             <button
               onClick={() => { setEditingPeriod(null); setShowTempModal(true) }}
-              className="w-full py-4 border-2 border-dashed border-[#c4c7c7] dark:border-neutral-700/50 hover:border-[#006c49] hover:text-[#006c49] hover:bg-[#006c49]/5 rounded-2xl transition-all flex items-center justify-center gap-2 text-stone-500 dark:text-neutral-400 relative z-10"
+              className="w-full py-4 max-sm:py-3 border-2 border-dashed border-[#c4c7c7] dark:border-neutral-700/50 hover:border-[#006c49] hover:text-[#006c49] hover:bg-[#006c49]/5 rounded-2xl transition-all flex items-center justify-center gap-2 text-stone-500 dark:text-neutral-400 relative z-10 active:scale-[0.98]"
             >
               <Plus className="h-4 w-4" strokeWidth={1.5} />
               <span className="text-sm font-bold">{t.temp_avail_new}</span>
@@ -635,13 +652,13 @@ export function CloserDisponibilite() {
           </div>
 
           {/* Absences Card */}
-          <div className={cn(GLASS_PANEL, 'rounded-2xl p-5 md:p-8 shadow-lg relative overflow-hidden')}>
-            <div className="absolute -right-8 -top-8 w-32 h-32 bg-[#006c49]/5 rounded-full blur-3xl" />
-            <h3 className="font-business-display font-extrabold text-lg md:text-2xl mb-6 relative z-10 text-stone-900 dark:text-white">{t.availability_absences_title}</h3>
+          <div className={cn(GLASS_PANEL, 'rounded-2xl p-4 sm:p-5 md:p-8 shadow-lg max-sm:shadow-sm relative overflow-hidden')}>
+            <div className="absolute -right-8 -top-8 w-32 h-32 bg-[#006c49]/5 rounded-full blur-3xl hidden lg:block" />
+            <h3 className="font-business-display font-extrabold text-base sm:text-lg md:text-2xl mb-3 sm:mb-6 relative z-10 text-stone-900 dark:text-white">{t.availability_absences_title}</h3>
 
-            <div className="space-y-4 mb-6 relative z-10">
+            <div className="space-y-4 mb-4 sm:mb-6 relative z-10 max-sm:space-y-0 max-sm:divide-y max-sm:divide-stone-100 dark:max-sm:divide-white/10">
               {absences.length === 0 ? (
-                <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-6">{t.availability_no_absences}</p>
+                <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-6 max-sm:py-4">{t.availability_no_absences}</p>
               ) : (
                 absences.map(abs => {
                   const isPast = new Date(abs.end_date + 'T23:59:59') < new Date()
@@ -650,15 +667,16 @@ export function CloserDisponibilite() {
                     'flex items-center justify-between p-4 rounded-2xl ring-1 transition-colors',
                     isPast
                       ? 'bg-stone-100 dark:bg-white/5 ring-stone-200/50 dark:ring-white/5 opacity-60'
-                      : 'bg-[#efedec] dark:bg-white/5 ring-[#c4c7c7]/10 dark:ring-white/10'
+                      : 'bg-[#efedec] dark:bg-white/5 ring-[#c4c7c7]/10 dark:ring-white/10',
+                    MOBILE_FLAT_ITEM, 'max-sm:gap-3'
                   )}>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 max-sm:min-w-0">
                       <div className={cn('p-2 rounded-xl', isPast ? 'bg-stone-200/60 dark:bg-white/10' : 'bg-[#006c49]/10')}>
                         <Calendar className={cn('h-4 w-4', isPast ? 'text-stone-400 dark:text-neutral-500' : 'text-[#006c49]')} strokeWidth={1.5} />
                       </div>
-                      <div>
+                      <div className="max-sm:min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="text-sm font-bold text-stone-900 dark:text-white">
+                          <p className="text-sm font-bold text-stone-900 dark:text-white max-sm:whitespace-nowrap">
                             {new Date(abs.start_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })} — {new Date(abs.end_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })}
                           </p>
                           {isPast && (
@@ -668,11 +686,11 @@ export function CloserDisponibilite() {
                           )}
                         </div>
                         {abs.reason && (
-                          <p className="text-[10px] text-stone-500 dark:text-neutral-400 uppercase tracking-wider">{abs.reason}</p>
+                          <p className="text-[10px] text-stone-500 dark:text-neutral-400 uppercase tracking-wider max-sm:truncate">{abs.reason}</p>
                         )}
                       </div>
                     </div>
-                    <button onClick={() => handleDeleteAbsence(abs.id)} className="text-stone-300 dark:text-neutral-600 hover:text-[#ba1a1a] transition-colors">
+                    <button onClick={() => handleDeleteAbsence(abs.id)} aria-label={lang === 'en' ? 'Delete' : 'Supprimer'} className="text-stone-300 dark:text-neutral-600 hover:text-[#ba1a1a] transition-colors max-sm:p-2 max-sm:-mr-2 max-sm:text-stone-400 max-sm:shrink-0">
                       <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                     </button>
                   </div>
@@ -683,15 +701,15 @@ export function CloserDisponibilite() {
 
             {/* Absence Form */}
             {showAbsenceForm && (
-              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-5 mb-4 space-y-4 relative z-10">
-                <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-5 max-sm:p-3 mb-4 space-y-4 max-sm:space-y-3 relative z-10">
+                <div className="grid grid-cols-2 gap-3 max-sm:gap-2">
                   <div>
                     <label className="block text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold mb-2">{t.availability_start_date}</label>
-                    <input type="date" value={absStartDate} onChange={e => setAbsStartDate(e.target.value)} className="w-full rounded-full bg-white dark:bg-neutral-800 border-none px-4 py-2.5 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
+                    <input type="date" value={absStartDate} onChange={e => setAbsStartDate(e.target.value)} className="w-full min-w-0 rounded-full bg-white dark:bg-neutral-800 border-none px-4 max-sm:px-3 py-2.5 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
                   </div>
                   <div>
                     <label className="block text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold mb-2">{t.availability_end_date}</label>
-                    <input type="date" value={absEndDate} onChange={e => setAbsEndDate(e.target.value)} className="w-full rounded-full bg-white dark:bg-neutral-800 border-none px-4 py-2.5 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
+                    <input type="date" value={absEndDate} onChange={e => setAbsEndDate(e.target.value)} className="w-full min-w-0 rounded-full bg-white dark:bg-neutral-800 border-none px-4 max-sm:px-3 py-2.5 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
                   </div>
                 </div>
                 <div>
@@ -709,7 +727,7 @@ export function CloserDisponibilite() {
             {!showAbsenceForm && (
               <button
                 onClick={() => setShowAbsenceForm(true)}
-                className="w-full py-4 border-2 border-dashed border-[#c4c7c7] dark:border-neutral-700/50 hover:border-[#006c49] hover:text-[#006c49] hover:bg-[#006c49]/5 rounded-2xl transition-all flex items-center justify-center gap-2 text-stone-500 dark:text-neutral-400 relative z-10"
+                className="w-full py-4 max-sm:py-3 active:scale-[0.98] border-2 border-dashed border-[#c4c7c7] dark:border-neutral-700/50 hover:border-[#006c49] hover:text-[#006c49] hover:bg-[#006c49]/5 rounded-2xl transition-all flex items-center justify-center gap-2 text-stone-500 dark:text-neutral-400 relative z-10"
               >
                 <Plus className="h-4 w-4" strokeWidth={1.5} />
                 <span className="text-sm font-bold">{t.availability_new_absence}</span>
@@ -718,15 +736,15 @@ export function CloserDisponibilite() {
           </div>
 
           {/* Booking Constraints Card */}
-          <div className={cn(GLASS_PANEL, 'rounded-2xl p-5 md:p-8 shadow-lg relative overflow-hidden')}>
-            <div className="absolute -left-8 -bottom-8 w-32 h-32 bg-[#006c49]/5 rounded-full blur-3xl" />
-            <h3 className="font-business-display font-extrabold text-lg md:text-2xl mb-2 relative z-10 flex items-center gap-3 text-stone-900 dark:text-white">
+          <div className={cn(GLASS_PANEL, 'rounded-2xl p-4 sm:p-5 md:p-8 shadow-lg max-sm:shadow-sm relative overflow-hidden')}>
+            <div className="absolute -left-8 -bottom-8 w-32 h-32 bg-[#006c49]/5 rounded-full blur-3xl hidden lg:block" />
+            <h3 className="font-business-display font-extrabold text-base sm:text-lg md:text-2xl mb-1 sm:mb-2 relative z-10 flex items-center gap-2 sm:gap-3 text-stone-900 dark:text-white">
               <Settings2 className="h-5 w-5 text-[#006c49]" strokeWidth={1.5} />
               {t.availability_booking_settings}
             </h3>
-            <p className="text-xs text-stone-400 dark:text-neutral-500 mb-6 relative z-10">{t.availability_booking_rules_desc}</p>
+            <p className="text-xs text-stone-400 dark:text-neutral-500 mb-4 sm:mb-6 relative z-10">{t.availability_booking_rules_desc}</p>
 
-            <div className="space-y-6 relative z-10">
+            <div className="space-y-6 max-sm:space-y-4 relative z-10">
               {/* Max calls per day */}
               <div>
                 <label className="block text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold mb-2">
@@ -818,35 +836,36 @@ export function CloserDisponibilite() {
 
       {/* Onboarding Popup */}
       {showOnboardingPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={dismissOnboarding} />
-          <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl p-8">
-            <button onClick={dismissOnboarding} className="absolute top-5 right-5 text-stone-300 dark:text-neutral-600 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
+          <div className="relative w-full max-w-md max-sm:max-w-none max-h-[92dvh] overflow-y-auto overscroll-contain rounded-t-3xl sm:rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl p-8 max-sm:px-5 max-sm:pt-3 max-sm:pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+            <div className="sm:hidden mx-auto mb-4 h-1 w-10 rounded-full bg-stone-300 dark:bg-neutral-700" />
+            <button onClick={dismissOnboarding} aria-label={lang === 'en' ? 'Close' : 'Fermer'} className="absolute top-5 right-5 max-sm:top-4 max-sm:right-4 max-sm:p-1 text-stone-300 dark:text-neutral-600 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
               <X className="h-5 w-5" strokeWidth={1.5} />
             </button>
-            <div className="text-center mb-8">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#006c49]/10 mx-auto mb-5">
+            <div className="text-center mb-8 max-sm:mb-5">
+              <div className="flex h-16 w-16 max-sm:h-12 max-sm:w-12 items-center justify-center rounded-2xl bg-[#006c49]/10 mx-auto mb-5 max-sm:mb-3">
                 <Calendar className="h-8 w-8 text-[#006c49]" strokeWidth={1.5} />
               </div>
-              <h2 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">{t.availability_onboarding_title}</h2>
+              <h2 className="text-2xl max-sm:text-xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">{t.availability_onboarding_title}</h2>
               <p className="text-sm text-stone-500 dark:text-neutral-400 mt-3 leading-relaxed">
                 {t.availability_onboarding_desc}
               </p>
             </div>
-            <div className="space-y-3">
-              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-4">
+            <div className="space-y-3 max-sm:space-y-2">
+              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-4 max-sm:p-3">
                 <p className="text-sm text-stone-700 dark:text-neutral-200 font-medium">{t.availability_onboarding_step1}</p>
               </div>
-              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-4">
+              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-4 max-sm:p-3">
                 <p className="text-sm text-stone-700 dark:text-neutral-200 font-medium">{t.availability_onboarding_step2}</p>
               </div>
-              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-4">
+              <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-4 max-sm:p-3">
                 <p className="text-sm text-stone-700 dark:text-neutral-200 font-medium">{t.availability_onboarding_step3}</p>
               </div>
             </div>
             <button
               onClick={dismissOnboarding}
-              className="w-full mt-8 rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 py-4 text-sm font-business-display font-extrabold text-white hover:opacity-90 transition-all"
+              className="w-full mt-8 max-sm:mt-5 rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 py-4 text-sm font-business-display font-extrabold text-white hover:opacity-90 transition-all"
             >
               {t.availability_onboarding_go}
             </button>
