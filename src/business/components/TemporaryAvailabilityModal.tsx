@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
-import { X, Plus, Loader2, CalendarRange, Copy, Eraser } from 'lucide-react'
+import { X, Plus, Loader2, CalendarRange, Copy, Eraser, Globe } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
 import { cn } from '../../lib/utils'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
-import { periodsOverlap, hhmm, type TempPeriod, type TempSlot } from '../../lib/temporaryAvailability'
+import { periodsOverlap, hhmm, resolveDaySlots, type TempPeriod, type TempSlot } from '../../lib/temporaryAvailability'
+import { getTimezoneLabel } from '../../lib/timezone'
+import { TimezonePicker } from './TimezonePicker'
 
 const DAYS_FR = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
 const DAYS_EN = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
@@ -23,6 +25,8 @@ interface Props {
   baseSlots: WeeklySlot[]
   periods: TempPeriod[]
   editing: TempPeriod | null
+  /** Fuseau du profil de la personne dont on édite les dispos */
+  profileTimezone: string
   onSaved: (summary: string) => void
 }
 
@@ -34,7 +38,7 @@ const shiftTime = (time: string, hours: number) => {
 }
 
 export function TemporaryAvailabilityModal({
-  open, onClose, ownerId, teamMemberId, baseSlots, periods, editing, onSaved,
+  open, onClose, ownerId, teamMemberId, baseSlots, periods, editing, profileTimezone, onSaved,
 }: Props) {
   const { t, lang } = useBusinessLang()
   const DAYS = lang === 'en' ? DAYS_EN : DAYS_FR
@@ -47,6 +51,8 @@ export function TemporaryAvailabilityModal({
   const [newStart, setNewStart] = useState('09:00')
   const [newEnd, setNewEnd] = useState('12:00')
   const [saving, setSaving] = useState(false)
+  const [customTz, setCustomTz] = useState(false)
+  const [timezone, setTimezone] = useState('')
 
   // (Ré)initialise le formulaire à chaque ouverture
   useEffect(() => {
@@ -60,9 +66,43 @@ export function TemporaryAvailabilityModal({
       end_time: hhmm(s.end_time),
     })))
     setAddingDay(null)
-  }, [open, editing])
+    setCustomTz(!!editing?.timezone && editing.timezone !== profileTimezone)
+    setTimezone(editing?.timezone || profileTimezone)
+  }, [open, editing, profileTimezone])
 
   if (!open) return null
+
+  // Aperçu « Cela fera 07:00–11:00 en heure de Paris » pour chaque jour
+  const profileCity = profileTimezone.split('/').pop()?.replace(/_/g, ' ') || profileTimezone
+  const equivLabel = (slotsTxt: string) =>
+    t.temp_avail_tz_equiv.replace('{slots}', slotsTxt).replace('{tz}', profileCity)
+  const tzActive = customTz && !!timezone && timezone !== profileTimezone
+  const equivForDay = (dayIdx: number): string | null => {
+    if (!tzActive || !startDate) return null
+    // Premier jour de la période qui tombe sur ce jour de semaine
+    for (let off = 0; off < 7; off++) {
+      const d = new Date(`${startDate}T00:00:00Z`)
+      d.setUTCDate(d.getUTCDate() + off)
+      const js = d.getUTCDay()
+      if ((js === 0 ? 6 : js - 1) !== dayIdx) continue
+      const daySlots = slots.filter(s => s.day_of_week === dayIdx)
+      if (daySlots.length === 0) return null
+      const dateStr = d.toISOString().slice(0, 10)
+      const period: TempPeriod = { id: 'preview', start_date: dateStr, end_date: dateStr, slots: daySlots, timezone }
+      // On regarde le jour même et le lendemain dans le fuseau habituel (décalage possible)
+      const parts: string[] = []
+      for (const delta of [-1, 0, 1]) {
+        const dd = new Date(d); dd.setUTCDate(dd.getUTCDate() + delta)
+        const ds = dd.toISOString().slice(0, 10)
+        const jsd = dd.getUTCDay()
+        for (const r of resolveDaySlots([], [period], ds, jsd === 0 ? 6 : jsd - 1, profileTimezone)) {
+          parts.push(`${delta < 0 ? '(-1j) ' : delta > 0 ? '(+1j) ' : ''}${r.start_time}–${r.end_time}`)
+        }
+      }
+      return parts.join(', ')
+    }
+    return null
+  }
 
   const handleStartAdding = (dayIdx: number) => {
     const daySlots = slots.filter(s => s.day_of_week === dayIdx).sort((a, b) => a.end_time.localeCompare(b.end_time))
@@ -131,6 +171,8 @@ export function TemporaryAvailabilityModal({
         start_date: startDate,
         end_date: endDate,
         slots: sorted,
+        // NULL = fuseau du profil ; sinon la période est figée dans ce fuseau
+        timezone: customTz && timezone && timezone !== profileTimezone ? timezone : null,
         updated_at: new Date().toISOString(),
       }
 
@@ -202,6 +244,27 @@ export function TemporaryAvailabilityModal({
             />
           </div>
 
+          {/* Fuseau horaire propre à la période */}
+          <div className="rounded-2xl bg-stone-50 dark:bg-white/5 p-4 space-y-3">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox" checked={customTz}
+                onChange={e => { setCustomTz(e.target.checked); if (!timezone) setTimezone(profileTimezone) }}
+                className="h-4 w-4 rounded border-stone-300 text-[#006c49] focus:ring-[#006c49]/20"
+              />
+              <Globe className="h-4 w-4 text-[#006c49] shrink-0" strokeWidth={1.5} />
+              <span className="text-sm font-bold text-stone-900 dark:text-white">{t.temp_avail_tz_toggle}</span>
+            </label>
+            {customTz && (
+              <>
+                <TimezonePicker value={timezone} onChange={setTimezone} />
+                <p className="text-xs text-stone-500 dark:text-neutral-400">
+                  {t.temp_avail_tz_desc} ({getTimezoneLabel(profileTimezone)})
+                </p>
+              </>
+            )}
+          </div>
+
           {/* Actions rapides */}
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -234,6 +297,9 @@ export function TemporaryAvailabilityModal({
                       'text-sm font-bold',
                       daySlots.length > 0 ? 'text-stone-900 dark:text-white' : 'text-stone-400 dark:text-neutral-500'
                     )}>{day}</span>
+                    {equivForDay(idx) && (
+                      <span className="md:hidden text-[10px] text-stone-400 dark:text-neutral-500 tabular-nums">{equivLabel(equivForDay(idx)!)}</span>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 flex-grow">
@@ -245,6 +311,9 @@ export function TemporaryAvailabilityModal({
                         </button>
                       </div>
                     ))}
+                    {equivForDay(idx) && (
+                      <span className="max-md:hidden text-[11px] text-stone-400 dark:text-neutral-500 tabular-nums">{equivLabel(equivForDay(idx)!)}</span>
+                    )}
                     {daySlots.length === 0 && addingDay !== idx && (
                       <span className="text-xs text-stone-400/70 dark:text-neutral-500/70 italic">{t.temp_avail_no_slot_day}</span>
                     )}

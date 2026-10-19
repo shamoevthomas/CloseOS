@@ -4803,12 +4803,12 @@ ${notesSection}
 
       // Dispos temporaires : team members + owner
       if (teamMemberIds.length > 0) {
-        fetchPromises.push(supabase.from('business_temporary_availability').select('id, start_date, end_date, slots, created_at, team_member_id').in('team_member_id', teamMemberIds).gte('end_date', today))
+        fetchPromises.push(supabase.from('business_temporary_availability').select('id, start_date, end_date, slots, timezone, created_at, team_member_id').in('team_member_id', teamMemberIds).gte('end_date', today))
       } else {
         fetchPromises.push(Promise.resolve({ data: [] }))
       }
       if (isOwnerIncluded) {
-        fetchPromises.push(supabase.from('business_temporary_availability').select('id, start_date, end_date, slots, created_at, team_member_id').eq('business_owner_id', ownerId).is('team_member_id', null).gte('end_date', today))
+        fetchPromises.push(supabase.from('business_temporary_availability').select('id, start_date, end_date, slots, timezone, created_at, team_member_id').eq('business_owner_id', ownerId).is('team_member_id', null).gte('end_date', today))
       } else {
         fetchPromises.push(Promise.resolve({ data: [] }))
       }
@@ -4913,7 +4913,8 @@ ${notesSection}
             allSlots.filter((s: any) => s.team_member_id === memberId),
             allTempPeriods.filter((p: any) => p.team_member_id === memberId),
             memberDateStr,
-            dayOfWeek
+            dayOfWeek,
+            memberTz
           )
           if (memberSlots.length === 0) continue
 
@@ -5714,8 +5715,8 @@ ${notesSection}
 
       // Dispos temporaires : remplacent les créneaux hebdo sur les jours couverts
       const tempAvailQuery = isOwnerLink
-        ? supabase.from('business_temporary_availability').select('id, start_date, end_date, slots, created_at').eq('business_owner_id', ownerId).is('team_member_id', null).gte('end_date', today)
-        : supabase.from('business_temporary_availability').select('id, start_date, end_date, slots, created_at').eq('team_member_id', link.team_member_id).gte('end_date', today)
+        ? supabase.from('business_temporary_availability').select('id, start_date, end_date, slots, timezone, created_at').eq('business_owner_id', ownerId).is('team_member_id', null).gte('end_date', today)
+        : supabase.from('business_temporary_availability').select('id, start_date, end_date, slots, timezone, created_at').eq('team_member_id', link.team_member_id).gte('end_date', today)
 
       const appointmentsQuery = isOwnerLink
         ? supabase.from('business_appointments').select('date, time, duration, datetime_utc, timezone').eq('user_id', ownerId).is('assigned_to', null).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed'])
@@ -5783,7 +5784,7 @@ ${notesSection}
         if (isAbsent) continue
 
         // Dispo temporaire prioritaire sur les créneaux hebdo pour ce jour
-        const daySlots = resolveDaySlots(weeklySlots as any, tempPeriods, dateStr, dayOfWeek)
+        const daySlots = resolveDaySlots(weeklySlots as any, tempPeriods, dateStr, dayOfWeek, memberTz)
         if (daySlots.length === 0) continue
 
         const dayAppointments = existingAppointments.filter((a: any) => a.date === dateStr)

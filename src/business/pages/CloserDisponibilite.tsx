@@ -4,12 +4,13 @@ import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase'
 import {
   Calendar, Clock, Plus, Trash2, Loader2, X, CalendarOff, Copy, ChevronDown, Settings2, Shield,
-  CalendarRange, Pencil,
+  CalendarRange, Pencil, Globe,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { cn } from '../../lib/utils'
 import { TemporaryAvailabilityModal } from '../components/TemporaryAvailabilityModal'
 import { type TempPeriod } from '../../lib/temporaryAvailability'
+import { getTimezoneLabel } from '../../lib/timezone'
 
 interface Slot {
   id: number
@@ -39,7 +40,7 @@ const MOBILE_ROW = 'max-sm:rounded-none max-sm:bg-transparent dark:max-sm:bg-tra
 const MOBILE_FLAT_ITEM = 'max-sm:rounded-none max-sm:bg-transparent dark:max-sm:bg-transparent max-sm:ring-0 max-sm:px-0 max-sm:py-3'
 
 export function CloserDisponibilite() {
-  const { teamMember, ownerUserId, isTeamMember, user } = useBusinessAuth()
+  const { teamMember, ownerUserId, isTeamMember, user, businessProfile } = useBusinessAuth()
   const { t, lang } = useBusinessLang()
   const DAYS = lang === 'en' ? DAYS_EN : DAYS_FR
   const DAYS_SHORT = lang === 'en' ? DAYS_SHORT_EN : DAYS_SHORT_FR
@@ -48,6 +49,8 @@ export function CloserDisponibilite() {
   const isOwner = !isTeamMember
   const effectiveOwnerId = isOwner ? user?.id : ownerUserId
   const effectiveTeamMemberId = isOwner ? null : teamMember?.id
+  // Fuseau ENREGISTRÉ du profil (celui que lit le booking), pas celui du navigateur
+  const profileTimezone = (isOwner ? businessProfile?.timezone : teamMember?.timezone) || 'Europe/Paris'
 
   const [slots, setSlots] = useState<Slot[]>([])
   const [absences, setAbsences] = useState<Absence[]>([])
@@ -611,6 +614,12 @@ export function CloserDisponibilite() {
                             )}>
                               {status === 'active' ? t.temp_avail_status_active : status === 'upcoming' ? t.temp_avail_status_upcoming : t.temp_avail_status_past}
                             </span>
+                            {period.timezone && period.timezone !== profileTimezone && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 dark:bg-sky-900/30 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-sky-700 dark:text-sky-300">
+                                <Globe className="h-2.5 w-2.5" strokeWidth={2} />
+                                {getTimezoneLabel(period.timezone)}
+                              </span>
+                            )}
                           </div>
                           {period.label && (
                             <p className="text-[10px] text-stone-500 dark:text-neutral-400 uppercase tracking-wider mt-0.5 truncate">{period.label}</p>
@@ -828,6 +837,7 @@ export function CloserDisponibilite() {
         baseSlots={slots}
         periods={tempPeriods}
         editing={editingPeriod}
+        profileTimezone={profileTimezone}
         onSaved={async (summary) => {
           await notifyOwnerAndHoS(`${t.temp_avail_title} — ${memberName}`, summary)
           fetchData()

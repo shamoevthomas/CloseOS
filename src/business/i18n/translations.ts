@@ -2239,6 +2239,9 @@ export interface BusinessTranslations {
   temp_avail_copy_base: string;
   temp_avail_clear_all: string;
   temp_avail_override_note: string;
+  temp_avail_tz_toggle: string;
+  temp_avail_tz_desc: string;
+  temp_avail_tz_equiv: string;
   temp_avail_overlap_error: string;
   temp_avail_invalid_dates: string;
   temp_avail_saved: string;
@@ -4820,6 +4823,9 @@ export const fr: BusinessTranslations = {
   temp_avail_copy_base: 'Partir de mes dispos de base',
   temp_avail_clear_all: 'Tout effacer',
   temp_avail_override_note: 'Sur cette période, les jours sans créneau seront indisponibles.',
+  temp_avail_tz_toggle: 'Autre fuseau horaire pendant cette période',
+  temp_avail_tz_desc: 'Les dates et les heures de cette période sont lues dans ce fuseau. Changer le fuseau de votre profil ne la décale pas.',
+  temp_avail_tz_equiv: 'Cela fera {slots} en heure de {tz}',
   temp_avail_overlap_error: 'Cette période en chevauche une autre',
   temp_avail_invalid_dates: 'Dates invalides',
   temp_avail_saved: 'Disponibilité temporaire enregistrée',
@@ -7253,6 +7259,9 @@ export const en: BusinessTranslations = {
   temp_avail_copy_base: 'Start from my default slots',
   temp_avail_clear_all: 'Clear all',
   temp_avail_override_note: 'During this period, days without a slot will be unavailable.',
+  temp_avail_tz_toggle: 'Different time zone during this period',
+  temp_avail_tz_desc: 'This period\'s dates and hours are read in this time zone. Changing your profile time zone won\'t shift it.',
+  temp_avail_tz_equiv: 'That makes {slots} {tz} time',
   temp_avail_overlap_error: 'This period overlaps another one',
   temp_avail_invalid_dates: 'Invalid dates',
   temp_avail_saved: 'Temporary availability saved',

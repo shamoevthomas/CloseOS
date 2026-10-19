@@ -86,7 +86,14 @@ export function BusinessLayout() {
         supabase.from('business_users').update({ timezone: browserTz }).eq('id', user.id).then(() => refreshProfile())
       }
     } else if (storedTz !== browserTz && !tzBannerDismissed) {
-      setTzBannerVisible(true)
+      // En voyage couvert par une dispo temporaire dans CE fuseau (ex. Tbilissi) :
+      // le fuseau est déjà géré par la période, on ne propose pas de changer le
+      // profil (ça décalerait les créneaux hebdo pour rien).
+      const today = new Date().toISOString().slice(0, 10)
+      let q = supabase.from('business_temporary_availability').select('id')
+        .eq('timezone', browserTz).lte('start_date', today).gte('end_date', today).limit(1)
+      q = isTeamMember && teamMember?.id ? q.eq('team_member_id', teamMember.id) : q.eq('business_owner_id', user.id).is('team_member_id', null)
+      q.then(({ data }) => { if (!data || data.length === 0) setTzBannerVisible(true) })
     }
   }, [user?.id, storedTz, browserTz, isTeamMember, teamMember?.id])
 

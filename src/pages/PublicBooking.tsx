@@ -185,8 +185,8 @@ export function PublicBooking() {
 
             // Dispos temporaires : remplacent les créneaux hebdo sur les jours couverts
             const tempAvailQuery = isOwnerLink
-              ? supabase.from('business_temporary_availability').select('id, start_date, end_date, slots, created_at').eq('business_owner_id', link.business_owner_id).is('team_member_id', null).gte('end_date', today)
-              : supabase.from('business_temporary_availability').select('id, start_date, end_date, slots, created_at').eq('team_member_id', link.team_member_id).gte('end_date', today)
+              ? supabase.from('business_temporary_availability').select('id, start_date, end_date, slots, timezone, created_at').eq('business_owner_id', link.business_owner_id).is('team_member_id', null).gte('end_date', today)
+              : supabase.from('business_temporary_availability').select('id, start_date, end_date, slots, timezone, created_at').eq('team_member_id', link.team_member_id).gte('end_date', today)
 
             // On récupère datetime_utc + timezone : chaque RDV est stocké dans SON propre fuseau,
             // les conflits doivent donc être calculés en instant UTC absolu (pas en heures locales).
@@ -228,7 +228,7 @@ export function PublicBooking() {
               if (isAbsent) continue
 
               // Dispo temporaire prioritaire sur les créneaux hebdo pour ce jour
-              const daySlots = resolveDaySlots(weeklySlots as any, tempPeriods, dateStr, dayOfWeek)
+              const daySlots = resolveDaySlots(weeklySlots as any, tempPeriods, dateStr, dayOfWeek, ownerTz)
               if (daySlots.length === 0) continue
 
               for (const slot of daySlots) {

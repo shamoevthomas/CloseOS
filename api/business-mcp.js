@@ -362,6 +362,64 @@ function normalizeConfirmationPage(raw) {
 // remplaces par une periode temporaire si elle couvre le jour, annules par une
 // absence. Sans eux, « libre » voulait dire « entre 08:00 et 20:00 », et
 // l'agenda proposait 8h du matin a un prospect alors que Thomas dort.
+// Decalage (minutes) d'un fuseau IANA a un instant donne, via Intl.
+function decalageFuseau(tz, ms) {
+  const v = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'longOffset' })
+    .formatToParts(new Date(ms)).find((p) => p.type === 'timeZoneName')?.value || 'GMT'
+  const m = v.match(/GMT([+-])(\d{2}):?(\d{2})/)
+  return m ? (m[1] === '-' ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3])) : 0
+}
+// « date » + minutes (1440 = minuit suivant) lues dans tz -> instant UTC (ms)
+function instantDansFuseau(date, minutes, tz) {
+  const naif = Date.parse(`${date}T00:00:00Z`) + minutes * 60000
+  const approx = naif - decalageFuseau(tz, naif) * 60000
+  return naif - decalageFuseau(tz, approx) * 60000
+}
+// Fenetres du jour (heure de Paris) quand une periode a son propre fuseau :
+// l'hebdo de Paris est retire sur l'intervalle couvert par la periode (dans
+// SON fuseau), puis remplace par les creneaux de la periode convertis.
+function fenetresAvecFuseaux(hebdo, temporaires, date, jour) {
+  const P = 'Europe/Paris'
+  const debutJour = instantDansFuseau(date, 0, P), finJour = instantDansFuseau(date, 1440, P)
+  const borne = ([s, e]) => { const a = Math.max(s, debutJour), b = Math.min(e, finJour); return b > a ? [a, b] : null }
+  const retirer = (liste, [cs, ce]) => liste.flatMap(([s, e]) => {
+    if (e <= cs || s >= ce) return [[s, e]]
+    const out = []
+    if (s < cs) out.push([s, cs])
+    if (e > ce) out.push([ce, e])
+    return out
+  })
+  let res = hebdo.filter((s) => Number(s.day_of_week) === jour)
+    .map((s) => borne([instantDansFuseau(date, hhmmToMinutes(s.start_time), P), instantDansFuseau(date, hhmmToMinutes(s.end_time), P)]))
+    .filter(Boolean)
+  const tries = temporaires.slice().sort((x, y) => String(x.created_at || '').localeCompare(String(y.created_at || '')))
+  for (const p of tries) {
+    const tz = p.timezone || P
+    res = retirer(res, [instantDansFuseau(p.start_date, 0, tz), instantDansFuseau(p.end_date, 1440, tz)])
+    for (let off = -2; off <= 2; off++) {
+      const d = decalerJour(date, off)
+      if (d < p.start_date || d > p.end_date) continue
+      const js = new Date(`${d}T12:00:00Z`).getUTCDay()
+      const dow = js === 0 ? 6 : js - 1
+      for (const s of p.slots || []) {
+        if (Number(s.day_of_week) !== dow) continue
+        const iv = borne([instantDansFuseau(d, hhmmToMinutes(s.start_time), tz), instantDansFuseau(d, hhmmToMinutes(s.end_time), tz)])
+        if (iv) res.push(iv)
+      }
+    }
+  }
+  const enParis = (ms) => ms >= finJour ? '24:00'
+    : minutesToHhmm(Math.round((ms - debutJour) / 60000 + (decalageFuseau(P, ms) - decalageFuseau(P, debutJour))))
+  res.sort((a, b) => a[0] - b[0])
+  const fusion = []
+  for (const iv of res) {
+    const der = fusion[fusion.length - 1]
+    if (der && iv[0] <= der[1]) der[1] = Math.max(der[1], iv[1])
+    else fusion.push([iv[0], iv[1]])
+  }
+  return fusion.map(([s, e]) => ({ start: enParis(s), end: enParis(e) }))
+}
+
 async function disponibilitesDuJour(ctx, date) {
   const jsDay = new Date(`${date}T12:00:00Z`).getUTCDay()
   const jour = jsDay === 0 ? 6 : jsDay - 1     // 0 = lundi, 6 = dimanche
@@ -369,9 +427,10 @@ async function disponibilitesDuJour(ctx, date) {
   const [hebdo, temporaires, absences, reglages] = await Promise.all([
     sbSelect(`business_availability_slots?business_owner_id=eq.${ctx.owner}` +
              `&team_member_id=is.null&select=day_of_week,start_time,end_time`),
+    // ±2 jours : une periode dans un autre fuseau peut deborder sur la date
     sbSelect(`business_temporary_availability?business_owner_id=eq.${ctx.owner}` +
-             `&team_member_id=is.null&start_date=lte.${date}&end_date=gte.${date}` +
-             `&select=id,slots,created_at,start_date,end_date`),
+             `&team_member_id=is.null&start_date=lte.${decalerJour(date, 2)}&end_date=gte.${decalerJour(date, -2)}` +
+             `&select=id,slots,timezone,created_at,start_date,end_date`),
     sbSelect(`business_absences?business_owner_id=eq.${ctx.owner}` +
              `&start_date=lte.${date}&end_date=gte.${date}&select=start_date,end_date`),
     sbSelect(`business_users?id=eq.${ctx.owner}` +
@@ -390,11 +449,18 @@ async function disponibilitesDuJour(ctx, date) {
 
   if (absences.length) return { fenetres: [], absent: true, parametres }
 
+  // Periode dans un autre fuseau (ex. voyage a Tbilissi) : conversion en
+  // heure de Paris, meme regle que api/_lib/temporaryAvailability.ts.
+  if (temporaires.some((p) => p.timezone && p.timezone !== 'Europe/Paris')) {
+    return { fenetres: fenetresAvecFuseaux(hebdo, temporaires, date, jour), absent: false, parametres }
+  }
+
   // Une periode temporaire REMPLACE l'hebdomadaire sur les jours couverts.
   // La plus recemment creee gagne, comme cote booking.
+  const couvrantes = temporaires.filter((p) => p.start_date <= date && p.end_date >= date)
   let source = hebdo
-  if (temporaires.length) {
-    const p = temporaires.slice().sort(
+  if (couvrantes.length) {
+    const p = couvrantes.slice().sort(
       (x, y) => String(y.created_at || '').localeCompare(String(x.created_at || '')))[0]
     source = p.slots || []
   }
