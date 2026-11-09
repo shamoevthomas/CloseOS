@@ -6,6 +6,9 @@ import type { Prospect } from '../contexts/ProspectsContext'
 import type { PaymentMethod as SavedPaymentMethod } from './PaymentMethodsModal'
 import type { IssuerProfile } from './IssuerProfilesModal'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
+import { CountrySelect } from './CountrySelect'
+import { getCountryRule, taxExemptionMention } from '../lib/countryRules'
 import { cn } from '../lib/utils'
 import toast from 'react-hot-toast'
 // @ts-ignore - html2pdf.js doesn't have types
@@ -60,7 +63,9 @@ export function InvoiceGeneratorModal({
   const [issuerAddress, setIssuerAddress] = useState('')
   const [issuerCity, setIssuerCity] = useState('')
   const [issuerZip, setIssuerZip] = useState('')
-  const [issuerCountry, setIssuerCountry] = useState('France')
+  const { user: authUser } = useAuth()
+  const accountCountry: string = authUser?.user_metadata?.billing_country || 'France'
+  const [issuerCountry, setIssuerCountry] = useState(accountCountry)
   const [issuerSiret, setIssuerSiret] = useState('')
   const [issuerEmail, setIssuerEmail] = useState('')
   const [issuerPhone, setIssuerPhone] = useState('')
@@ -70,7 +75,14 @@ export function InvoiceGeneratorModal({
 
   // TVA
   const [tvaApplicable, setTvaApplicable] = useState(false)
-  const tvaRate = 0.2
+  // Taxe selon le pays de l'émetteur (TVA 20 % en France, 21 % en Belgique, 8,1 % en Suisse, TPS+TVQ au Québec…)
+  const issuerRule = getCountryRule(issuerCountry)
+  const recipientRule = getCountryRule(offer?.billingCountry)
+  const tvaRate = issuerRule.tax?.rate ?? 0
+  const taxLabel = issuerRule.tax?.label[lang] || (lang === 'fr' ? 'TVA' : 'VAT')
+  const taxPct = (tvaRate * 100).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US', { maximumFractionDigits: 3 })
+  const taxMention = taxExemptionMention(issuerCountry, offer?.billingCountry, lang)
+  useEffect(() => { if (!issuerRule.tax || tvaRate === 0) setTvaApplicable(false) }, [issuerRule.code, tvaRate])
 
   // Payment method
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>('virement')
@@ -440,7 +452,7 @@ export function InvoiceGeneratorModal({
       setIssuerAddress('')
       setIssuerCity('')
       setIssuerZip('')
-      setIssuerCountry('France')
+      setIssuerCountry(accountCountry)
       setIssuerSiret('')
       setIssuerEmail('')
       setIssuerPhone('')
@@ -816,11 +828,11 @@ export function InvoiceGeneratorModal({
                     </div>
                     <div>
                       <label className={labelCls}>{lang === 'fr' ? 'Pays' : 'Country'}</label>
-                      <input type="text" value={issuerCountry} onChange={(e) => setIssuerCountry(e.target.value)} className={inputCls} placeholder="France" />
+                      <CountrySelect value={issuerCountry} onChange={setIssuerCountry} lang={lang} className={inputCls} />
                     </div>
                     <div>
-                      <label className={labelCls}>SIRET</label>
-                      <input type="text" value={issuerSiret} onChange={(e) => setIssuerSiret(e.target.value)} className={inputCls} placeholder="123 456 789 00012" />
+                      <label className={labelCls}>{issuerRule.companyId?.label[lang] || (lang === 'fr' ? "N° d'entreprise" : 'Company number')} <span className="font-normal opacity-70">({lang === 'fr' ? 'facultatif' : 'optional'})</span></label>
+                      <input type="text" value={issuerSiret} onChange={(e) => setIssuerSiret(e.target.value)} className={inputCls} placeholder={issuerRule.companyId?.placeholder || ''} />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -899,8 +911,8 @@ export function InvoiceGeneratorModal({
                 </div>
               )}
 
-              {/* TVA Toggle */}
-              <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
+              {/* TVA Toggle (masqué quand le pays de l'émetteur n'a pas de taxe de ce type, ex. États-Unis) */}
+              {issuerRule.tax && tvaRate > 0 && <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
                 <label className="flex cursor-pointer items-start gap-3">
                   <div className="relative">
                     <input
@@ -913,13 +925,13 @@ export function InvoiceGeneratorModal({
                     <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white dark:bg-[#1a1a1a] transition-transform peer-checked:translate-x-5"></div>
                   </div>
                   <div className="flex-1">
-                    <div className="text-sm font-semibold text-slate-900 dark:text-white">{lang === 'fr' ? 'TVA Applicable ?' : 'VAT Applicable?'}</div>
+                    <div className="text-sm font-semibold text-slate-900 dark:text-white">{lang === 'fr' ? `${taxLabel} applicable ?` : `${taxLabel} applicable?`}</div>
                     <div className="mt-1 text-xs text-slate-500 dark:text-neutral-400">
-                      {lang === 'fr' ? 'Ajouter 20% de TVA au montant de la commission' : 'Add 20% VAT to the commission amount'}
+                      {lang === 'fr' ? `Ajouter ${taxPct} % de ${taxLabel} au montant de la commission` : `Add ${taxPct}% ${taxLabel} to the commission amount`}
                     </div>
                   </div>
                 </label>
-              </div>
+              </div>}
 
               {/* Late Payment Penalties */}
               <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
@@ -1224,7 +1236,7 @@ export function InvoiceGeneratorModal({
                   </div>
                   {tvaApplicable && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-500 dark:text-neutral-400">{lang === 'fr' ? 'TVA (20%)' : 'VAT (20%)'}</span>
+                      <span className="text-slate-500 dark:text-neutral-400">{`${taxLabel} (${taxPct} %)`}</span>
                       <span className="font-bold text-slate-900 dark:text-white">{formatCurrency(editableTvaAmount)}</span>
                     </div>
                   )}
@@ -1283,7 +1295,7 @@ export function InvoiceGeneratorModal({
                               {issuerCountry && <p style={{ margin: 0 }}>{issuerCountry}</p>}
                             </div>
                           )}
-                          {issuerSiret && <p style={{ color: '#334155', margin: '0.125rem 0' }}><span style={{ fontWeight: 500 }}>SIRET:</span> {issuerSiret}</p>}
+                          {issuerSiret && <p style={{ color: '#334155', margin: '0.125rem 0' }}><span style={{ fontWeight: 500 }}>{issuerRule.companyId?.label[lang] || 'N°'} :</span> {issuerSiret}</p>}
                           {issuerEmail && <p style={{ color: '#334155', margin: '0.125rem 0' }}><span style={{ fontWeight: 500 }}>Email:</span> {issuerEmail}</p>}
                           {issuerPhone && <p style={{ color: '#334155', margin: '0.125rem 0' }}><span style={{ fontWeight: 500 }}>Tel:</span> {issuerPhone}</p>}
                         </div>
@@ -1300,7 +1312,7 @@ export function InvoiceGeneratorModal({
                               {offer.billingCountry && <p style={{ margin: 0 }}>{offer.billingCountry}</p>}
                             </div>
                           )}
-                          {offer.siret && <p style={{ color: '#334155', margin: '0.125rem 0' }}><span style={{ fontWeight: 500 }}>SIRET:</span> {offer.siret}</p>}
+                          {offer.siret && <p style={{ color: '#334155', margin: '0.125rem 0' }}><span style={{ fontWeight: 500 }}>{recipientRule.companyId?.label[lang] || 'N°'} :</span> {offer.siret}</p>}
                           {offer.billingEmail && <p style={{ color: '#334155', margin: '0.125rem 0' }}><span style={{ fontWeight: 500 }}>Email:</span> {offer.billingEmail}</p>}
                           {offer.billingPhone && <p style={{ color: '#334155', margin: '0.125rem 0' }}><span style={{ fontWeight: 500 }}>Tel:</span> {offer.billingPhone}</p>}
                         </div>
@@ -1390,7 +1402,7 @@ export function InvoiceGeneratorModal({
                         </div>
                         {tvaApplicable && (
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
-                            <span style={{ color: '#334155' }}>{lang === 'fr' ? 'TVA (20%)' : 'VAT (20%)'}</span>
+                            <span style={{ color: '#334155' }}>{`${taxLabel} (${taxPct} %)`}</span>
                             <span style={{ fontWeight: 600, color: '#0f172a' }}>{formatCurrency(editableTvaAmount)}</span>
                           </div>
                         )}
@@ -1437,10 +1449,10 @@ export function InvoiceGeneratorModal({
                             </p>
                           )}
 
-                          {!tvaApplicable && (
+                          {!tvaApplicable && taxMention && (
                             <div style={{ marginTop: '1rem', borderLeft: '4px solid #a855f7', backgroundColor: '#faf5ff', padding: '0.75rem', borderRadius: '0.25rem' }}>
                               <p style={{ fontSize: '0.75rem', fontWeight: 600, fontStyle: 'italic', color: '#0f172a', margin: 0 }}>
-                                {lang === 'fr' ? 'TVA non applicable, art. 293 B du CGI' : 'VAT not applicable, art. 293 B of the French Tax Code'}
+                                {taxMention}
                               </p>
                             </div>
                           )}

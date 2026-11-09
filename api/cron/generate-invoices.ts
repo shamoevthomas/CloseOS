@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { getCountryRule, taxExemptionMention } from '../../src/lib/countryRules.js';
 
 export const config = {
     runtime: 'edge',
@@ -268,7 +269,14 @@ export default async function handler(req: Request) {
                     totalCommissionHT += g.total;
                 });
 
-                const tvaRate = config.tva_applicable ? 0.2 : 0;
+                // Taxe selon le pays de l'émetteur (profil émetteur), mention selon émetteur + infopreneur
+                const issuerRule = getCountryRule(issuerProfile?.country);
+                const clientRule = getCountryRule(offer.billing_country);
+                const taxApplies = !!config.tva_applicable && !!issuerRule.tax && issuerRule.tax.rate > 0;
+                const tvaRate = taxApplies ? issuerRule.tax!.rate : 0;
+                const taxLabel = issuerRule.tax?.label.fr || 'TVA';
+                const taxPct = (tvaRate * 100).toLocaleString('fr-FR', { maximumFractionDigits: 3 });
+                const taxMention = taxApplies ? null : taxExemptionMention(issuerProfile?.country, offer.billing_country, 'fr');
                 const tvaAmount = totalCommissionHT * tvaRate;
                 const totalTTC = totalCommissionHT + tvaAmount;
 
@@ -308,7 +316,7 @@ export default async function handler(req: Request) {
             ${issuerProfile.address ? `<p style="margin: 2px 0; color: #475569; font-size: 13px;">${issuerProfile.address}</p>` : ''}
             ${issuerProfile.zip || issuerProfile.city ? `<p style="margin: 2px 0; color: #475569; font-size: 13px;">${issuerProfile.zip || ''} ${issuerProfile.city || ''}</p>` : ''}
             ${issuerProfile.country ? `<p style="margin: 2px 0; color: #475569; font-size: 13px;">${issuerProfile.country}</p>` : ''}
-            ${issuerProfile.siret ? `<p style="margin: 2px 0; color: #475569; font-size: 13px;">SIRET : ${issuerProfile.siret}</p>` : ''}
+            ${issuerProfile.siret ? `<p style="margin: 2px 0; color: #475569; font-size: 13px;">${issuerRule.companyId?.label.fr || 'N°'} : ${issuerProfile.siret}</p>` : ''}
             ${issuerProfile.email ? `<p style="margin: 2px 0; color: #475569; font-size: 13px;">Email : ${issuerProfile.email}</p>` : ''}
             ${issuerProfile.phone ? `<p style="margin: 2px 0; color: #475569; font-size: 13px;">Tél : ${issuerProfile.phone}</p>` : ''}
           </div>
@@ -321,6 +329,8 @@ export default async function handler(req: Request) {
             <p style="font-weight: bold; color: #0f172a; margin: 0;">${offer.billing_name || offer.company || 'Client'}</p>
             ${offer.billing_address ? `<p style="margin: 2px 0; color: #475569; font-size: 13px;">${offer.billing_address}</p>` : ''}
             ${offer.billing_zip || offer.billing_city ? `<p style="margin: 2px 0; color: #475569; font-size: 13px;">${offer.billing_zip || ''} ${offer.billing_city || ''}</p>` : ''}
+            ${offer.billing_country ? `<p style="margin: 2px 0; color: #475569; font-size: 13px;">${offer.billing_country}</p>` : ''}
+            ${offer.siret ? `<p style="margin: 2px 0; color: #475569; font-size: 13px;">${clientRule.companyId?.label.fr || 'N°'} : ${offer.siret}</p>` : ''}
             ${offer.billing_email ? `<p style="margin: 2px 0; color: #475569; font-size: 13px;">${offer.billing_email}</p>` : ''}
           </div>
         `;
@@ -374,20 +384,21 @@ export default async function handler(req: Request) {
                     <span style="color: #64748b; font-size: 14px;">Total HT</span>
                     <span style="font-weight: bold; color: #334155;">${formatCurrency(totalCommissionHT)}</span>
                   </div>
-                  ${config.tva_applicable
+                  ${taxApplies
                         ? `
                   <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                    <span style="color: #64748b; font-size: 14px;">TVA (20%)</span>
+                    <span style="color: #64748b; font-size: 14px;">${taxLabel} (${taxPct} %)</span>
                     <span style="font-weight: bold; color: #334155;">${formatCurrency(tvaAmount)}</span>
                   </div>
                   `
                         : ''
                     }
                   <div style="display: flex; justify-content: space-between; padding-top: 10px; border-top: 2px solid #e2e8f0;">
-                    <span style="font-weight: bold; color: #0f172a; font-size: 16px;">Total TTC</span>
+                    <span style="font-weight: bold; color: #0f172a; font-size: 16px;">${taxApplies ? 'Total TTC' : 'Total'}</span>
                     <span style="font-weight: bold; color: #6366f1; font-size: 18px;">${formatCurrency(totalTTC)}</span>
                   </div>
                 </div>
+                ${taxMention ? `<p style="margin: 0 0 20px; font-size: 12px; font-style: italic; color: #334155;">${taxMention}</p>` : ''}
 
                 <!-- Payment Method -->
                 ${paymentMethodHTML}

@@ -3,6 +3,8 @@ import { ArrowRight, Loader2, Building2, Briefcase, ChevronRight, Camera, User, 
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { countries } from '../../lib/countries';
+import { CountrySelect } from '../../components/CountrySelect';
+import { getCountryRule } from '../../lib/countryRules';
 import { PhoneInput } from './PhoneInput';
 import { supabase } from '../../lib/supabase';
 import Cropper from 'react-easy-crop';
@@ -106,6 +108,11 @@ export function BusinessOnboardingModal() {
   const [teamSize, setTeamSize] = useState('');
   const [niche, setNiche] = useState('');
   const [nicheCustom, setNicheCustom] = useState('');
+  // Pays de l'entreprise : change le numéro demandé (SIRET, BCE, IDE, NEQ…), la taxe et les mentions des factures
+  const [billingCountry, setBillingCountry] = useState(businessSettings?.billing_country || 'France');
+  const [companyIdNumber, setCompanyIdNumber] = useState(businessSettings?.siret || '');
+  const [taxNumber, setTaxNumber] = useState(businessSettings?.tva_number || '');
+  const countryRule = getCountryRule(billingCountry);
 
   // Sync avatar & name from Google metadata once user loads
   useEffect(() => {
@@ -471,6 +478,9 @@ export function BusinessOnboardingModal() {
         team_size: teamSize,
         niche,
         niche_custom: niche === 'Autre' ? nicheCustom : null,
+        billing_country: billingCountry,
+        siret: companyIdNumber.trim() || null,
+        tva_number: countryRule.tax ? (taxNumber.trim() || null) : null,
       });
 
       // Auto-register device after onboarding to skip A2F on first session
@@ -660,6 +670,29 @@ export function BusinessOnboardingModal() {
                   placeholder={t.onboarding_owner_company_placeholder}
                   required
                 />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">{lang === 'fr' ? 'Pays de ton entreprise' : 'Country of your business'}</label>
+                <CountrySelect value={billingCountry} onChange={setBillingCountry} lang={lang === 'fr' ? 'fr' : 'en'} className="w-full rounded-xl bg-stone-100/50 dark:bg-neutral-800 border-none py-3 px-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 focus:outline-none cursor-pointer" />
+                <p className="mt-1.5 text-xs text-stone-500 dark:text-neutral-400">
+                  {lang === 'fr'
+                    ? 'Sert à adapter tes factures et celles de ton équipe : numéro d\'entreprise, taxe et mentions légales.'
+                    : 'Used to adapt your invoices and your team\'s: company number, tax and legal mentions.'}
+                </p>
+              </div>
+
+              <div className={countryRule.tax ? 'grid grid-cols-1 sm:grid-cols-2 gap-3' : ''}>
+                <div>
+                  <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">{countryRule.companyId?.label[lang === 'fr' ? 'fr' : 'en'] || (lang === 'fr' ? "N° d'entreprise" : 'Company number')} <span className="normal-case tracking-normal font-normal">({lang === 'fr' ? 'facultatif' : 'optional'})</span></label>
+                  <input type="text" value={companyIdNumber} onChange={(e) => setCompanyIdNumber(e.target.value)} placeholder={countryRule.companyId?.placeholder || ''} className="w-full rounded-xl bg-stone-100/50 dark:bg-neutral-800 border-none py-3 px-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 focus:outline-none" />
+                </div>
+                {countryRule.tax && (
+                  <div>
+                    <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">{countryRule.tax.numberLabel[lang === 'fr' ? 'fr' : 'en']} <span className="normal-case tracking-normal font-normal">({lang === 'fr' ? 'facultatif' : 'optional'})</span></label>
+                    <input type="text" value={taxNumber} onChange={(e) => setTaxNumber(e.target.value)} placeholder={countryRule.tax.numberPlaceholder} className="w-full rounded-xl bg-stone-100/50 dark:bg-neutral-800 border-none py-3 px-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 focus:outline-none" />
+                  </div>
+                )}
               </div>
 
               <div>

@@ -3,6 +3,8 @@ import { X, Plus, Pencil, Trash2, Building2, Check, Loader2, Star } from 'lucide
 import { supabase } from '../../lib/supabase'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
+import { CountrySelect } from '../../components/CountrySelect'
+import { getCountryRule, countryLabel } from '../../lib/countryRules'
 
 export interface IssuerProfile {
   id: string
@@ -24,7 +26,9 @@ interface BusinessIssuerProfilesModalProps {
 }
 
 export function BusinessIssuerProfilesModal({ isOpen, onClose }: BusinessIssuerProfilesModalProps) {
-  const { ownerUserId, user } = useBusinessAuth()
+  const { ownerUserId, user, businessSettings } = useBusinessAuth()
+  // Pays proposé par défaut : celui de l'entreprise (modifiable : un closer peut facturer depuis un autre pays)
+  const defaultCountry: string = businessSettings?.billing_country || 'France'
   const { t, lang } = useBusinessLang()
   const effectiveUserId = ownerUserId || user?.id
 
@@ -39,7 +43,7 @@ export function BusinessIssuerProfilesModal({ isOpen, onClose }: BusinessIssuerP
   const [formAddress, setFormAddress] = useState('')
   const [formCity, setFormCity] = useState('')
   const [formZip, setFormZip] = useState('')
-  const [formCountry, setFormCountry] = useState('France')
+  const [formCountry, setFormCountry] = useState(defaultCountry)
   const [formSiret, setFormSiret] = useState('')
   const [formEmail, setFormEmail] = useState('')
   const [formPhone, setFormPhone] = useState('')
@@ -159,7 +163,7 @@ export function BusinessIssuerProfilesModal({ isOpen, onClose }: BusinessIssuerP
     setFormAddress('')
     setFormCity('')
     setFormZip('')
-    setFormCountry('France')
+    setFormCountry(defaultCountry)
     setFormSiret('')
     setFormEmail('')
     setFormPhone('')
@@ -261,12 +265,12 @@ export function BusinessIssuerProfilesModal({ isOpen, onClose }: BusinessIssuerP
                   </div>
                   <div>
                     <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">{t.issuer_country_label}</label>
-                    <input type="text" value={formCountry} onChange={(e) => setFormCountry(e.target.value)} className="w-full rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:ring-1 focus:ring-[#006c49] outline-none" />
+                    <CountrySelect value={formCountry} onChange={setFormCountry} lang={lang === 'fr' ? 'fr' : 'en'} className="w-full rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:ring-1 focus:ring-[#006c49] outline-none cursor-pointer" />
                   </div>
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">{t.issuer_siret_label}</label>
-                  <input type="text" value={formSiret} onChange={(e) => setFormSiret(e.target.value)} className="w-full rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:ring-1 focus:ring-[#006c49] outline-none" />
+                  <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">{getCountryRule(formCountry).companyId?.label[lang === 'fr' ? 'fr' : 'en'] || (lang === 'fr' ? "N° d'entreprise" : 'Company number')} <span className="font-normal opacity-70">({lang === 'fr' ? 'facultatif' : 'optional'})</span></label>
+                  <input type="text" value={formSiret} onChange={(e) => setFormSiret(e.target.value)} placeholder={getCountryRule(formCountry).companyId?.placeholder || ''} className="w-full rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:ring-1 focus:ring-[#006c49] outline-none" />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -315,7 +319,7 @@ export function BusinessIssuerProfilesModal({ isOpen, onClose }: BusinessIssuerP
                       </div>
                       <p className="mt-0.5 sm:mt-1 text-sm text-[#444748] dark:text-neutral-300 max-sm:truncate">{profile.companyName}</p>
                       <div className="mt-1 sm:mt-2 text-xs text-[#444748]/60 dark:text-neutral-500 max-sm:truncate">
-                        {profile.siret && <span>SIRET: {profile.siret}</span>}
+                        <span>{countryLabel(profile.country, lang === 'fr' ? 'fr' : 'en')}</span>{profile.siret && <span> · {getCountryRule(profile.country).companyId?.label[lang === 'fr' ? 'fr' : 'en'] || 'N°'} : {profile.siret}</span>}
                       </div>
                     </div>
                     <div className="flex items-center gap-0 sm:gap-2 shrink-0 -mr-1 sm:mr-0">

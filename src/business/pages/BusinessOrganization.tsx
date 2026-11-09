@@ -32,6 +32,8 @@ import {
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase'
+import { CountrySelect } from '../../components/CountrySelect'
+import { getCountryRule } from '../../lib/countryRules'
 import Cropper from 'react-easy-crop'
 import getCroppedImg from '../../lib/image-crop'
 
@@ -1145,19 +1147,24 @@ export function BusinessOrganization() {
                     <label className={stoneLabelClass}>Raison sociale</label>
                     <input type="text" value={formData.raison_sociale} onChange={(e) => setFormData({ ...formData, raison_sociale: e.target.value })} className={stoneInputClass} placeholder="Raison sociale de votre entreprise" />
                   </div>
-                  <div className="col-span-1">
-                    <label className={stoneLabelClass}>SIRET</label>
-                    <input type="text" value={formData.siret} onChange={(e) => setFormData({ ...formData, siret: e.target.value })} className={stoneInputClass} placeholder="123 456 789 00012" />
+                  <div className="col-span-1 sm:col-span-2">
+                    <label className={stoneLabelClass}>Pays de l'entreprise</label>
+                    <CountrySelect value={formData.billing_country} onChange={(v) => setFormData({ ...formData, billing_country: v })} className={`${stoneInputClass} cursor-pointer`} />
+                    <p className="mt-1.5 text-xs text-[#444748] dark:text-neutral-400">Adapte le numéro d'entreprise demandé, la taxe et les mentions légales de vos factures. Aucun numéro n'est obligatoire.</p>
                   </div>
-                  <div className="col-span-1">
-                    <label className={stoneLabelClass}>Numéro de TVA</label>
-                    <input type="text" value={formData.tva_number} onChange={(e) => setFormData({ ...formData, tva_number: e.target.value })} className={stoneInputClass} placeholder="FR 12 345678901" />
+                  <div className={getCountryRule(formData.billing_country).tax ? 'col-span-1' : 'col-span-1 sm:col-span-2'}>
+                    <label className={stoneLabelClass}>{getCountryRule(formData.billing_country).companyId?.label.fr || "N° d'entreprise"} <span className="normal-case tracking-normal font-normal">(facultatif)</span></label>
+                    <input type="text" value={formData.siret} onChange={(e) => setFormData({ ...formData, siret: e.target.value })} className={stoneInputClass} placeholder={getCountryRule(formData.billing_country).companyId?.placeholder || ''} />
                   </div>
+                  {getCountryRule(formData.billing_country).tax && <div className="col-span-1">
+                    <label className={stoneLabelClass}>{getCountryRule(formData.billing_country).tax!.numberLabel.fr} <span className="normal-case tracking-normal font-normal">(facultatif)</span></label>
+                    <input type="text" value={formData.tva_number} onChange={(e) => setFormData({ ...formData, tva_number: e.target.value })} className={stoneInputClass} placeholder={getCountryRule(formData.billing_country).tax!.numberPlaceholder} />
+                  </div>}
                 </div>
 
                 <div className="h-px bg-[#c4c7c7]/10 my-2" />
 
-                {/* Mobile : adresse pleine largeur, code postal + ville côte à côte, pays pleine largeur */}
+                {/* Mobile : adresse pleine largeur, code postal + ville côte à côte (le pays est choisi plus haut) */}
                 <div className="grid grid-cols-2 gap-x-4 sm:gap-x-8 gap-y-5 sm:gap-y-8">
                   <div className="col-span-2">
                     <label className={stoneLabelClass}>Adresse de facturation</label>
@@ -1170,10 +1177,6 @@ export function BusinessOrganization() {
                   <div className="col-span-1 sm:col-span-1">
                     <label className={stoneLabelClass}>Ville</label>
                     <input type="text" value={formData.billing_city} onChange={(e) => setFormData({ ...formData, billing_city: e.target.value })} className={stoneInputClass} placeholder="Paris" />
-                  </div>
-                  <div className="col-span-2 sm:col-span-1">
-                    <label className={stoneLabelClass}>Pays</label>
-                    <input type="text" value={formData.billing_country} onChange={(e) => setFormData({ ...formData, billing_country: e.target.value })} className={stoneInputClass} placeholder="France" />
                   </div>
                 </div>
               </div>

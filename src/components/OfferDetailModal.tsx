@@ -36,6 +36,8 @@ import { ContactSelector } from './ContactSelector'
 import { useInternalContacts } from '../contexts/InternalContactsContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useLanguage } from '../contexts/LanguageContext'
+import { CountrySelect } from './CountrySelect'
+import { getCountryRule, countryLabel } from '../lib/countryRules'
 import { useCustomStages } from '../hooks/useCustomStages'
 import { GcalOfferImportPanel } from './GcalOfferImportPanel'
 export { type Offer, type OfferContact, type OfferResource, type OfferFormula } from '../contexts/OffersContext'
@@ -1540,8 +1542,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 )}
               </div>
 
-              {/* Ville / CP / Pays */}
-              <div className="grid grid-cols-3 gap-3">
+              {/* Ville / CP */}
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-slate-400 dark:text-neutral-500 uppercase">{lang === 'fr' ? 'Ville' : 'City'}</label>
                   {isEditing ? (
@@ -1568,34 +1570,39 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     <p className="text-sm text-slate-500 dark:text-neutral-400">{offer.billingZip || '-'}</p>
                   )}
                 </div>
-                <div>
-                  <label className="mb-1.5 block text-xs font-medium text-slate-400 dark:text-neutral-500 uppercase">{lang === 'fr' ? 'Pays' : 'Country'}</label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={editedOffer.billingCountry || ''}
-                      onChange={(e) => setEditedOffer({ ...editedOffer, billingCountry: e.target.value })}
-                      className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none"
-                    />
-                  ) : (
-                    <p className="text-sm text-slate-500 dark:text-neutral-400">{offer.billingCountry || '-'}</p>
-                  )}
-                </div>
               </div>
 
-              {/* SIRET */}
+              {/* Pays de l'infopreneur : adapte le numéro d'entreprise demandé et la mention de taxe sur les factures */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-400 dark:text-neutral-500 uppercase">{lang === 'fr' ? 'SIRET / TVA' : 'SIRET / VAT'}</label>
+                <label className="mb-1.5 block text-xs font-medium text-slate-400 dark:text-neutral-500 uppercase">{lang === 'fr' ? "Pays de l'infopreneur" : "Infopreneur's country"}</label>
+                {isEditing ? (
+                  <CountrySelect
+                    value={editedOffer.billingCountry || 'France'}
+                    onChange={(v) => setEditedOffer({ ...editedOffer, billingCountry: v })}
+                    lang={lang}
+                    className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-neutral-500 focus:border-sky-500 focus:outline-none"
+                  />
+                ) : (
+                  <p className="text-sm text-slate-500 dark:text-neutral-400">{offer.billingCountry ? `${getCountryRule(offer.billingCountry).flag} ${countryLabel(offer.billingCountry, lang)}` : '-'}</p>
+                )}
+              </div>
+
+              {/* N° d'entreprise (selon le pays, facultatif : l'infopreneur peut ne pas en avoir) */}
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-400 dark:text-neutral-500 uppercase">
+                  {(() => { const r = getCountryRule(isEditing ? editedOffer.billingCountry : offer.billingCountry); const id = r.companyId?.label[lang] || (lang === 'fr' ? "N° d'entreprise" : 'Company number'); const tax = r.tax ? ` / ${r.tax.numberLabel[lang]}` : ''; return `${id}${tax}` })()}
+                  <span className="ml-1 normal-case font-normal opacity-70">({lang === 'fr' ? 'facultatif' : 'optional'})</span>
+                </label>
                 {isEditing ? (
                   <input
                     type="text"
                     value={editedOffer.siret || ''}
                     onChange={(e) => setEditedOffer({ ...editedOffer, siret: e.target.value })}
-                    placeholder="123 456 789 00012"
+                    placeholder={getCountryRule(editedOffer.billingCountry).companyId?.placeholder || ''}
                     className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-neutral-500 focus:border-sky-500 focus:outline-none"
                   />
                 ) : (
-                  <p className="text-sm text-slate-500 dark:text-neutral-400 font-mono">{offer.siret || (lang === 'fr' ? 'Non défini' : 'Not defined')}</p>
+                  <p className="text-sm text-slate-500 dark:text-neutral-400 font-mono">{offer.siret || (lang === 'fr' ? 'Non renseigné' : 'Not provided')}</p>
                 )}
               </div>
 

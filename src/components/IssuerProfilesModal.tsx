@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import { X, Plus, Pencil, Trash2, Building2, Check, Loader2, Star } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useAuth } from '../contexts/AuthContext'
+import { CountrySelect } from './CountrySelect'
+import { getCountryRule, countryLabel } from '../lib/countryRules'
 
 export interface IssuerProfile {
   id: string
@@ -24,6 +27,9 @@ interface IssuerProfilesModalProps {
 
 export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProps) {
   const { lang } = useLanguage()
+  const { user } = useAuth()
+  // Pays par défaut d'un nouveau profil : celui choisi dans les paramètres du compte (Profil → Pays de facturation)
+  const defaultCountry: string = user?.user_metadata?.billing_country || 'France'
   const [profiles, setProfiles] = useState<IssuerProfile[]>([])
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -35,7 +41,7 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
   const [formAddress, setFormAddress] = useState('')
   const [formCity, setFormCity] = useState('')
   const [formZip, setFormZip] = useState('')
-  const [formCountry, setFormCountry] = useState('France')
+  const [formCountry, setFormCountry] = useState(defaultCountry)
   const [formSiret, setFormSiret] = useState('')
   const [formEmail, setFormEmail] = useState('')
   const [formPhone, setFormPhone] = useState('')
@@ -168,7 +174,7 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
     setFormAddress('')
     setFormCity('')
     setFormZip('')
-    setFormCountry('France')
+    setFormCountry(defaultCountry)
     setFormSiret('')
     setFormEmail('')
     setFormPhone('')
@@ -256,11 +262,11 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
                 <div className="grid grid-cols-3 gap-3">
                   <div><label className="mb-2 block text-sm font-medium text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Ville' : 'City'}</label><input type="text" value={formCity} onChange={(e) => setFormCity(e.target.value)} className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none" /></div>
                   <div><label className="mb-2 block text-sm font-medium text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Code Postal' : 'Zip Code'}</label><input type="text" value={formZip} onChange={(e) => setFormZip(e.target.value)} className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none" /></div>
-                  <div><label className="mb-2 block text-sm font-medium text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Pays' : 'Country'}</label><input type="text" value={formCountry} onChange={(e) => setFormCountry(e.target.value)} className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none" /></div>
+                  <div><label className="mb-2 block text-sm font-medium text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Pays' : 'Country'}</label><CountrySelect value={formCountry} onChange={setFormCountry} lang={lang} className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none" /></div>
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-400 dark:text-neutral-500">SIRET</label>
-                  <input type="text" value={formSiret} onChange={(e) => setFormSiret(e.target.value)} className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none" />
+                  <label className="mb-2 block text-sm font-medium text-slate-400 dark:text-neutral-500">{getCountryRule(formCountry).companyId?.label[lang] || (lang === 'fr' ? "N° d'entreprise" : 'Company number')} <span className="font-normal opacity-70">({lang === 'fr' ? 'facultatif' : 'optional'})</span></label>
+                  <input type="text" value={formSiret} onChange={(e) => setFormSiret(e.target.value)} placeholder={getCountryRule(formCountry).companyId?.placeholder || ''} className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><label className="mb-2 block text-sm font-medium text-slate-400 dark:text-neutral-500">Email</label><input type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none" /></div>
@@ -296,7 +302,7 @@ export function IssuerProfilesModal({ isOpen, onClose }: IssuerProfilesModalProp
                       </div>
                       <p className="mt-1 text-sm text-slate-500 dark:text-neutral-400">{profile.companyName}</p>
                       <div className="mt-2 text-xs text-slate-400 dark:text-neutral-500">
-                        {profile.siret && <span>SIRET: {profile.siret}</span>}
+                        <span>{countryLabel(profile.country, lang)}</span>{profile.siret && <span> · {getCountryRule(profile.country).companyId?.label[lang] || 'N°'} : {profile.siret}</span>}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">

@@ -36,6 +36,8 @@ import { useUpgrade } from '../../contexts/UpgradeContext'
 import { useLanguage, type Lang } from '../../contexts/LanguageContext'
 import { settingsTranslations } from '../../i18n/translations'
 import { supabase } from '../../lib/supabase'
+import { CountrySelect } from '../CountrySelect'
+import { getCountryRule } from '../../lib/countryRules'
 import Cropper from 'react-easy-crop'
 import getCroppedImg from '../../lib/image-crop'
 import { DataExportContent } from '../DataExportContent'
@@ -95,6 +97,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
     currentPassword: '', // AJOUT
 
     avatar_url: '',
+    billing_country: 'France',
     deletion_scheduled_at: null as string | null
   })
 
@@ -114,6 +117,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
           phone: data?.phone || user.user_metadata?.phone || '',
           role: data?.role || user.user_metadata?.role || '',
           avatar_url: data?.avatar_url || user.user_metadata?.avatar_url || '',
+          billing_country: user.user_metadata?.billing_country || 'France',
           deletion_scheduled_at: data?.deletion_scheduled_at || null
         }))
       }
@@ -386,6 +390,11 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
         role: formData.role
       }).eq('id', user.id)
       if (dbError) dbErrorMsg = dbError.message;
+      // Pays de facturation : rangé dans les métadonnées du compte (pas de colonne dédiée dans profiles)
+      if (!dbErrorMsg) {
+        const { error: countryError } = await supabase.auth.updateUser({ data: { billing_country: formData.billing_country } })
+        if (countryError) dbErrorMsg = countryError.message
+      }
     }
 
     if (error || dbErrorMsg) {
@@ -726,6 +735,21 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                       <option value="Setter">Setter</option>
                       <option value="Setter-Closer">Setter-Closer</option>
                     </select>
+                  </div>
+
+                  <div className="space-y-1 text-left col-span-2">
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Pays de facturation' : 'Billing country'}</label>
+                    <CountrySelect
+                      value={formData.billing_country}
+                      onChange={(v) => setFormData({ ...formData, billing_country: v })}
+                      lang={lang}
+                      className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium focus:ring-0 outline-none cursor-pointer text-left [&>option]:text-black"
+                    />
+                    <p className="text-[11px] text-white/40 leading-relaxed pt-1">
+                      {lang === 'fr'
+                        ? `Adapte tes factures à ton pays : ${getCountryRule(formData.billing_country).companyId?.label.fr || "n° d'entreprise"} au lieu du SIRET, ${getCountryRule(formData.billing_country).tax ? `${getCountryRule(formData.billing_country).tax!.label.fr} à ${(getCountryRule(formData.billing_country).tax!.rate * 100).toLocaleString('fr-FR', { maximumFractionDigits: 3 })} %` : 'pas de TVA'}, et la bonne mention légale. Aucun numéro n'est obligatoire.`
+                        : `Adapts your invoices to your country: ${getCountryRule(formData.billing_country).companyId?.label.en || 'company number'}, ${getCountryRule(formData.billing_country).tax ? `${getCountryRule(formData.billing_country).tax!.label.en} at ${(getCountryRule(formData.billing_country).tax!.rate * 100).toLocaleString('en-US', { maximumFractionDigits: 3 })}%` : 'no VAT'}, and the right legal mention. No number is mandatory.`}
+                    </p>
                   </div>
                 </div>
 
