@@ -6,7 +6,7 @@ import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { useCustomStages } from '../hooks/useCustomStages'
-import { renderEmail, prospectNames, EMAILING_MAX_RECIPIENTS, type EmailMode } from '../../lib/businessEmailTemplate'
+import { renderEmail, prospectNames, EMAILING_MAX_RECIPIENTS, EMAILING_DAILY_LIMIT, type EmailMode } from '../../lib/businessEmailTemplate'
 
 // Page Emailing : envoyer des emails aux prospects du CRM (via le Brevo de CloseOS, 100 destinataires max par envoi)
 // et synchroniser les contacts vers un outil d'emailing (Brevo du client) ou les récupérer par API.
@@ -146,12 +146,21 @@ export function BusinessEmailing() {
     })
   }, [reachable, fStages, fTags, fSetter, fCloser, fGroup, groups, search, prospectTags, onlySelected, selected])
 
-  const cap = EMAILING_MAX_RECIPIENTS
+  // Quota : 50 emails par jour et par compte (le serveur fait foi) → on ne peut pas sélectionner plus que ce qui reste
+  const [quota, setQuota] = useState<{ sent: number; remaining: number } | null>(null)
+  const loadQuota = useCallback(async () => {
+    try { const q = await api('quota', undefined, 'GET'); setQuota({ sent: q.sent, remaining: q.remaining }) } catch { setQuota(null) }
+  }, [api])
+  useEffect(() => { if (ownerId) loadQuota() }, [ownerId, loadQuota])
+  const cap = Math.min(EMAILING_MAX_RECIPIENTS, quota ? quota.remaining : EMAILING_DAILY_LIMIT)
+  const capMsg = () => quota && quota.remaining < EMAILING_MAX_RECIPIENTS
+    ? tr(`Il vous reste ${quota.remaining} email(s) aujourd'hui (limite ${EMAILING_DAILY_LIMIT} par jour)`, `${quota.remaining} email(s) left today (limit ${EMAILING_DAILY_LIMIT} per day)`)
+    : tr(`Maximum ${EMAILING_MAX_RECIPIENTS} destinataires (limite ${EMAILING_DAILY_LIMIT} emails par jour)`, `Maximum ${EMAILING_MAX_RECIPIENTS} recipients (limit ${EMAILING_DAILY_LIMIT} emails per day)`)
   const toggleOne = (id: number) => {
     setSelected((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
-      else if (next.size >= cap) { toast.error(tr(`Maximum ${cap} destinataires par envoi`, `Maximum ${cap} recipients per send`)); return prev }
+      else if (next.size >= cap) { toast.error(capMsg()); return prev }
       else next.add(id)
       return next
     })
@@ -165,7 +174,7 @@ export function BusinessEmailing() {
       next.add(p.id)
     }
     setSelected(next)
-    if (skipped) toast(tr(`Limite de ${cap} atteinte : ${skipped} prospect(s) non ajouté(s)`, `${cap} limit reached: ${skipped} not added`), { icon: '⚠️' })
+    if (skipped) toast(`${capMsg()} : ${skipped} ${tr('prospect(s) non ajouté(s)', 'not added')}`, { icon: '⚠️' })
   }
   const clearFilters = () => { setFStages([]); setFTags([]); setFSetter(''); setFCloser(''); setFGroup(''); setSearch(''); setOnlySelected(false) }
 
@@ -251,7 +260,8 @@ export function BusinessEmailing() {
       setConfirming(false)
       setSelected(new Set())
       loadHistory()
-    } catch (e: any) { toast.error(e.message) } finally { setSending(false) }
+      loadQuota()
+    } catch (e: any) { toast.error(e.message); loadQuota() } finally { setSending(false) }
   }
 
   // ─── Synchronisation ───
@@ -328,7 +338,7 @@ export function BusinessEmailing() {
         <div className="min-w-0">
           <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-stone-900 dark:text-white leading-none" style={{ fontFamily: 'Manrope, sans-serif' }}>Emailing</h1>
           <p className="mt-1 sm:mt-2.5 text-xs sm:text-base font-medium text-stone-500 dark:text-neutral-400">
-            {reachable.length} {tr('prospect(s) avec un email', 'prospect(s) with an email')}
+            {reachable.length} {tr('prospect(s) avec un email', 'prospect(s) with an email')} · {tr(`${EMAILING_DAILY_LIMIT} emails par jour maximum`, `${EMAILING_DAILY_LIMIT} emails per day max`)}
           </p>
         </div>
       </div>
@@ -354,6 +364,31 @@ export function BusinessEmailing() {
               <h2 className="flex items-center gap-2 font-['Manrope'] text-lg font-extrabold text-[#1b1c1b] dark:text-white"><Users className="h-5 w-5" /> {tr('Destinataires', 'Recipients')}</h2>
               <span className={`rounded-full px-3 py-1 text-xs font-bold ${selected.size >= cap ? 'bg-amber-100 text-amber-800' : 'bg-emerald-50 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'}`}>{selected.size} / {cap}</span>
             </div>
+
+            {/* Avertissement : seuls les prospects avec un email apparaissent */}
+            <div className="flex items-start gap-2 rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-3 py-2.5 text-xs text-amber-900 dark:text-amber-200">
+              <AlertTriangle className="h-4 w-4 shrink-0 mt-px" />
+              <p>
+                {tr(
+                  `Seuls les prospects qui ont un email dans leur fiche apparaissent dans cette liste : ${reachable.length} sur ${prospects.length} dans le CRM.`,
+                  `Only prospects with an email on their record appear in this list: ${reachable.length} of ${prospects.length} in the CRM.`,
+                )}
+                {prospects.length > reachable.length && tr(
+                  ` Les ${prospects.length - reachable.length} autres n'ont pas d'email (ou un email invalide) : ajoutez-le dans leur fiche pour pouvoir leur écrire.`,
+                  ` The other ${prospects.length - reachable.length} have no (valid) email: add it on their record to be able to write to them.`,
+                )}
+              </p>
+            </div>
+
+            {/* Quota du jour */}
+            <p className="text-xs text-stone-500 dark:text-neutral-400">
+              {quota
+                ? tr(
+                    `Aujourd'hui : ${quota.sent} / ${EMAILING_DAILY_LIMIT} emails envoyés · il en reste ${quota.remaining}. Maximum ${EMAILING_MAX_RECIPIENTS} destinataires par envoi.`,
+                    `Today: ${quota.sent} / ${EMAILING_DAILY_LIMIT} emails sent · ${quota.remaining} left. Maximum ${EMAILING_MAX_RECIPIENTS} recipients per send.`,
+                  )
+                : tr(`Limite : ${EMAILING_DAILY_LIMIT} emails par jour, ${EMAILING_MAX_RECIPIENTS} destinataires maximum par envoi.`, `Limit: ${EMAILING_DAILY_LIMIT} emails per day, ${EMAILING_MAX_RECIPIENTS} recipients max per send.`)}
+            </p>
 
             <div>
               <label className={labelCls}>{tr('Étape', 'Stage')}</label>
@@ -420,12 +455,12 @@ export function BusinessEmailing() {
             <div className="max-h-[420px] overflow-y-auto rounded-xl border border-stone-100 dark:border-neutral-800 divide-y divide-stone-100 dark:divide-neutral-800">
               {loading && <div className="flex justify-center p-6"><Loader2 className="h-5 w-5 animate-spin text-stone-400" /></div>}
               {!loading && filtered.length === 0 && <p className="p-6 text-center text-sm text-stone-500">{tr('Aucun prospect ne correspond.', 'No matching prospect.')}</p>}
-              {filtered.slice(0, 500).map((p) => {
+              {filtered.map((p) => {
                 const on = selected.has(p.id)
                 const { prenom, nom } = prospectNames(p)
                 const stage = stageOptions.find((s) => s.id === p.stage)?.name || p.stage
                 return (
-                  <label key={p.id} className={`flex cursor-pointer items-center gap-3 px-3 py-2.5 transition-colors ${on ? 'bg-emerald-50/70 dark:bg-emerald-900/20' : 'hover:bg-stone-50 dark:hover:bg-neutral-800/60'}`}>
+                  <label key={p.id} className={`flex cursor-pointer items-center gap-3 px-3 py-2.5 transition-colors [content-visibility:auto] [contain-intrinsic-size:auto_56px] ${on ? 'bg-emerald-50/70 dark:bg-emerald-900/20' : 'hover:bg-stone-50 dark:hover:bg-neutral-800/60'}`}>
                     <input type="checkbox" checked={on} onChange={() => toggleOne(p.id)} className="h-4 w-4 accent-[#006c49]" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-[#1b1c1b] dark:text-white">{[prenom, nom].filter(Boolean).join(' ') || p.email}</p>
@@ -435,7 +470,6 @@ export function BusinessEmailing() {
                   </label>
                 )
               })}
-              {filtered.length > 500 && <p className="p-3 text-center text-xs text-stone-500">{tr(`+ ${filtered.length - 500} autres : affine les filtres`, `+ ${filtered.length - 500} more: refine the filters`)}</p>}
             </div>
 
             {/* Groupes */}

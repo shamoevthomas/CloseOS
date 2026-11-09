@@ -5,7 +5,7 @@ import {
   Calendar, Clock, BarChart3, GitBranch, CalendarDays, Mail,
   AlertCircle, DollarSign, ShoppingCart, Target, UserX, Ban,
   Save, CreditCard, History, LogIn, LogOut, Pencil, Check, X, Globe,
-  Link2, Copy, ExternalLink, Award, Percent, Receipt, CalendarRange, ChevronDown, ChevronRight,
+  Link2, Copy, ExternalLink, Award, Percent, Receipt, CalendarRange, ChevronDown, ChevronRight, Trophy,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { PhoneInput } from '../components/PhoneInput'
@@ -268,7 +268,8 @@ function ContactInfo({ member }: { member: TeamMember }) {
 }
 
 export function BusinessTeam() {
-  const { user, ownerUserId, isTeamMember, teamMember, businessProfile, userTimezone, businessSettings, refreshProfile } = useBusinessAuth()
+  const { user, ownerUserId, isTeamMember, teamMember, businessProfile, userTimezone, businessSettings, refreshProfile, updateBusinessSettings } = useBusinessAuth()
+  const [savingWonVisibility, setSavingWonVisibility] = useState(false)
   const { t, lang } = useBusinessLang()
   const effectiveUserId = ownerUserId || user?.id
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
@@ -487,6 +488,49 @@ export function BusinessTeam() {
           </button>
         )}
       </div>
+
+      {/* Visibilité des deals gagnés pour l'équipe (propriétaire uniquement) */}
+      {!isTeamMember && (() => {
+        const allWon = businessSettings?.team_can_see_all_won !== false
+        const toggle = async () => {
+          setSavingWonVisibility(true)
+          const { error } = await updateBusinessSettings({ team_can_see_all_won: !allWon })
+          setSavingWonVisibility(false)
+          if (error) toast.error(lang === 'en' ? 'Could not save the setting' : "Impossible d'enregistrer le réglage")
+          else toast.success(lang === 'en' ? 'Setting saved' : 'Réglage enregistré')
+        }
+        return (
+          <div className={cn(WHITE_CARD, 'p-4 sm:p-6 flex items-start gap-4')}>
+            <div className="h-10 w-10 shrink-0 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
+              <Trophy className="h-5 w-5 text-[#006c49]" strokeWidth={1.5} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-business-display font-extrabold text-sm sm:text-base text-stone-900 dark:text-white">
+                {lang === 'en' ? 'Members see all won deals' : "Les membres voient tous les gagnés de l'entreprise"}
+              </p>
+              <p className="mt-1 text-xs sm:text-sm text-stone-500 dark:text-neutral-400">
+                {allWon
+                  ? (lang === 'en'
+                    ? 'On: setters and closers see every won prospect in the CRM.'
+                    : 'Activé : setters et closers voient tous les prospects gagnés dans le CRM.')
+                  : (lang === 'en'
+                    ? 'Off: once a prospect is won, members only see it if they are its setter or closer. Head of Sales and Admins still see everything.'
+                    : "Désactivé : une fois gagné, un prospect n'est visible que par son setter ou son closer. Les Head of Sales et Admins voient toujours tout.")}
+              </p>
+            </div>
+            <button
+              role="switch"
+              aria-checked={allWon}
+              aria-label={lang === 'en' ? 'Members see all won deals' : "Les membres voient tous les gagnés de l'entreprise"}
+              onClick={toggle}
+              disabled={savingWonVisibility}
+              className={cn('relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-60', allWon ? 'bg-[#006c49]' : 'bg-stone-300 dark:bg-neutral-600')}
+            >
+              <span className={cn('absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all', allWon ? 'left-6' : 'left-1')} />
+            </button>
+          </div>
+        )
+      })()}
 
       {/* Owner card */}
       {ownerInfo && (() => {

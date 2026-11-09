@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { X, ChevronLeft, ChevronRight, MessageCircle, Check, Clock, Bell, PartyPopper, Phone, ArrowLeft, Reply, Layers } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, MessageCircle, Check, Clock, Bell, PartyPopper, Phone, ArrowLeft, Reply, Layers, AlarmClock, AlarmClockPlus, ExternalLink } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 import { cn } from '../lib/utils'
 import { useAuth } from '../contexts/AuthContext'
@@ -9,6 +10,8 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { useContactedReminders, computeRelanceBadge, relanceLabel } from '../hooks/useContactedReminders'
 import { useSalesWhatsAppTemplates } from '../lib/salesWhatsappTemplates'
 import { fillWhatsAppMessage, whatsAppLink, splitProspectName } from '../lib/whatsappMessage'
+import { useCustomStages } from '../hooks/useCustomStages'
+import { ProspectView } from './ProspectView'
 
 // CloseOS Sales — « Mode cartes » : à la connexion, une carte plein écran par chose à faire aujourd'hui.
 //  - relance due (Contacté, pas de réponse, échéance atteinte) : relancer sur WhatsApp (message pré-enregistré),
@@ -18,8 +21,16 @@ import { fillWhatsAppMessage, whatsAppLink, splitProspectName } from '../lib/wha
 
 export const OPEN_SALES_FOCUS_EVENT = 'closeos:open-sales-focus-cards'
 
-type CardKind = 'relance' | 'statut'
-interface FocusCard { id: number; kind: CardKind; dueAt: number }
+type CardKind = 'relance' | 'statut' | 'rappel'
+
+/** « 2026-11-10T10:00 » (heure locale) pour un champ datetime-local. */
+function toLocalInput(d: Date) {
+  const z = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`
+}
+interface ReminderRow { id: number; title: string; description: string | null; reminder_date: string; prospect_id: number | null }
+// key = identifiant de la carte (snooze, résultat) ; id = prospect lié (0 pour un rappel sans prospect)
+interface FocusCard { key: string; id: number; kind: CardKind; dueAt: number; reminder?: ReminderRow }
 
 const todayKey = () => new Date().toISOString().slice(0, 10)
 function readJSON<T>(key: string, fallback: T): T {
@@ -34,7 +45,10 @@ function nameOf(p: Prospect, fr: boolean) {
 
 export function FocusCards() {
   const { user } = useAuth()
-  const { prospects, updateProspect } = useProspects()
+  const { prospects, updateProspect, deleteProspect } = useProspects()
+  const { allStages } = useCustomStages()
+  const [ficheOpen, setFicheOpen] = useState(false)
+  const [newRem, setNewRem] = useState<{ title: string; when: string } | null>(null)
   const { lang } = useLanguage()
   const fr = lang !== 'en'
   const { delays, loading: delaysLoading } = useContactedReminders()
@@ -43,7 +57,7 @@ export function FocusCards() {
   const [open, setOpen] = useState(false)
   const [cards, setCards] = useState<FocusCard[]>([])
   const [index, setIndex] = useState(0)
-  const [outcomes, setOutcomes] = useState<Record<number, string>>({})
+  const [outcomes, setOutcomes] = useState<Record<string, string>>({})
   const [waPanel, setWaPanel] = useState(false)
   const [statutStep, setStatutStep] = useState<'ask' | 'oui'>('ask')
   const [busy, setBusy] = useState(false)
@@ -59,19 +73,34 @@ export function FocusCards() {
     const today = todayKey()
     const list: FocusCard[] = []
     for (const p of prospects) {
-      if (p.stage !== 'contacted' || snoozed[p.id] === today) continue
+      if (p.stage !== 'contacted' || snoozed[`p-${p.id}`] === today) continue
       if (!p.responded_at) {
         const badge = computeRelanceBadge(p.contacted_at, p.last_relance_at, delays, p.relance_step, now)
-        if (badge?.due) list.push({ id: p.id, kind: 'relance', dueAt: badge.dueAt })
+        if (badge?.due) list.push({ key: `p-${p.id}`, id: p.id, kind: 'relance', dueAt: badge.dueAt })
       } else if (p.discussion_next_at && now >= new Date(p.discussion_next_at).getTime()) {
-        list.push({ id: p.id, kind: 'statut', dueAt: new Date(p.discussion_next_at).getTime() })
+        list.push({ key: `p-${p.id}`, id: p.id, kind: 'statut', dueAt: new Date(p.discussion_next_at).getTime() })
       }
     }
     return list.sort((a, b) => a.dueAt - b.dueAt)
   }, [prospects, delays, snoozeKey])
 
-  const openCards = useCallback((force: boolean) => {
-    const list = compute()
+  // Rappels du jour (non faits, échéance aujourd'hui ou dépassée), comme la cloche et la page Rappels
+  const loadReminderCards = useCallback(async (): Promise<FocusCard[]> => {
+    if (!user?.id) return []
+    const end = new Date(); end.setHours(23, 59, 59, 999)
+    const { data, error } = await supabase.from('reminders').select('id, title, description, reminder_date, prospect_id')
+      .eq('user_id', user.id).eq('is_done', false).lte('reminder_date', end.toISOString()).order('reminder_date', { ascending: true }).limit(100)
+    if (error || !data) return []
+    const snoozed = readJSON<Record<string, string>>(snoozeKey, {})
+    const today = todayKey()
+    return (data as ReminderRow[])
+      .filter((r) => snoozed[`r-${r.id}`] !== today)
+      .map((r) => ({ key: `r-${r.id}`, id: Number(r.prospect_id) || 0, kind: 'rappel' as const, dueAt: new Date(r.reminder_date).getTime(), reminder: r }))
+  }, [user?.id, snoozeKey])
+
+  const openCards = useCallback(async (force: boolean) => {
+    const reminderCards = await loadReminderCards()
+    const list = [...compute(), ...reminderCards].sort((a, b) => a.dueAt - b.dueAt)
     if (!force && list.length === 0) return
     setCards(list)
     setIndex(0)
@@ -80,7 +109,7 @@ export function FocusCards() {
     setStatutStep('ask')
     setOpen(true)
     writeJSON(seenKey, todayKey())
-  }, [compute, seenKey])
+  }, [compute, loadReminderCards, seenKey])
 
   // Ouverture automatique : une fois par jour, quand prospects et délais sont chargés
   const autoTried = useRef(false)
@@ -103,29 +132,33 @@ export function FocusCards() {
   const total = cards.length
   const atEnd = index >= total
   const card = atEnd ? null : cards[index]
-  const p = useMemo(() => (card ? prospects.find((x) => x.id === card.id) || null : null), [card, prospects])
+  const p = useMemo(() => (card && card.id ? prospects.find((x) => x.id === card.id) || null : null), [card, prospects])
 
   const go = useCallback((n: number) => {
     setIndex((i) => Math.max(0, Math.min(total, i + n)))
     setWaPanel(false)
     setStatutStep('ask')
+    setNewRem(null)
     setDx(0)
   }, [total])
 
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
+      if (ficheOpen) return
+      const tag = (e.target as HTMLElement)?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
       if (e.key === 'ArrowRight') go(1)
       else if (e.key === 'ArrowLeft') go(-1)
       else if (e.key === 'Escape') setOpen(false)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [open, go])
+  }, [open, go, ficheOpen])
 
   const done = (label: string) => {
     if (!card) return
-    setOutcomes((o) => ({ ...o, [card.id]: label }))
+    setOutcomes((o) => ({ ...o, [card.key]: label }))
     setTimeout(() => go(1), 450)
   }
   const run = async (fn: () => Promise<unknown> | unknown, label: string) => {
@@ -153,10 +186,46 @@ export function FocusCards() {
   const later = () => {
     if (!card) return
     const snoozed = readJSON<Record<string, string>>(snoozeKey, {})
-    snoozed[card.id] = todayKey()
+    snoozed[card.key] = todayKey()
     writeJSON(snoozeKey, snoozed)
     done(fr ? 'Reporté à demain' : 'Postponed to tomorrow')
   }
+  // ── Statut (menu déroulant), comme sur la fiche : passage en Contacté = départ du compteur de relances ──
+  const changeStage = (stage: string) => {
+    if (!p || stage === p.stage) return
+    const patch: Partial<Prospect> = { stage }
+    if (stage === 'contacted' && !p.contacted_at) patch.contacted_at = new Date().toISOString()
+    const label = allStages.find((st) => st.id === stage)?.name || stage
+    run(() => updateProspect(p.id, patch), `${fr ? 'Statut' : 'Status'} : ${label}`)
+  }
+  // ── Nouveau rappel (et clôture du rappel affiché, s'il s'agit d'une carte rappel) ──
+  const openNewReminder = () => {
+    const base = card?.reminder ? new Date(card.reminder.reminder_date) : null
+    const t = new Date(); t.setDate(t.getDate() + 1)
+    if (base) t.setHours(base.getHours(), base.getMinutes(), 0, 0); else t.setHours(10, 0, 0, 0)
+    const title = card?.reminder?.title || (p ? `${fr ? 'Relancer' : 'Follow up'} ${nameOf(p, fr)}` : '')
+    setNewRem({ title, when: toLocalInput(t) })
+  }
+  const createReminder = () => {
+    if (!newRem || !user?.id || !newRem.title.trim() || !newRem.when) return
+    const when = new Date(newRem.when)
+    run(async () => {
+      const { error } = await supabase.from('reminders').insert([{
+        user_id: user.id, title: newRem.title.trim(), reminder_date: when.toISOString(), prospect_id: p?.id || null, is_done: false,
+      }])
+      if (error) throw error
+      if (card?.reminder) {
+        const { error: e2 } = await supabase.from('reminders').update({ is_done: true }).eq('id', card.reminder.id).eq('user_id', user.id)
+        if (e2) throw e2
+      }
+      setNewRem(null)
+    }, `${fr ? 'Nouveau rappel le' : 'New reminder on'} ${when.toLocaleDateString(fr ? 'fr-FR' : 'en-US', { weekday: 'short', day: 'numeric', month: 'short' })} · ${when.toLocaleTimeString(fr ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}`)
+  }
+
+  const reminderDone = () => card?.reminder && run(async () => {
+    const { error } = await supabase.from('reminders').update({ is_done: true }).eq('id', card.reminder!.id).eq('user_id', user!.id)
+    if (error) throw error
+  }, fr ? 'Rappel terminé' : 'Reminder done')
   const clearResponse = { responded_at: null, discussion_next_at: null, discussion_email_sent: false }
   const statutNon = () => p && run(() => updateProspect(p.id, clearResponse), fr ? 'Plus en discussion · les relances reprennent' : 'No longer in discussion · follow-ups resume')
   const statutQualified = () => p && run(() => updateProspect(p.id, { stage: 'qualified', ...clearResponse }), fr ? 'Passé en Qualifié' : 'Moved to Qualified')
@@ -179,6 +248,46 @@ export function FocusCards() {
   const leftAside = total - doneCount
   const btn = 'flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold transition-all active:scale-[0.98] disabled:opacity-50'
   const hint = 'text-[11px] leading-snug text-slate-500 dark:text-neutral-400'
+  const tool = 'flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-neutral-200 hover:border-sky-300 disabled:opacity-50'
+
+  // Outils communs à toutes les cartes : ouvrir la fiche, changer le statut, programmer un nouveau rappel
+  const renderTools = () => (
+    <div className="mt-4 border-t border-slate-100 dark:border-white/10 pt-4 space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        {p && (
+          <button onClick={() => setFicheOpen(true)} className={tool}>
+            <ExternalLink className="h-3.5 w-3.5" /> {fr ? 'Ouvrir la fiche' : 'Open record'}
+          </button>
+        )}
+        {p && (
+          <label className={cn(tool, 'pr-1.5')}>
+            <span className="text-slate-400">{fr ? 'Statut' : 'Status'}</span>
+            <select value={p.stage} onChange={(e) => changeStage(e.target.value)} disabled={busy}
+              className="bg-transparent font-bold outline-none cursor-pointer text-slate-900 dark:text-white">
+              {!allStages.some((st) => st.id === p.stage) && <option value={p.stage}>{p.stage}</option>}
+              {allStages.map((st) => <option key={st.id} value={st.id}>{st.name}</option>)}
+            </select>
+          </label>
+        )}
+        <button onClick={() => (newRem ? setNewRem(null) : openNewReminder())} className={tool}>
+          <AlarmClockPlus className="h-3.5 w-3.5" /> {fr ? 'Nouveau rappel' : 'New reminder'}
+        </button>
+      </div>
+      {newRem && (
+        <div className="rounded-2xl border border-slate-200 dark:border-white/10 p-3 space-y-2">
+          <input value={newRem.title} onChange={(e) => setNewRem({ ...newRem, title: e.target.value })} placeholder={fr ? 'Titre du rappel' : 'Reminder title'}
+            className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-white outline-none focus:border-sky-500" />
+          <input type="datetime-local" value={newRem.when} onChange={(e) => setNewRem({ ...newRem, when: e.target.value })}
+            className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-white outline-none focus:border-sky-500" />
+          <div className="flex gap-2">
+            <button onClick={() => setNewRem(null)} className={cn(btn, 'flex-1 py-2 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-neutral-300')}>{fr ? 'Annuler' : 'Cancel'}</button>
+            <button onClick={createReminder} disabled={busy || !newRem.title.trim() || !newRem.when} className={cn(btn, 'flex-1 py-2 bg-sky-600 text-white hover:bg-sky-500')}>{fr ? 'Créer le rappel' : 'Create reminder'}</button>
+          </div>
+          {card?.kind === 'rappel' && <p className={hint}>{fr ? 'Le rappel affiché sera clôturé et remplacé par celui-ci.' : 'The current reminder will be closed and replaced by this one.'}</p>}
+        </div>
+      )}
+    </div>
+  )
 
   return createPortal(
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 dark:bg-black/75 backdrop-blur-md p-3 sm:p-6">
@@ -197,8 +306,8 @@ export function FocusCards() {
         {total > 0 && (
           <div className="mb-3 flex items-center gap-1.5 px-1">
             {cards.map((c, i) => (
-              <button key={c.id} onClick={() => { setIndex(i); setWaPanel(false); setStatutStep('ask') }} aria-label={`${i + 1}`}
-                className={cn('h-1.5 flex-1 rounded-full transition-all', outcomes[c.id] ? 'bg-sky-400' : i === index ? 'bg-white' : 'bg-white/30')} />
+              <button key={c.key} onClick={() => { setIndex(i); setWaPanel(false); setStatutStep('ask') }} aria-label={`${i + 1}`}
+                className={cn('h-1.5 flex-1 rounded-full transition-all', outcomes[c.key] ? 'bg-sky-400' : i === index ? 'bg-white' : 'bg-white/30')} />
             ))}
           </div>
         )}
@@ -228,7 +337,7 @@ export function FocusCards() {
               )}
               <div className="mt-8 flex flex-col sm:flex-row gap-2 justify-center">
                 {leftAside > 0 && (
-                  <button onClick={() => { const i = cards.findIndex((c) => !outcomes[c.id]); setIndex(Math.max(0, i)) }} className={cn(btn, 'border border-slate-200 dark:border-white/10 text-slate-700 dark:text-neutral-200')}>
+                  <button onClick={() => { const i = cards.findIndex((c) => !outcomes[c.key]); setIndex(Math.max(0, i)) }} className={cn(btn, 'border border-slate-200 dark:border-white/10 text-slate-700 dark:text-neutral-200')}>
                     <ArrowLeft className="h-4 w-4" /> {fr ? 'Revoir les cartes laissées' : 'Review skipped cards'}
                   </button>
                 )}
@@ -237,7 +346,55 @@ export function FocusCards() {
             </div>
           )}
 
-          {!atEnd && card && p && (
+          {/* ── Carte rappel ── */}
+          {!atEnd && card && card.kind === 'rappel' && card.reminder && (() => {
+            const r = card.reminder
+            const when = new Date(r.reminder_date)
+            const late = when.getTime() < Date.now()
+            const sameDay = when.toDateString() === new Date().toDateString()
+            const whenLabel = `${sameDay ? (fr ? "aujourd'hui" : 'today') : when.toLocaleDateString(fr ? 'fr-FR' : 'en-US', { weekday: 'short', day: 'numeric', month: 'short' })} · ${when.toLocaleTimeString(fr ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}`
+            return (
+              <div className="p-5 sm:p-7">
+                <div className="flex items-center justify-between gap-3">
+                  <span className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold', late ? 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300' : 'bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-300')}>
+                    <AlarmClock className="h-3.5 w-3.5" /> {fr ? 'Rappel' : 'Reminder'}{late ? (fr ? ' en retard' : ' overdue') : ''} · {whenLabel}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-400">{index + 1} / {total}</span>
+                </div>
+                <h2 className="mt-5 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white break-words">{r.title}</h2>
+                <div className="mt-2 space-y-1 text-sm text-slate-500 dark:text-neutral-400">
+                  {p && <p className="font-semibold text-slate-700 dark:text-neutral-200">{nameOf(p, fr)}</p>}
+                  {p?.phone && <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> {p.phone}</p>}
+                  {r.description && <p className="whitespace-pre-wrap">{r.description}</p>}
+                </div>
+                {outcomes[card.key] ? (
+                  <div className="mt-7 flex items-center gap-2 rounded-2xl bg-sky-50 dark:bg-sky-900/30 px-4 py-4 text-sm font-bold text-sky-800 dark:text-sky-200">
+                    <Check className="h-5 w-5 shrink-0" /> {outcomes[card.key]}
+                  </div>
+                ) : (
+                  <div className="mt-7 space-y-2.5">
+                    <button onClick={reminderDone} disabled={busy} className={cn(btn, 'w-full bg-sky-600 text-white hover:bg-sky-500 text-base py-4')}>
+                      <Check className="h-5 w-5" /> {fr ? "C'est fait" : 'Done'}
+                    </button>
+                    <div className={cn('grid gap-2', p?.phone ? 'grid-cols-2' : 'grid-cols-1')}>
+                      {p?.phone && (
+                        <button onClick={() => window.open(whatsAppLink(p.phone), '_blank')} className={cn(btn, 'flex-col gap-1 px-2 bg-[#25D366] text-white')}>
+                          <MessageCircle className="h-4 w-4" /> <span className="text-xs">WhatsApp</span>
+                        </button>
+                      )}
+                      <button onClick={later} disabled={busy} className={cn(btn, 'flex-col gap-1 px-2 bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-neutral-200')}>
+                        <Clock className="h-4 w-4" /> <span className="text-xs">{fr ? 'Plus tard' : 'Later'}</span>
+                      </button>
+                    </div>
+                    <p className={hint}>{fr ? '« Plus tard » la cache juste jusqu’à demain. Pour programmer une autre date : « Nouveau rappel ».' : '"Later" just hides it until tomorrow. To schedule another date: "New reminder".'}</p>
+                  </div>
+                )}
+                {!outcomes[card.key] && renderTools()}
+              </div>
+            )
+          })()}
+
+          {!atEnd && card && card.kind !== 'rappel' && p && (
             <div className="p-5 sm:p-7">
               <div className="flex items-center justify-between gap-3">
                 <span className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold',
@@ -258,9 +415,9 @@ export function FocusCards() {
                 )}
               </div>
 
-              {outcomes[card.id] ? (
+              {outcomes[card.key] ? (
                 <div className="mt-7 flex items-center gap-2 rounded-2xl bg-sky-50 dark:bg-sky-900/30 px-4 py-4 text-sm font-bold text-sky-800 dark:text-sky-200">
-                  <Check className="h-5 w-5 shrink-0" /> {outcomes[card.id]}
+                  <Check className="h-5 w-5 shrink-0" /> {outcomes[card.key]}
                 </div>
               ) : card.kind === 'relance' ? (
                 <div className="mt-7 space-y-2.5">
@@ -326,10 +483,11 @@ export function FocusCards() {
                   <button onClick={() => setStatutStep('ask')} className="flex items-center gap-1 text-xs font-semibold text-slate-500"><ArrowLeft className="h-3.5 w-3.5" /> {fr ? 'Retour' : 'Back'}</button>
                 </div>
               )}
+              {!outcomes[card.key] && renderTools()}
             </div>
           )}
 
-          {!atEnd && card && !p && (
+          {!atEnd && card && card.kind !== 'rappel' && !p && (
             <div className="p-8 text-center text-sm text-slate-500">
               {fr ? 'Ce prospect n’est plus disponible.' : 'This prospect is no longer available.'}
               <button onClick={() => go(1)} className="mt-4 block w-full font-bold text-slate-900 dark:text-white">{fr ? 'Suivant' : 'Next'} →</button>
@@ -343,6 +501,19 @@ export function FocusCards() {
           <button onClick={() => go(1)} disabled={atEnd} className="flex h-11 w-11 items-center justify-center rounded-full bg-white/90 dark:bg-neutral-800 shadow disabled:opacity-30"><ChevronRight className="h-5 w-5" /></button>
         </div>
       </div>
+
+      {ficheOpen && p && (
+        <ProspectView
+          prospect={p}
+          onClose={() => setFicheOpen(false)}
+          onUpdate={(id, updates) => {
+            const patch: any = { ...updates }
+            if (patch.stage === 'contacted' && !p.contacted_at && !patch.contacted_at) patch.contacted_at = new Date().toISOString()
+            updateProspect(id, patch)
+          }}
+          onDelete={(id) => { deleteProspect(id); setFicheOpen(false); go(1) }}
+        />
+      )}
     </div>,
     document.body,
   )

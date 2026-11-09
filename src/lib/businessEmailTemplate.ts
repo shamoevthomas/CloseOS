@@ -14,7 +14,18 @@ export interface EmailVars {
   email?: string
 }
 
-export const EMAILING_MAX_RECIPIENTS = 100
+// Limites d'envoi (Brevo de CloseOS) : 50 destinataires par envoi ET 50 emails par jour et par compte.
+export const EMAILING_MAX_RECIPIENTS = 50
+export const EMAILING_DAILY_LIMIT = 50
+
+/** Minuit (heure de Paris) du jour en cours, en ISO UTC : début du quota quotidien. */
+export function parisDayStartISO(now: Date = new Date()): string {
+  const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' })
+  const p: Record<string, string> = Object.fromEntries(fmt.formatToParts(now).map((x) => [x.type, x.value]))
+  const parisAsUtc = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second)
+  const offset = parisAsUtc - Math.floor(now.getTime() / 1000) * 1000
+  return new Date(Date.UTC(+p.year, +p.month - 1, +p.day) - offset).toISOString()
+}
 
 export function escapeHtml(s: string): string {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))

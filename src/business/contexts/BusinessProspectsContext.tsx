@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, type ReactNode } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useBusinessAuth } from './BusinessAuthContext'
 import { withRetry } from '../../lib/supabaseHelpers'
@@ -130,12 +130,25 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
 
   const crmProvider = businessSettings?.crm_provider || 'closeos'
 
+  // Page Équipe → « Les membres voient tous les gagnés » désactivé : un setter / closer ne reçoit plus
+  // les prospects gagnés des autres (seulement ceux dont il est le setter ou le closer). Head of Sales / Admin voient tout.
+  const myMemberId = teamMember?.id || null
+  const hideOthersWon = !!isTeamMember && !['Head of Sales', 'Admin'].includes(teamMember?.role || '')
+    && businessSettings?.team_can_see_all_won === false && !!myMemberId
+  const canSee = useCallback((p: BusinessProspect) =>
+    !hideOthersWon || p.stage !== 'won' || p.assigned_to === myMemberId || p.assigned_setter === myMemberId,
+  [hideOthersWon, myMemberId])
+
   const loadProspects = useCallback(async (showLoading = true) => {
     if (!userId) { if (showLoading) setLoading(false); return }
     try {
       if (showLoading) setLoading(true)
       const { data, error } = await withRetry(
-        () => supabase.from('business_prospects').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+        async () => {
+          let q = supabase.from('business_prospects').select('*').eq('user_id', userId)
+          if (hideOthersWon) q = q.or(`stage.neq.won,assigned_to.eq.${myMemberId},assigned_setter.eq.${myMemberId}`)
+          return await q.order('created_at', { ascending: false })
+        },
         { context: 'LoadBusinessProspects' }
       )
 
@@ -147,7 +160,7 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
     } finally {
       if (showLoading) setLoading(false)
     }
-  }, [userId])
+  }, [userId, hideOthersWon, myMemberId])
 
   // Check CRM connection status
   const checkCrmStatus = useCallback(async () => {
@@ -847,9 +860,12 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
     if (removed) pushToIclosedIfNeeded(removed, 'delete')
   }
 
+  // Temps réel et mises à jour locales passent aussi par ce filtre (un prospect qui passe en « Gagné » disparaît)
+  const visibleProspects = useMemo(() => (hideOthersWon ? prospects.filter(canSee) : prospects), [prospects, hideOthersWon, canSee])
+
   return (
     <BusinessProspectsContext.Provider value={{
-      prospects, addProspect, updateProspect, deleteProspect,
+      prospects: visibleProspects, addProspect, updateProspect, deleteProspect,
       refreshProspects: () => loadProspects(false),
       loading,
       syncHubspot, syncPipedrive, syncAirtable, syncGhl,

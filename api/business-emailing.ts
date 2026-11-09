@@ -15,7 +15,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createHmac, timingSafeEqual } from 'node:crypto'
-import { renderEmail, prospectNames, escapeHtml, EMAILING_MAX_RECIPIENTS, type EmailMode } from '../src/lib/businessEmailTemplate.js'
+import { renderEmail, prospectNames, escapeHtml, EMAILING_MAX_RECIPIENTS, EMAILING_DAILY_LIMIT, parisDayStartISO, type EmailMode } from '../src/lib/businessEmailTemplate.js'
 import { brevoFetch, listBrevoLists, crmContacts, syncOwnerToBrevo } from './_lib/emailing-sync.js'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || ''
@@ -98,6 +98,12 @@ function validateMessage(b: any): { subject: string; mode: EmailMode; content: s
   return { subject, mode, content }
 }
 
+/** Emails réellement envoyés aujourd'hui (heure de Paris) par ce compte. */
+async function sentToday(supabase: SupabaseClient, ownerId: string): Promise<number> {
+  const { data } = await supabase.from('business_email_campaigns').select('sent_count').eq('owner_id', ownerId).gte('created_at', parisDayStartISO())
+  return (data || []).reduce((n: number, r: any) => n + (Number(r.sent_count) || 0), 0)
+}
+
 function maskKey(k?: string | null) {
   if (!k) return null
   return `${k.slice(0, 8)}…${k.slice(-4)}`
@@ -145,6 +151,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if ('error' in who) return res.status(who.status).json({ error: who.error })
     const { ownerId, uid } = who
 
+    // ─── Quota du jour ───
+    if (action === 'quota' && req.method === 'GET') {
+      const sent = await sentToday(supabase, ownerId)
+      return res.status(200).json({ limit: EMAILING_DAILY_LIMIT, per_send: EMAILING_MAX_RECIPIENTS, sent, remaining: Math.max(0, EMAILING_DAILY_LIMIT - sent) })
+    }
+
     // ─── Envoi d'essai à soi-même ───
     if (action === 'test' && req.method === 'POST') {
       if (!BREVO_API_KEY) return res.status(500).json({ error: 'BREVO_API_KEY manquante côté serveur' })
@@ -186,6 +198,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         recipients.push({ email, ...prospectNames(p) })
       }
       if (recipients.length === 0) return res.status(400).json({ error: 'Aucune adresse email valide parmi les destinataires' })
+
+      // Quota : 50 emails par jour et par compte (heure de Paris)
+      const already = await sentToday(supabase, ownerId)
+      const remaining = Math.max(0, EMAILING_DAILY_LIMIT - already)
+      if (remaining === 0) return res.status(429).json({ error: `Limite de ${EMAILING_DAILY_LIMIT} emails par jour atteinte. Réessayez demain.`, remaining })
+      if (recipients.length > remaining) return res.status(400).json({ error: `Il vous reste ${remaining} email(s) aujourd'hui (limite ${EMAILING_DAILY_LIMIT} par jour) : réduisez la sélection.`, remaining })
 
       const sender = await senderFor(supabase, ownerId)
       let sent = 0
