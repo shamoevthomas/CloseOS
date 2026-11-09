@@ -96,11 +96,13 @@ export function CaptureForm() {
   const funnelRef = useRef<FunnelTracker | null>(null)
   if (!funnelRef.current && slug && typeof window !== 'undefined') {
     const p = new URLSearchParams(window.location.search)
-    funnelRef.current = createFunnelTracker(slug, p.get('payment_intent_return') === 'true')
+    funnelRef.current = createFunnelTracker(slug, p.get('payment_intent_return') === 'true', p.get('src'))
   }
   const funnel = funnelRef.current
   const [searchParams] = useSearchParams()
   const isEmbed = searchParams.get('embed') === 'true'
+  // Source de la campagne (lien par source : ?src=<clé>) ; absente = source principale
+  const srcKey = searchParams.get('src') || undefined
 
   // ─── Tracking « temps sur page » : si arrivée via un lien de tracking CloseOS (?_tk=eventId) ───
   useEffect(() => {
@@ -280,7 +282,7 @@ export function CaptureForm() {
           fetch(`${API_URL}?action=capture-view`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ slug }),
+            body: JSON.stringify({ slug, src: srcKey }),
           }).catch(() => {})
         }
         else setNotFound(true)
@@ -418,7 +420,7 @@ export function CaptureForm() {
       await fetch(`${API_URL}?action=capture-partial`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug, name, email, phone: pPhone, custom_data: customData, funnel_session_id: funnel?.sessionId }),
+        body: JSON.stringify({ slug, name, email, phone: pPhone, custom_data: customData, funnel_session_id: funnel?.sessionId, src: srcKey }),
       })
     } catch { /* fire-and-forget */ }
   }, [slug, firstName, lastName, email, phone, countryCode, customData])
@@ -569,7 +571,7 @@ export function CaptureForm() {
 
   const buildSubmitPayload = () => {
     const name = `${firstName} ${lastName}`.trim()
-    const payload: any = { slug, name, email, phone: fullPhone, custom_data: customData, funnel_session_id: funnel?.sessionId }
+    const payload: any = { slug, name, email, phone: fullPhone, custom_data: customData, funnel_session_id: funnel?.sessionId, src: srcKey }
     if (hasQuestionnaire && Object.keys(answers).length > 0) {
       payload.answers = Object.entries(answers)
         .filter(([question_id]) => visibleQuestionIds.has(question_id))
@@ -1541,7 +1543,7 @@ export function CaptureForm() {
           clientSecret={inlinePayment.client_secret}
           confirmEndpoint={`${API_URL}?action=capture-confirm-payment`}
           cancelEndpoint={`${API_URL}?action=capture-cancel-payment`}
-          returnUrl={`${window.location.origin}/capture/${slug || ''}?payment_intent_return=true`}
+          returnUrl={`${window.location.origin}/capture/${slug || ''}?payment_intent_return=true${srcKey ? `&src=${encodeURIComponent(srcKey)}` : ''}`}
           onSuccess={(data: any) => {
             setInlinePayment(null)
             rememberConfirmationAuth(data)

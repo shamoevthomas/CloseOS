@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
+import { normalizeSources, resolveSource } from '../src/lib/campaignSources.js'
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '',
@@ -61,6 +62,16 @@ function isBotOrPrefetch(req: VercelRequest): boolean {
   return false
 }
 
+// Clics par source : lien principal (clé null) + une ligne par source déclarée (les clés supprimées retombent sur le principal)
+function sourceBreakdown(rawSources: unknown, evs: { visitor_id?: string | null; source_key?: string | null }[]) {
+  const sources = normalizeSources(rawSources)
+  const known = new Set(sources.map((s) => s.key))
+  return [{ key: null as string | null, name: 'Lien principal' }, ...sources].map((src) => {
+    const mine = evs.filter((e) => (src.key ? e.source_key === src.key : !e.source_key || !known.has(e.source_key)))
+    return { key: src.key, name: src.name, clicks: mine.length, uniqueVisitors: new Set(mine.map((e) => e.visitor_id || 'anon')).size }
+  })
+}
+
 // ─── Handler ───
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -75,11 +86,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const { data: link } = await supabase
         .from('business_tracking_links')
-        .select('id, destination_url, is_internal, is_active')
+        .select('id, destination_url, is_internal, is_active, sources')
         .eq('slug', slug)
         .maybeSingle()
 
       if (!link || !link.is_active) return res.redirect(302, fallback)
+      // Source du lien (?s=<clé>) ; inconnue ou absente = lien principal (clé null)
+      const clickSource = resolveSource(link.sources, req.query.s, null)
 
       // Bot / aperçu de lien / prefetch : on redirige mais on n'enregistre RIEN (stats propres)
       if (isBotOrPrefetch(req)) {
@@ -123,6 +136,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           city,
           referrer,
           user_agent: ua,
+          source_key: clickSource.key,
         })
         .select('id')
         .maybeSingle()
@@ -157,7 +171,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ══════════ CREATE ══════════
     if (action === 'create' && req.method === 'POST') {
-      const { user_id, name, destination_url } = req.body || {}
+      const { user_id, name, destination_url, sources } = req.body || {}
       if (!user_id || !name || !destination_url) {
         return res.status(400).json({ error: 'user_id, name and destination_url required' })
       }
@@ -184,8 +198,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           slug,
           destination_url: dest,
           is_internal: detectInternal(dest),
+          sources: normalizeSources(sources),
         })
-        .select('id, name, slug, destination_url, is_internal, is_active, created_at')
+        .select('id, name, slug, destination_url, is_internal, is_active, created_at, sources')
         .single()
 
       if (error) return res.status(500).json({ error: error.message })
@@ -199,7 +214,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const { data: links } = await supabase
         .from('business_tracking_links')
-        .select('id, name, slug, destination_url, is_internal, is_active, created_at')
+        .select('id, name, slug, destination_url, is_internal, is_active, created_at, sources')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
 
@@ -207,7 +222,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         (links || []).map(async (l) => {
           const { data: events } = await supabase
             .from('business_tracking_events')
-            .select('visitor_id, is_returning')
+            .select('visitor_id, is_returning, source_key')
             .eq('link_id', l.id)
           const evs = events || []
           const uniqueVisitors = new Set(evs.map((e) => e.visitor_id)).size
@@ -217,6 +232,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             clicks: evs.length,
             uniqueVisitors,
             returningClicks,
+            bySource: sourceBreakdown(l.sources, evs),
           }
         }),
       )
@@ -232,14 +248,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // ownership check
       const { data: link } = await supabase
         .from('business_tracking_links')
-        .select('id, name, slug, destination_url, is_internal, is_active, created_at, user_id')
+        .select('id, name, slug, destination_url, is_internal, is_active, created_at, user_id, sources')
         .eq('id', linkId)
         .maybeSingle()
       if (!link || link.user_id !== userId) return res.status(404).json({ error: 'not found' })
 
       const { data: events } = await supabase
         .from('business_tracking_events')
-        .select('visitor_id, is_returning, country, city, duration_seconds, created_at')
+        .select('visitor_id, is_returning, country, city, duration_seconds, created_at, source_key')
         .eq('link_id', linkId)
         .order('created_at', { ascending: true })
       const evs = events || []
@@ -295,17 +311,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           hasDurationData: durations.length > 0,
           byCountry,
           timeseries,
+          bySource: sourceBreakdown(link.sources, evs),
         },
       })
     }
 
     // ══════════ TOGGLE / UPDATE ══════════
     if (action === 'update' && req.method === 'POST') {
-      const { id, user_id, is_active, name } = req.body || {}
+      const { id, user_id, is_active, name, sources } = req.body || {}
       if (!id || !user_id) return res.status(400).json({ error: 'id and user_id required' })
       const patch: Record<string, any> = {}
       if (typeof is_active === 'boolean') patch.is_active = is_active
       if (typeof name === 'string') patch.name = name.slice(0, 120)
+      if (Array.isArray(sources)) patch.sources = normalizeSources(sources)
       const { error } = await supabase
         .from('business_tracking_links')
         .update(patch)

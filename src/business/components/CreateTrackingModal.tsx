@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { X, Copy, Check, Loader2, Link as LinkIcon, Radar, ExternalLink, Info } from 'lucide-react'
+import { X, Copy, Check, Loader2, Link as LinkIcon, Radar, ExternalLink, Info, Plus } from 'lucide-react'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
+import { type SourceEntry, MAX_SOURCES, normalizeSources, withSourceParam } from '../../lib/campaignSources'
 
 interface CreatedLink {
   id: string
@@ -8,6 +9,7 @@ interface CreatedLink {
   slug: string
   destination_url: string
   is_internal: boolean
+  sources?: SourceEntry[] | null
 }
 
 interface Props {
@@ -34,6 +36,12 @@ const TT = {
     redirects_to: 'Redirige vers',
     done: 'Terminé',
     err: 'Erreur lors de la création',
+    sources_label: 'Sources (optionnel)',
+    sources_hint: 'Un lien par source (Instagram, YouTube…) pour savoir d\'où viennent les clics. Le lien de base reste le lien principal.',
+    sources_ph: 'Ex. Instagram',
+    add: 'Ajouter', remove: 'Retirer',
+    main_link: 'Lien principal',
+    links_generated: 'Liens de tracking créés',
   },
   en: {
     title: 'Create a tracking',
@@ -51,6 +59,12 @@ const TT = {
     redirects_to: 'Redirects to',
     done: 'Done',
     err: 'Error while creating',
+    sources_label: 'Sources (optional)',
+    sources_hint: 'One link per source (Instagram, YouTube…) to know where clicks come from. The base link stays the main link.',
+    sources_ph: 'e.g. Instagram',
+    add: 'Add', remove: 'Remove',
+    main_link: 'Main link',
+    links_generated: 'Tracking links created',
   },
 }
 
@@ -62,11 +76,28 @@ export function CreateTrackingModal({ isOpen, onClose, userId, onCreated }: Prop
   const [loading, setLoading] = useState(false)
   const [created, setCreated] = useState<CreatedLink | null>(null)
   const [copied, setCopied] = useState(false)
+  const [sources, setSources] = useState<SourceEntry[]>([])
+  const [newSource, setNewSource] = useState('')
+  const [copiedKey, setCopiedKey] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   if (!isOpen) return null
 
   const shortUrl = created ? `${window.location.origin}/t/${created.slug}` : ''
+  const createdSources = normalizeSources(created?.sources)
+
+  const addSource = () => {
+    const n = newSource.trim()
+    if (!n) return
+    setSources(normalizeSources([...sources, { key: '', name: n }]))
+    setNewSource('')
+  }
+
+  const copySourceUrl = (key: string, url: string) => {
+    navigator.clipboard.writeText(url)
+    setCopiedKey(key)
+    setTimeout(() => setCopiedKey(null), 2000)
+  }
 
   const handleCreate = async () => {
     if (!name.trim() || !dest.trim() || !userId) return
@@ -76,7 +107,7 @@ export function CreateTrackingModal({ isOpen, onClose, userId, onCreated }: Prop
       const res = await fetch('/api/track?action=create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, name: name.trim(), destination_url: dest.trim() }),
+        body: JSON.stringify({ user_id: userId, name: name.trim(), destination_url: dest.trim(), sources }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || t.err)
@@ -98,6 +129,7 @@ export function CreateTrackingModal({ isOpen, onClose, userId, onCreated }: Prop
 
   const handleClose = () => {
     setName(''); setDest(''); setCreated(null); setCopied(false); setError(null); setLoading(false)
+    setSources([]); setNewSource(''); setCopiedKey(null)
     onClose()
   }
 
@@ -145,6 +177,43 @@ export function CreateTrackingModal({ isOpen, onClose, userId, onCreated }: Prop
               />
               <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1.5">{t.dest_hint}</p>
             </div>
+            {/* Sources : un lien par source (/t/:slug?s=<clé>) */}
+            <div>
+              <label className="block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400 mb-2">{t.sources_label}</label>
+              {sources.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {sources.map((src) => (
+                    <span key={src.key} className="inline-flex items-center gap-1 rounded-full bg-red-500/10 text-red-700 dark:text-red-400 pl-3 pr-1 py-1 text-xs font-bold">
+                      {src.name}
+                      <button type="button" onClick={() => setSources(sources.filter((x) => x.key !== src.key))} aria-label={t.remove} className="p-0.5 rounded-full hover:bg-red-500/20">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              {sources.length < MAX_SOURCES && (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newSource}
+                    onChange={(e) => setNewSource(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSource() } }}
+                    placeholder={t.sources_ph}
+                    className="flex-1 min-w-0 rounded-xl bg-white dark:bg-neutral-800 border border-stone-300 dark:border-neutral-600 py-3 sm:py-2.5 px-4 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 dark:placeholder:text-neutral-500 outline-none focus:ring-2 focus:ring-stone-900/10"
+                  />
+                  <button
+                    type="button"
+                    onClick={addSource}
+                    disabled={!newSource.trim()}
+                    className="shrink-0 flex items-center gap-1 rounded-xl border border-stone-300 dark:border-neutral-600 px-3 text-sm font-bold text-stone-700 dark:text-neutral-200 hover:bg-stone-50 dark:hover:bg-neutral-800 disabled:opacity-40 transition-colors"
+                  >
+                    <Plus className="h-4 w-4" /> {t.add}
+                  </button>
+                </div>
+              )}
+              <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1.5">{t.sources_hint}</p>
+            </div>
 
             {error && <p className="text-xs text-red-500">{error}</p>}
 
@@ -159,7 +228,7 @@ export function CreateTrackingModal({ isOpen, onClose, userId, onCreated }: Prop
         ) : (
           <div className="space-y-4">
             <div className="rounded-xl border border-red-200/60 dark:border-red-900/40 bg-red-50/50 dark:bg-red-950/20 p-4">
-              <p className="text-sm font-semibold text-red-700 dark:text-red-400 mb-2">{t.generated}</p>
+              <p className="text-sm font-semibold text-red-700 dark:text-red-400 mb-2">{createdSources.length > 0 ? `${t.links_generated} · ${t.main_link}` : t.generated}</p>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
@@ -176,6 +245,28 @@ export function CreateTrackingModal({ isOpen, onClose, userId, onCreated }: Prop
                 </button>
               </div>
               <p className="text-xs text-red-600/80 dark:text-red-400/70 mt-2">{t.copy_hint}</p>
+              {createdSources.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-red-200/60 dark:border-red-900/40 space-y-1.5">
+                  {createdSources.map((src) => {
+                    const url = withSourceParam(shortUrl, src.key, 's')
+                    return (
+                      <div key={src.key} className="flex items-center gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-bold text-stone-800 dark:text-neutral-100 truncate">{src.name}</div>
+                          <div className="text-[11px] font-mono text-stone-500 dark:text-neutral-400 truncate">{url}</div>
+                        </div>
+                        <button
+                          onClick={() => copySourceUrl(src.key, url)}
+                          aria-label="Copier"
+                          className="shrink-0 rounded-full bg-white dark:bg-neutral-800 border border-red-200 dark:border-red-900/50 p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 active:scale-95 transition-all"
+                        >
+                          {copiedKey === src.key ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
 
             <div className="rounded-xl border border-stone-200/60 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 p-3.5 text-xs text-stone-500 dark:text-neutral-400">

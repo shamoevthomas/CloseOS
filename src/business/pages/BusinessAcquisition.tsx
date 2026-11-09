@@ -22,6 +22,20 @@ interface TrackingLink {
   clicks: number
   uniqueVisitors: number
   returningClicks: number
+  sources?: { key: string; name: string }[] | null
+  /** Clics par source (clé null = lien principal) */
+  bySource?: { key: string | null; name: string; clicks: number; uniqueVisitors: number }[]
+}
+
+/** Stats d'une source de campagne (clé null = source principale, lien sans ?src=) */
+interface CampaignSourceStat {
+  key: string | null
+  name: string
+  views: number
+  leads: number
+  wonCount: number
+  totalCA: number
+  conversionRate: number
 }
 
 const TRK = {
@@ -32,6 +46,8 @@ const TRK = {
     clicks: 'clics', unique: 'uniques', recurring: 'récurrents',
     empty: 'Aucun lien de tracking. Créez-en un pour analyser vos clics.',
     view: 'Voir le détail', confirm_delete: 'Supprimer ce lien de tracking et toutes ses données ?',
+    by_source: 'Par source', main_link: 'Lien principal',
+    camp_by_source: 'Par source', col_source: 'Source', col_views: 'Vues', col_leads: 'Leads', col_conv: 'Conv.', col_ca: 'CA',
   },
   en: {
     create: 'Create a tracking',
@@ -40,6 +56,8 @@ const TRK = {
     clicks: 'clicks', unique: 'unique', recurring: 'returning',
     empty: 'No tracking link yet. Create one to analyze your clicks.',
     view: 'View details', confirm_delete: 'Delete this tracking link and all its data?',
+    by_source: 'By source', main_link: 'Main link',
+    camp_by_source: 'By source', col_source: 'Source', col_views: 'Views', col_leads: 'Leads', col_conv: 'Conv.', col_ca: 'Rev.',
   },
 }
 
@@ -56,6 +74,7 @@ interface CampaignStat {
   unqualifiedCount: number
   conversionRate: number
   wonRate: number
+  bySource?: CampaignSourceStat[]
 }
 
 const API_URL = '/api/business'
@@ -347,6 +366,23 @@ export function BusinessAcquisition() {
                   </div>
                 </div>
 
+                {(l.bySource?.length || 0) > 1 && (
+                  <div className="rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200/50 dark:border-neutral-700/40 px-3 py-2">
+                    <p className="text-[9px] uppercase font-bold tracking-wider text-stone-400 dark:text-neutral-500 mb-1">{trk.by_source}</p>
+                    <div className="space-y-1">
+                      {(l.bySource || []).map((b) => (
+                        <div key={b.key || '__main__'} className="flex items-center gap-2 text-xs">
+                          <span className="min-w-0 flex-1 truncate text-stone-600 dark:text-neutral-300">{b.key ? b.name : trk.main_link}</span>
+                          <div className="w-16 h-1 rounded-full bg-stone-200 dark:bg-neutral-700 overflow-hidden">
+                            <div className="h-full rounded-full bg-red-500" style={{ width: `${l.clicks > 0 ? Math.round((b.clicks / l.clicks) * 100) : 0}%` }} />
+                          </div>
+                          <span className="w-8 text-right font-bold tabular-nums text-stone-900 dark:text-white">{b.clicks}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <button
                   onClick={() => setDetailLink({ id: l.id, name: l.name })}
                   className="w-full rounded-full border border-stone-300 dark:border-neutral-600 py-2.5 text-sm font-bold active:scale-[0.98] text-stone-700 dark:text-neutral-200 hover:bg-stone-900 hover:text-white dark:hover:bg-white dark:hover:text-black active:scale-95 transition-all"
@@ -410,6 +446,33 @@ export function BusinessAcquisition() {
                     </div>
                   </div>
                 </div>
+                {(c.bySource?.length || 0) > 1 && (
+                  <div className="mt-5 pt-4 border-t border-stone-200/50 dark:border-neutral-700/40">
+                    <p className="text-[10px] text-stone-500 dark:text-neutral-400 uppercase font-bold tracking-wider sm:tracking-[0.15em] mb-2">{trk.camp_by_source}</p>
+                    <table className="w-full text-xs tabular-nums">
+                      <thead>
+                        <tr className="text-[9px] uppercase tracking-wider text-stone-400 dark:text-neutral-500">
+                          <th className="text-left font-bold pb-1">{trk.col_source}</th>
+                          <th className="text-right font-bold pb-1">{trk.col_views}</th>
+                          <th className="text-right font-bold pb-1">{trk.col_leads}</th>
+                          <th className="text-right font-bold pb-1">{trk.col_conv}</th>
+                          <th className="text-right font-bold pb-1">{trk.col_ca}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(c.bySource || []).map((b) => (
+                          <tr key={b.key || '__main__'} className="border-t border-stone-100 dark:border-neutral-800">
+                            <td className="py-1.5 pr-2 max-w-[7rem] truncate font-bold text-stone-700 dark:text-neutral-200">{b.name}</td>
+                            <td className="py-1.5 text-right text-stone-600 dark:text-neutral-300">{b.views.toLocaleString()}</td>
+                            <td className="py-1.5 text-right text-stone-600 dark:text-neutral-300">{b.leads.toLocaleString()}</td>
+                            <td className="py-1.5 text-right font-bold text-emerald-700 dark:text-emerald-400">{b.conversionRate.toFixed(1)}%</td>
+                            <td className="py-1.5 text-right text-stone-600 dark:text-neutral-300">{formatCurrency(b.totalCA, lang)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
                 <button
                   onClick={() => setFunnelCampaign({ id: c.id, name: c.name })}
                   className="mt-6 w-full flex items-center justify-center gap-2 rounded-xl border border-stone-200 dark:border-neutral-700 py-2.5 text-sm font-bold text-stone-700 dark:text-neutral-200 hover:bg-stone-900 hover:text-white hover:border-stone-900 dark:hover:bg-white dark:hover:text-stone-900 transition-colors"

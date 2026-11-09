@@ -15,6 +15,7 @@ import { CampaignConfirmationEditor } from '../components/CampaignConfirmationEd
 import { type ConfirmationPageConfig, defaultConfirmationPage, normalizeConfirmationPage } from '../../lib/confirmationPage'
 import type { ConditionalRule } from '../../lib/questionnaireConditions'
 import toast from 'react-hot-toast'
+import { type SourceEntry, MAX_SOURCES, normalizeSources, withSourceParam } from '../../lib/campaignSources'
 
 interface CustomField {
   label: string
@@ -43,6 +44,8 @@ interface Campaign {
   name: string
   description: string | null
   source: string
+  /** Sources supplémentaires : un lien par source (/capture/:slug?src=<clé>) */
+  sources?: SourceEntry[] | null
   utm_source: string | null
   utm_medium: string | null
   utm_campaign: string | null
@@ -152,6 +155,9 @@ export function BusinessCampaigns() {
   const [formFormulaId, setFormFormulaId] = useState<string | null>(null)
   const [formDescription, setFormDescription] = useState('')
   const [formSource, setFormSource] = useState('Insta')
+  // Sources supplémentaires de la campagne (la source principale = formSource, lien sans paramètre)
+  const [formExtraSources, setFormExtraSources] = useState<SourceEntry[]>([])
+  const [newExtraSource, setNewExtraSource] = useState('')
   const [formUtmSource, setFormUtmSource] = useState('')
   const [formUtmMedium, setFormUtmMedium] = useState('')
   const [formUtmCampaign, setFormUtmCampaign] = useState('')
@@ -329,7 +335,7 @@ export function BusinessCampaigns() {
   }, [effectiveUserId])
 
   const resetForm = () => {
-    setFormName(''); setFormDescription(''); setFormSource('Insta')
+    setFormName(''); setFormDescription(''); setFormSource('Insta'); setFormExtraSources([]); setNewExtraSource('')
     setFormUtmSource(''); setFormUtmMedium(''); setFormUtmCampaign('')
     setFormRedirectUrl('')
     setFormLandingTitle(''); setFormLandingSubtitle(''); setFormLandingText(''); setFormLandingVideoUrl('')
@@ -356,6 +362,7 @@ export function BusinessCampaigns() {
     setEditingCampaign(campaign)
     setFormName(campaign.name); setFormDescription(campaign.description || '')
     setFormSource(campaign.source || 'Insta')
+    setFormExtraSources(normalizeSources(campaign.sources)); setNewExtraSource('')
     setFormUtmSource(campaign.utm_source || ''); setFormUtmMedium(campaign.utm_medium || '')
     setFormUtmCampaign(campaign.utm_campaign || '')
     setFormRedirectUrl(campaign.redirect_url || '')
@@ -429,6 +436,7 @@ export function BusinessCampaigns() {
 
   const getPayload = () => ({
     user_id: effectiveUserId, name: formName, description: formDescription, source: formSource,
+    sources: formExtraSources,
     utm_source: formUtmSource || null, utm_medium: formUtmMedium || null, utm_campaign: formUtmCampaign || null,
     custom_fields: formCustomFields,
     landing_title: formLandingTitle || null, landing_subtitle: formLandingSubtitle || null,
@@ -531,6 +539,8 @@ export function BusinessCampaigns() {
   const [embedModalCampaign, setEmbedModalCampaign] = useState<Campaign | null>(null)
   const [embedModalFormat, setEmbedModalFormat] = useState<'page' | 'iframe' | 'popup'>('page')
   const [embedTab, setEmbedTab] = useState<'code' | 'style'>('code')
+  // Source dont on affiche le lien / le code (null = source principale)
+  const [embedSourceKey, setEmbedSourceKey] = useState<string | null>(null)
 
   // Style customization
   const [styleFont, setStyleFont] = useState('Inter, system-ui, sans-serif')
@@ -555,6 +565,7 @@ export function BusinessCampaigns() {
     setEmbedModalCampaign(campaign)
     setEmbedModalFormat(format)
     setEmbedTab('code')
+    setEmbedSourceKey(null)
     setStyleFont('Inter, system-ui, sans-serif')
     setStylePrimaryColor('#2563eb')
     setStyleBgColor('#ffffff')
@@ -563,10 +574,13 @@ export function BusinessCampaigns() {
     setStyleLayout('vertical')
   }
 
-  const getCaptureUrl = (slug: string) => `${window.location.origin}/capture/${slug}`
+  const getCaptureBaseUrl = (slug: string) => `${window.location.origin}/capture/${slug}`
+  // Lien de la source sélectionnée (?src=<clé>) ; source principale = lien historique sans paramètre
+  const getCaptureUrl = (slug: string) => withSourceParam(getCaptureBaseUrl(slug), embedSourceKey, 'src')
 
   const getStyleParams = () => {
     const params = new URLSearchParams()
+    if (embedSourceKey) params.set('src', embedSourceKey)
     params.set('embed', 'true')
     if (stylePrimaryColor !== '#2563eb') params.set('pc', stylePrimaryColor.replace('#', ''))
     if (styleBgColor !== '#ffffff') params.set('bg', styleBgColor.replace('#', ''))
@@ -577,7 +591,7 @@ export function BusinessCampaigns() {
     return params.toString()
   }
 
-  const getStyledIframeUrl = (slug: string) => `${getCaptureUrl(slug)}?${getStyleParams()}`
+  const getStyledIframeUrl = (slug: string) => `${getCaptureBaseUrl(slug)}?${getStyleParams()}`
 
   const getIframeCode = useMemo(() => {
     if (!embedModalCampaign) return ''
@@ -595,7 +609,7 @@ window.addEventListener('message',function(e){
   }
 });
 </script>`
-  }, [embedModalCampaign, stylePrimaryColor, styleBgColor, styleTextColor, styleRadius, styleFont, embedLayout])
+  }, [embedModalCampaign, embedSourceKey, stylePrimaryColor, styleBgColor, styleTextColor, styleRadius, styleFont, embedLayout])
 
   const getPopupCode = useMemo(() => {
     if (!embedModalCampaign) return ''
@@ -627,7 +641,7 @@ window.addEventListener('message',function(e){
   });
 })();
 </script>`
-  }, [embedModalCampaign, stylePrimaryColor, styleBgColor, styleTextColor, styleRadius, styleFont, embedLayout])
+  }, [embedModalCampaign, embedSourceKey, stylePrimaryColor, styleBgColor, styleTextColor, styleRadius, styleFont, embedLayout])
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text); toast.success(`${label} ${t.campaigns_copied}`)
@@ -710,7 +724,11 @@ window.addEventListener('message',function(e){
                   </div>
                   <div className="min-w-0">
                     <h3 className="text-base sm:text-xl font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white max-sm:truncate">{campaign.name}</h3>
-                    <p className="text-xs sm:text-sm text-[#444748] dark:text-neutral-400 max-sm:truncate">Source: {campaign.source}</p>
+                    <p className="text-xs sm:text-sm text-[#444748] dark:text-neutral-400 max-sm:truncate">
+                      {(campaign.sources?.length || 0) > 0
+                        ? <>Sources : {[campaign.source, ...(campaign.sources || []).map((x) => x.name)].join(', ')}</>
+                        : <>Source: {campaign.source}</>}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 shrink-0">
@@ -867,6 +885,62 @@ window.addEventListener('message',function(e){
                       </select>
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#747878] pointer-events-none" />
                     </div>
+                  </div>
+                  {/* Sources supplémentaires : même campagne, un lien par source */}
+                  <div>
+                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-1">{lang === 'fr' ? 'Autres sources (un lien par source)' : 'Other sources (one link per source)'}</label>
+                    <p className="text-[11px] text-[#444748]/60 dark:text-neutral-500 mb-2">
+                      {lang === 'fr'
+                        ? `Le lien de base reste attribué à « ${formSource} ». Chaque source ajoutée a son propre lien : les vues, leads et ventes sont comptés par source.`
+                        : `The base link stays attributed to “${formSource}”. Each added source gets its own link: views, leads and sales are counted per source.`}
+                    </p>
+                    {formExtraSources.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {formExtraSources.map((src) => (
+                          <span key={src.key} className="inline-flex items-center gap-1.5 rounded-full bg-[#006c49]/10 text-[#006c49] dark:text-emerald-400 pl-3 pr-1.5 py-1 text-xs font-bold">
+                            {src.name}
+                            <span className="font-mono font-normal text-[10px] opacity-60">?src={src.key}</span>
+                            <button type="button" onClick={() => setFormExtraSources(formExtraSources.filter((x) => x.key !== src.key))} aria-label={lang === 'fr' ? 'Retirer' : 'Remove'} className="p-0.5 rounded-full hover:bg-[#006c49]/20">
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {formExtraSources.length < MAX_SOURCES && (
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newExtraSource}
+                          onChange={(e) => setNewExtraSource(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key !== 'Enter') return
+                            e.preventDefault()
+                            const name = newExtraSource.trim()
+                            if (!name) return
+                            setFormExtraSources(normalizeSources([...formExtraSources, { key: '', name }])); setNewExtraSource('')
+                          }}
+                          list="closeos-campaign-sources"
+                          placeholder={lang === 'fr' ? 'Ex. TikTok, YouTube, Newsletter…' : 'e.g. TikTok, YouTube, Newsletter…'}
+                          className={`${smallInputCls} flex-1`}
+                        />
+                        <datalist id="closeos-campaign-sources">
+                          {allSources.filter((x) => x !== formSource && !formExtraSources.some((e) => e.name === x)).map((x) => <option key={x} value={x} />)}
+                        </datalist>
+                        <button
+                          type="button"
+                          disabled={!newExtraSource.trim()}
+                          onClick={() => {
+                            const name = newExtraSource.trim()
+                            if (!name) return
+                            setFormExtraSources(normalizeSources([...formExtraSources, { key: '', name }])); setNewExtraSource('')
+                          }}
+                          className="shrink-0 self-start flex items-center gap-1 rounded-full bg-[#1b1c1b] dark:bg-white text-white dark:text-[#1b1c1b] px-4 py-2.5 text-xs font-bold disabled:opacity-40 transition-opacity"
+                        >
+                          <Plus className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Ajouter' : 'Add'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_internal_desc}</label>
@@ -2122,6 +2196,26 @@ window.addEventListener('message',function(e){
               </button>
             </div>
 
+            {/* Choix de la source : chaque source a son propre lien et son propre code */}
+            {(embedModalCampaign.sources?.length || 0) > 0 && (
+              <div className="px-5 sm:px-8 pb-3 flex-shrink-0">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 ml-1">{lang === 'fr' ? 'Lien pour la source' : 'Link for source'}</p>
+                <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
+                  {[{ key: null as string | null, name: embedModalCampaign.source || 'Direct' }, ...(embedModalCampaign.sources || [])].map((src) => (
+                    <button
+                      key={src.key || '__main__'}
+                      onClick={() => setEmbedSourceKey(src.key)}
+                      className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold transition-all ${
+                        embedSourceKey === src.key ? 'bg-[#006c49] text-white shadow' : 'bg-[#f5f3f2] dark:bg-neutral-800 text-[#444748] dark:text-neutral-300 hover:bg-[#eae8e7] dark:hover:bg-neutral-700'
+                      }`}
+                    >
+                      {src.name}{!src.key && <span className="ml-1 font-normal opacity-70">{lang === 'fr' ? '(principale)' : '(main)'}</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Tabs - hidden for page format */}
             {embedModalFormat !== 'page' && (
               <div className="grid grid-cols-2 sm:flex px-5 sm:px-8 pb-2 sm:pb-0 flex-shrink-0 gap-1">
@@ -2274,7 +2368,7 @@ window.addEventListener('message',function(e){
                           if (styleRadius !== 12) params.set('br', String(styleRadius))
                           if (styleFont !== 'Inter, system-ui, sans-serif') params.set('font', styleFont.split(',')[0].trim())
                           if (styleLayout === 'horizontal') params.set('layout', 'horizontal')
-                          const url = params.toString() ? `${getCaptureUrl(embedModalCampaign.slug)}?${params.toString()}` : getCaptureUrl(embedModalCampaign.slug)
+                          const url = params.toString() ? `${getCaptureUrl(embedModalCampaign.slug)}${embedSourceKey ? '&' : '?'}${params.toString()}` : getCaptureUrl(embedModalCampaign.slug)
                           copyToClipboard(url, t.campaigns_custom_link)
                         }}
                         className="w-full flex items-center justify-center gap-2 rounded-full bg-[#1b1c1b] px-4 py-3 text-sm font-bold text-white hover:scale-[1.02] active:scale-95 transition-all"
@@ -2298,7 +2392,7 @@ window.addEventListener('message',function(e){
                             if (styleRadius !== 12) params.set('br', String(styleRadius))
                             if (styleFont !== 'Inter, system-ui, sans-serif') params.set('font', styleFont.split(',')[0].trim())
                             if (styleLayout === 'horizontal') params.set('layout', 'horizontal')
-                            return params.toString() ? `${getCaptureUrl(embedModalCampaign.slug)}?${params.toString()}` : getCaptureUrl(embedModalCampaign.slug)
+                            return params.toString() ? `${getCaptureUrl(embedModalCampaign.slug)}${embedSourceKey ? '&' : '?'}${params.toString()}` : getCaptureUrl(embedModalCampaign.slug)
                           })()}
                           className="w-full h-full min-h-[450px]"
                           style={{ border: 'none' }}

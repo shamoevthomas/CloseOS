@@ -279,7 +279,7 @@ function parisToIso(date, time) {
 const PROSPECT_FIELDS = 'id,contact,firstName,lastName,email,phone,stage,value,source,notes,campaign_id,formula_id,assigned_to,assigned_setter,created_at,last_contact,contacted_at,noshow_at,loss_reason,relance_step,last_relance_at,responded_at'
 const PROSPECT_WRITABLE = new Set(['contact', 'firstName', 'lastName', 'email', 'phone', 'stage', 'value', 'source', 'notes', 'campaign_id', 'formula_id', 'assigned_to', 'assigned_setter', 'loss_reason', 'loss_details', 'probability', 'payment_type', 'installments', 'timezone', 'company'])
 const BOOKING_LINK_WRITABLE = new Set(['label', 'duration', 'description', 'redirect_url', 'team_member_id', 'email_enabled', 'email_required', 'phone_enabled', 'phone_required', 'google_meet_enabled', 'multi_booking_enabled', 'multi_booking_max', 'multi_booking_period', 'multi_booking_max_per_period', 'multi_booking_gap_days'])
-const CAMPAIGN_WRITABLE = new Set(['name', 'description', 'source', 'utm_source', 'utm_medium', 'utm_campaign', 'custom_fields', 'redirect_url', 'landing_title', 'landing_subtitle', 'landing_text', 'landing_video_url', 'email_required', 'phone_required', 'formula_id', 'capture_type', 'popup_delay', 'booking_duration', 'booking_title', 'booking_description', 'booking_with', 'booking_assign_mode', 'booking_assigned_members', 'booking_distribution', 'booking_via_setter', 'setter_assign_mode', 'setter_assigned_members', 'setter_distribution', 'team_id', 'is_active', 'confirmation_page'])
+const CAMPAIGN_WRITABLE = new Set(['name', 'description', 'source', 'sources', 'utm_source', 'utm_medium', 'utm_campaign', 'custom_fields', 'redirect_url', 'landing_title', 'landing_subtitle', 'landing_text', 'landing_video_url', 'email_required', 'phone_required', 'formula_id', 'capture_type', 'popup_delay', 'booking_duration', 'booking_title', 'booking_description', 'booking_with', 'booking_assign_mode', 'booking_assigned_members', 'booking_distribution', 'booking_via_setter', 'setter_assign_mode', 'setter_assigned_members', 'setter_distribution', 'team_id', 'is_active', 'confirmation_page'])
 const TEAM_MEMBER_WRITABLE = new Set(['role', 'team_id', 'owner_assignable', 'owner_assignable_roles', 'can_manage_campaigns'])
 const FORM_WRITABLE = new Set(['name', 'description', 'blocks', 'settings', 'is_active', 'crm_enabled', 'crm_mapping', 'crm_source', 'crm_stage', 'crm_campaign_id', 'notify_enabled', 'notify_email'])
 
@@ -818,6 +818,8 @@ const impl = {
       campaigns: (data.campaigns || []).map((c) => ({
         id: c.id, name: c.name, capture_type: c.capture_type, is_active: c.is_active, source: c.source,
         slug: c.slug, url: `${ctx.base}/capture/${c.slug}`, leads: c.business_prospects?.[0]?.count || 0,
+        // Un lien par source supplémentaire (le lien sans paramètre = source principale)
+        source_links: (c.sources || []).map((s) => ({ key: s.key, name: s.name, url: `${ctx.base}/capture/${c.slug}?src=${encodeURIComponent(s.key)}` })),
         stripe_enabled: c.stripe_enabled, booking_with: c.booking_with,
       })),
     }
@@ -829,7 +831,10 @@ const impl = {
     if (body.confirmation_page) body.confirmation_page = normalizeConfirmationPage(body.confirmation_page)
     const data = await callApi(ctx, '/api/business', 'campaigns-create', 'POST', { body })
     const c = data.campaign
-    return { campaign: c, url: `${ctx.base}/capture/${c.slug}` }
+    return {
+      campaign: c, url: `${ctx.base}/capture/${c.slug}`,
+      source_links: (c.sources || []).map((s) => ({ key: s.key, name: s.name, url: `${ctx.base}/capture/${c.slug}?src=${encodeURIComponent(s.key)}` })),
+    }
   },
 
   async campaign_update(ctx, a) {
@@ -1634,21 +1639,27 @@ const impl = {
     if (action === 'list') {
       const data = await callApi(ctx, '/api/track', 'list', 'GET', { query: { user_id: ctx.owner } })
       return {
-        tracking_links: (data.links || []).map((l) => ({ ...l, url: `${ctx.base}/t/${l.slug}` })),
+        tracking_links: (data.links || []).map((l) => ({
+          ...l, url: `${ctx.base}/t/${l.slug}`,
+          source_links: (l.sources || []).map((s) => ({ key: s.key, name: s.name, url: `${ctx.base}/t/${l.slug}?s=${encodeURIComponent(s.key)}` })),
+        })),
       }
     }
     if (action === 'create') {
       if (!a.name || !a.destination_url) throw new Error('name et destination_url requis.')
       const data = await callApi(ctx, '/api/track', 'create', 'POST', {
-        body: { user_id: ctx.owner, name: a.name, destination_url: a.destination_url },
+        body: { user_id: ctx.owner, name: a.name, destination_url: a.destination_url, ...(Array.isArray(a.sources) ? { sources: a.sources } : {}) },
       })
       const link = data.link || data
-      return { tracking_link: link, url: link.slug ? `${ctx.base}/t/${link.slug}` : undefined }
+      return {
+        tracking_link: link, url: link.slug ? `${ctx.base}/t/${link.slug}` : undefined,
+        source_links: link.slug ? (link.sources || []).map((s) => ({ key: s.key, name: s.name, url: `${ctx.base}/t/${link.slug}?s=${encodeURIComponent(s.key)}` })) : [],
+      }
     }
     if (action === 'update') {
       if (!a.id) throw new Error('id requis.')
       return await callApi(ctx, '/api/track', 'update', 'POST', {
-        body: { user_id: ctx.owner, id: a.id, ...(a.name !== undefined ? { name: a.name } : {}), ...(a.is_active !== undefined ? { is_active: a.is_active } : {}) },
+        body: { user_id: ctx.owner, id: a.id, ...(a.name !== undefined ? { name: a.name } : {}), ...(a.is_active !== undefined ? { is_active: a.is_active } : {}), ...(Array.isArray(a.sources) ? { sources: a.sources } : {}) },
       })
     }
     if (action === 'delete') {
@@ -1752,7 +1763,9 @@ const TOOLS = [
     description: "Crée une campagne de capture. capture_type : 'with_rdv' (le prospect réserve un créneau) ou 'without_rdv' (simple inscription). booking_with : 'closer' ou 'setter' ; booking_assign_mode : 'all_role' | 'specific' | 'multiple'. Renvoie l'URL publique /capture/<slug>.",
     inputSchema: obj({
       name: str('Nom de la campagne'), capture_type: str("'with_rdv' | 'without_rdv' (défaut with_rdv)"),
-      source: str('Source des leads'), landing_title: str('Titre de la landing'), landing_subtitle: str('Sous-titre'),
+      source: str('Source principale des leads (lien sans paramètre)'),
+      sources: { type: 'array', items: { type: 'object' }, description: "Sources supplémentaires [{name}] : un lien par source (/capture/<slug>?src=<clé>), vues/leads/CA comptés par source" },
+      landing_title: str('Titre de la landing'), landing_subtitle: str('Sous-titre'),
       landing_video_url: str('URL vidéo de la landing'), booking_duration: num('Durée du RDV en minutes'),
       booking_with: str("'closer' | 'setter'"), booking_assign_mode: str("'all_role' | 'specific' | 'multiple'"),
       booking_assigned_members: { type: 'array', items: { type: 'string' }, description: 'Ids membres si specific/multiple' },
@@ -1951,17 +1964,18 @@ const TOOLS = [
   },
   {
     name: 'tracking_links_manage',
-    description: "Liens de tracking courts (/t/<slug>, page Acquisition) : redirection vers une destination en enregistrant chaque clic (pays, visiteurs uniques/récurrents, referrer, temps sur page). Actions : list, create (name + destination_url), update (name / is_active), delete (confirm=true), stats (id → clics, pays, récurrence).",
+    description: "Liens de tracking courts (/t/<slug>, page Acquisition) : redirection vers une destination en enregistrant chaque clic (pays, visiteurs uniques/récurrents, referrer, temps sur page). Actions : list, create (name + destination_url [+ sources]), update (name / is_active / sources), delete (confirm=true), stats (id → clics, pays, récurrence, clics par source). sources = [{name}] : un lien par source (/t/<slug>?s=<clé>), le lien sans paramètre reste le lien principal.",
     inputSchema: obj({
       action: str("'list' (défaut) | 'create' | 'update' | 'delete' | 'stats'"),
       id: str('Id du lien (update/delete/stats)'), name: str('Nom du lien'),
       destination_url: str('URL de destination (create)'), is_active: bool('Activer/désactiver (update)'),
+      sources: { type: 'array', items: { type: 'object' }, description: 'Sources [{name}] (create/update) : remplace la liste ; garder les {key,name} existants pour ne pas casser les liens déjà partagés' },
       confirm: bool('Requis pour delete'),
     }),
   },
   {
     name: 'acquisition_stats',
-    description: 'Statistiques d\'acquisition par campagne (vues, leads, conversion, no-shows).',
+    description: 'Statistiques d\'acquisition par campagne (vues, leads, conversion, no-shows, et bySource : détail par source/lien).',
     inputSchema: obj({}),
   },
 ]

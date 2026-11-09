@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
-import { X, Loader2, MousePointerClick, Users, Repeat, Clock, Globe, Copy, Check } from 'lucide-react'
+import { X, Loader2, MousePointerClick, Users, Repeat, Clock, Globe, Copy, Check, Plus, Split } from 'lucide-react'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { flagEmoji, countryName } from '../lib/countryGeo'
+import { type SourceEntry, MAX_SOURCES, normalizeSources, withSourceParam } from '../../lib/campaignSources'
 
 // three.js est lourd → on ne le charge que quand la pop-up détail s'ouvre
 const VisitorGlobe = lazy(() => import('./VisitorGlobe').then((m) => ({ default: m.VisitorGlobe })))
@@ -17,9 +18,12 @@ interface Stats {
   hasDurationData: boolean
   byCountry: CountryStat[]
   timeseries: { day: string; count: number }[]
+  /** Clics par source (clé null = lien principal) */
+  bySource?: { key: string | null; name: string; clicks: number; uniqueVisitors: number }[]
 }
 interface LinkRow {
   id: string; name: string; slug: string; destination_url: string; is_internal: boolean
+  sources?: SourceEntry[] | null
 }
 
 interface Props {
@@ -36,12 +40,26 @@ const TT = {
     returning_clicks: 'clics récurrents', avg_time: 'Temps moyen / page', no_time: 'Non mesurable (destination externe)',
     by_country: 'Visiteurs par pays', countries: 'pays', country: 'pays', no_data: 'Aucun clic pour le moment',
     unknown: 'Inconnu',
+    by_source: 'Liens par source',
+    by_source_desc: 'Un lien par source : chaque clic est rattaché à sa source.',
+    main_link: 'Lien principal',
+    add_source_ph: 'Ex. Instagram, YouTube, Newsletter…',
+    add: 'Ajouter', remove: 'Retirer',
+    remove_confirm: 'Retirer cette source ? Les clics déjà enregistrés et les liens déjà partagés seront comptés dans le lien principal.',
+    clicks_short: 'clics', unique_short: 'uniques',
   },
   en: {
     clicks: 'Total clicks', unique: 'Unique visitors', recurring: 'Returning', neww: 'New',
     returning_clicks: 'returning clicks', avg_time: 'Avg. time / page', no_time: 'Not measurable (external destination)',
     by_country: 'Visitors by country', countries: 'countries', country: 'country', no_data: 'No clicks yet',
     unknown: 'Unknown',
+    by_source: 'Links per source',
+    by_source_desc: 'One link per source: every click is attributed to its source.',
+    main_link: 'Main link',
+    add_source_ph: 'e.g. Instagram, YouTube, Newsletter…',
+    add: 'Add', remove: 'Remove',
+    remove_confirm: 'Remove this source? Clicks already recorded and links already shared will count toward the main link.',
+    clicks_short: 'clicks', unique_short: 'unique',
   },
 }
 
@@ -60,10 +78,13 @@ export function TrackingDetailModal({ isOpen, onClose, linkId, linkName, userId 
   const [stats, setStats] = useState<Stats | null>(null)
   const [link, setLink] = useState<LinkRow | null>(null)
   const [copied, setCopied] = useState(false)
+  const [copiedKey, setCopiedKey] = useState<string | null>(null)
+  const [newSource, setNewSource] = useState('')
+  const [savingSources, setSavingSources] = useState(false)
 
-  const fetchStats = useCallback(async () => {
+  const fetchStats = useCallback(async (silent = false) => {
     if (!linkId || !userId) return
-    setLoading(true)
+    if (!silent) setLoading(true)
     try {
       const res = await fetch(`/api/track?action=stats&link_id=${linkId}&user_id=${userId}`)
       const data = await res.json()
@@ -88,6 +109,43 @@ export function TrackingDetailModal({ isOpen, onClose, linkId, linkName, userId 
   // map pour le globe : iso2 minuscule -> count
   const counts: Record<string, number> = {}
   realCountries.forEach((c) => { counts[c.code.toLowerCase()] = c.count })
+
+  const sources = normalizeSources(link?.sources)
+  // Lignes « par source » : lien principal + sources déclarées (clics à 0 si aucune donnée)
+  const sourceRows = [{ key: null as string | null, name: t.main_link }, ...sources].map((src) => {
+    const st = stats?.bySource?.find((b) => b.key === src.key)
+    return { ...src, clicks: st?.clicks || 0, uniqueVisitors: st?.uniqueVisitors || 0, url: withSourceParam(shortUrl, src.key, 's') }
+  })
+
+  const copySourceUrl = (key: string | null, url: string) => {
+    navigator.clipboard.writeText(url)
+    setCopiedKey(key || '__main__')
+    setTimeout(() => setCopiedKey(null), 2000)
+  }
+
+  const saveSources = async (next: SourceEntry[]) => {
+    if (!linkId || !userId) return
+    setSavingSources(true)
+    try {
+      await fetch('/api/track?action=update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: linkId, user_id: userId, sources: next }),
+      })
+      await fetchStats(true)
+    } catch (e) {
+      console.error('tracking sources update error', e)
+    } finally {
+      setSavingSources(false)
+    }
+  }
+
+  const addSource = () => {
+    const name = newSource.trim()
+    if (!name) return
+    setNewSource('')
+    saveSources(normalizeSources([...sources, { key: '', name }]))
+  }
 
   const handleCopy = () => {
     if (!shortUrl) return
@@ -126,6 +184,63 @@ export function TrackingDetailModal({ isOpen, onClose, linkId, linkName, userId 
             </button>
           </div>
         </div>
+
+        {link && !loading && (
+          <div className="mb-6 sm:mb-10 rounded-2xl border border-stone-200/60 dark:border-neutral-700/40 bg-stone-50/60 dark:bg-white/5 p-3.5 sm:p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <Split className="h-4 w-4 text-red-600 shrink-0" />
+              <h3 className="text-sm sm:text-base font-extrabold text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.by_source}</h3>
+            </div>
+            <p className="text-xs text-stone-500 dark:text-neutral-400 mb-3">{t.by_source_desc}</p>
+            <div className="space-y-1.5">
+              {sourceRows.map((r) => (
+                <div key={r.key || '__main__'} className="flex items-center gap-2 sm:gap-3 rounded-xl bg-white dark:bg-neutral-900/60 border border-stone-200/50 dark:border-neutral-700/40 px-3 py-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-bold text-stone-900 dark:text-white truncate">{r.name}</div>
+                    <div className="text-[11px] font-mono text-stone-400 dark:text-neutral-500 truncate">{r.url}</div>
+                  </div>
+                  <div className="shrink-0 text-right tabular-nums">
+                    <div className="text-sm font-black text-stone-900 dark:text-white">{r.clicks} <span className="text-[10px] font-bold uppercase text-stone-400 dark:text-neutral-500">{t.clicks_short}</span></div>
+                    <div className="text-[10px] text-stone-400 dark:text-neutral-500">{r.uniqueVisitors} {t.unique_short}</div>
+                  </div>
+                  <button onClick={() => copySourceUrl(r.key, r.url)} aria-label="Copier" className="shrink-0 p-2 rounded-full text-stone-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
+                    {copiedKey === (r.key || '__main__') ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                  </button>
+                  {r.key && (
+                    <button
+                      onClick={() => { if (window.confirm(t.remove_confirm)) saveSources(sources.filter((x) => x.key !== r.key)) }}
+                      disabled={savingSources}
+                      aria-label={t.remove}
+                      title={t.remove}
+                      className="shrink-0 p-2 -ml-1 rounded-full text-stone-300 dark:text-neutral-600 hover:text-red-500 transition-colors disabled:opacity-40"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {sources.length < MAX_SOURCES && (
+              <div className="flex gap-2 mt-3">
+                <input
+                  type="text"
+                  value={newSource}
+                  onChange={(e) => setNewSource(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSource() } }}
+                  placeholder={t.add_source_ph}
+                  className="flex-1 min-w-0 rounded-full bg-white dark:bg-neutral-800 border border-stone-300 dark:border-neutral-600 py-2 px-4 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 dark:placeholder:text-neutral-500 outline-none focus:ring-2 focus:ring-stone-900/10"
+                />
+                <button
+                  onClick={addSource}
+                  disabled={savingSources || !newSource.trim()}
+                  className="shrink-0 flex items-center gap-1.5 rounded-full bg-stone-900 dark:bg-white dark:text-black px-4 py-2 text-sm font-bold text-white disabled:opacity-40 active:scale-95 transition-all"
+                >
+                  {savingSources ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} {t.add}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {loading ? (
           <div className="flex items-center justify-center h-48 sm:h-64">

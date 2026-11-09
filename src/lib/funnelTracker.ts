@@ -53,8 +53,9 @@ export interface FunnelTracker {
 /**
  * @param resume true au retour d'un paiement Stripe : on reprend la session
  *               même si elle a été marquée terminée.
+ * @param src    clé de la source de la campagne (?src=) : rattache la session à sa source.
  */
-export function createFunnelTracker(slug: string, resume = false): FunnelTracker {
+export function createFunnelTracker(slug: string, resume = false, src: string | null = null): FunnelTracker {
   const storageKey = `closeos_funnel_${slug}`
   let sessionId = ''
   try {
@@ -75,7 +76,7 @@ export function createFunnelTracker(slug: string, resume = false): FunnelTracker
   const send = (beacon: boolean) => {
     if (timer) { clearTimeout(timer); timer = null }
     if (Object.keys(pending).length === 0) return
-    const body = JSON.stringify({ slug, session_id: sessionId, device, ...pending })
+    const body = JSON.stringify({ slug, session_id: sessionId, device, ...(src ? { src } : {}), ...pending })
     pending = {}
     try {
       if (beacon && navigator.sendBeacon) navigator.sendBeacon(ENDPOINT, body)

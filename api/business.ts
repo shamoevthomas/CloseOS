@@ -1,5 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
+import { nextSundayMidnightParis } from '../src/lib/weeklyReset.js'
+import { normalizeSources, resolveSource } from '../src/lib/campaignSources.js'
 import crypto from 'crypto'
 import { fromZonedTime, toZonedTime, formatInTimeZone } from 'date-fns-tz'
 import { fr as frLocale } from 'date-fns/locale'
@@ -2433,7 +2435,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Get all campaigns with views
       const { data: campaigns, error: campErr } = await supabase
         .from('business_campaigns')
-        .select('id, name, views, is_active')
+        .select('id, name, views, is_active, source, sources, source_views')
         .eq('user_id', user_id)
         .order('created_at', { ascending: false })
 
@@ -2442,7 +2444,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Get all prospects with campaign_id
       const { data: prospects, error: prosErr } = await supabase
         .from('business_prospects')
-        .select('id, campaign_id, stage, value')
+        .select('id, campaign_id, stage, value, campaign_source_key')
         .eq('user_id', user_id)
 
       if (prosErr) return res.status(500).json({ error: prosErr.message })
@@ -2469,6 +2471,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           unqualifiedCount,
           conversionRate: c.views > 0 ? ((totalLeads / c.views) * 100) : 0,
           wonRate: totalLeads > 0 ? ((wonCount / totalLeads) * 100) : 0,
+          // Détail par source (un lien par source) : source principale (clé null) + sources ajoutées
+          bySource: (() => {
+            const extra = normalizeSources(c.sources)
+            const sv = (c.source_views || {}) as Record<string, number>
+            const extraViews = extra.reduce((n, s) => n + (Number(sv[s.key]) || 0), 0)
+            const known = new Set(extra.map((s) => s.key))
+            return [{ key: null as string | null, name: c.source || 'Direct' }, ...extra].map((src) => {
+              const ps = campProspects.filter((p: any) => src.key ? p.campaign_source_key === src.key : !p.campaign_source_key || !known.has(p.campaign_source_key))
+              const won = ps.filter((p: any) => p.stage === 'won')
+              const views = src.key ? (Number(sv[src.key]) || 0) : Math.max(0, (c.views || 0) - extraViews)
+              return {
+                key: src.key, name: src.name, views, leads: ps.length, wonCount: won.length,
+                totalCA: won.reduce((sum: number, p: any) => sum + (Number(p.value) || 0), 0),
+                conversionRate: views > 0 ? (ps.length / views) * 100 : 0,
+              }
+            })
+          })(),
         }
       })
 
@@ -2548,6 +2567,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .from('business_campaigns')
         .insert({
           user_id, name, description, source: source || 'Direct',
+          sources: normalizeSources(req.body.sources),
           utm_source, utm_medium, utm_campaign,
           custom_fields: custom_fields || [],
           slug, is_active: true,
@@ -2594,6 +2614,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (action === 'campaigns-update' && req.method === 'PUT') {
       const { user_id, id, ...updates } = req.body
       if (!user_id || !id) return res.status(400).json({ error: 'user_id and id required' })
+      // Sources supplémentaires (un lien par source) : toujours nettoyées côté serveur ; les vues ne se modifient pas ici
+      if ('sources' in updates) updates.sources = normalizeSources(updates.sources)
+      delete updates.source_views
 
       const { data, error } = await supabase
         .from('business_campaigns')
@@ -4352,7 +4375,7 @@ ${notesSection}
       const { slug, session_id } = body
       if (!slug || typeof session_id !== 'string' || !UUID_RE.test(session_id)) return res.status(400).json({ error: 'slug and session_id required' })
 
-      const { data: campaign } = await supabase.from('business_campaigns').select('id, user_id').eq('slug', slug).maybeSingle()
+      const { data: campaign } = await supabase.from('business_campaigns').select('id, user_id, source, sources').eq('slug', slug).maybeSingle()
       if (!campaign) return res.status(404).json({ error: 'Campaign not found' })
 
       const { data: existing } = await supabase
@@ -4379,7 +4402,7 @@ ${notesSection}
       if (existing) {
         await supabase.from('campaign_funnel_sessions').update(update).eq('id', session_id)
       } else {
-        await supabase.from('campaign_funnel_sessions').insert({ id: session_id, campaign_id: campaign.id, owner_id: campaign.user_id, ...update })
+        await supabase.from('campaign_funnel_sessions').insert({ id: session_id, campaign_id: campaign.id, owner_id: campaign.user_id, source_key: resolveSource(campaign.sources, body.src, campaign.source).key, ...update })
       }
       return res.status(200).json({ ok: true })
     }
@@ -4588,22 +4611,27 @@ ${notesSection}
 
     // ─── Public capture view tracking (no auth) ───
     if (action === 'capture-view' && req.method === 'POST') {
-      const { slug } = req.body
+      const { slug, src } = req.body
       if (!slug) return res.status(400).json({ error: 'slug required' })
 
       const { data: campaign } = await supabase
         .from('business_campaigns')
-        .select('id, views')
+        .select('id, views, source, sources')
         .eq('slug', slug)
         .eq('is_active', true)
         .single()
 
       if (!campaign) return res.status(404).json({ error: 'Campaign not found' })
 
-      await supabase
-        .from('business_campaigns')
-        .update({ views: (campaign.views || 0) + 1 })
-        .eq('id', campaign.id)
+      // +1 vue au total et, si le lien porte une source connue (?src=), +1 sur cette source
+      const viewSource = resolveSource(campaign.sources, src, campaign.source)
+      const { error: rpcErr } = await supabase.rpc('business_campaign_add_view', { p_campaign: campaign.id, p_source_key: viewSource.key })
+      if (rpcErr) {
+        await supabase
+          .from('business_campaigns')
+          .update({ views: (campaign.views || 0) + 1 })
+          .eq('id', campaign.id)
+      }
 
       return res.status(200).json({ success: true })
     }
@@ -5505,13 +5533,13 @@ ${notesSection}
 
     // ─── Passive partial lead capture (no auth) ───
     if (action === 'capture-partial' && req.method === 'POST') {
-      const { slug, name, email, phone, custom_data, funnel_session_id } = req.body
+      const { slug, name, email, phone, custom_data, funnel_session_id, src } = req.body
       if (!slug) return res.status(400).json({ error: 'slug required' })
       if (!email && !phone) return res.status(400).json({ error: 'email or phone required' })
 
       const { data: campaign } = await supabase
         .from('business_campaigns')
-        .select('id, user_id')
+        .select('id, user_id, source, sources')
         .eq('slug', slug)
         .eq('is_active', true)
         .single()
@@ -5559,6 +5587,9 @@ ${notesSection}
             phone: phone || '',
             stage: 'partial',
             campaign_id: campaign.id,
+            // source du lien d'arrivée (?src=) sinon source principale de la campagne
+            source: resolveSource(campaign.sources, src, campaign.source).name,
+            campaign_source_key: resolveSource(campaign.sources, src, campaign.source).key,
             notes: custom_data ? JSON.stringify(custom_data) : null,
           })
           .select('id')
@@ -6895,7 +6926,7 @@ ${notesSection}
         campaign_id: campaign.id,
         stripe_checkout_session_id: paymentIntent.id, // legacy column name; stores PI id for inline flow
         stripe_payment_intent_id: paymentIntent.id,
-        prospect_data: { slug, name, email, phone, custom_data, date, time, datetime_utc, prospect_timezone, available_member_ids, answers, funnel_session_id: req.body.funnel_session_id || null },
+        prospect_data: { slug, name, email, phone, custom_data, date, time, datetime_utc, prospect_timezone, available_member_ids, answers, funnel_session_id: req.body.funnel_session_id || null, src: typeof req.body.src === 'string' ? req.body.src.slice(0, 60) : null },
         payment_type: 'initial',
         amount,
       })
@@ -7306,7 +7337,7 @@ ${notesSection}
     }
 
     if (action === 'capture-submit' && req.method === 'POST') {
-      const { slug, name, email, phone, custom_data, date, time, datetime_utc, prospect_timezone, available_member_ids, answers, payment_session_id } = req.body
+      const { slug, name, email, phone, custom_data, date, time, datetime_utc, prospect_timezone, available_member_ids, answers, payment_session_id, src } = req.body
       if (!slug || !name) return res.status(400).json({ error: 'slug and name required' })
 
       // Find campaign by slug
@@ -7484,6 +7515,9 @@ ${notesSection}
             phone: phone || '',
             stage: 'prospect',
             campaign_id: campaign.id,
+            // source du lien d'arrivée (?src=) sinon source principale de la campagne
+            source: resolveSource(campaign.sources, src, campaign.source).name,
+            campaign_source_key: resolveSource(campaign.sources, src, campaign.source).key,
             formula_id: campaign.formula_id || null,
             notes: custom_data ? JSON.stringify(custom_data) : null,
             timezone: prospect_timezone || null,
@@ -8280,10 +8314,10 @@ ${notesSection}
         .update({ used: true })
         .eq('id', codeRow.id)
 
-      // Create device token (7 days)
+      // Device token : valable jusqu'au dimanche suivant 00:00 (heure de Paris) — un code par semaine
       const token = crypto.randomBytes(48).toString('hex')
       const revokeToken = crypto.randomBytes(32).toString('hex')
-      const tokenExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+      const tokenExpires = nextSundayMidnightParis().toISOString()
 
       // Remove old tokens for this device
       await supabase
@@ -8353,7 +8387,7 @@ ${notesSection}
         // Don't block verification if notification fails
       }
 
-      return res.status(200).json({ success: true, token })
+      return res.status(200).json({ success: true, token, expires_at: tokenExpires })
     }
 
     // ─── Check device token ───
@@ -8372,7 +8406,7 @@ ${notesSection}
         .gte('expires_at', new Date().toISOString())
         .maybeSingle()
 
-      return res.status(200).json({ verified: !!deviceToken })
+      return res.status(200).json({ verified: !!deviceToken, expires_at: deviceToken?.expires_at || null })
     }
 
     // ─── Revoke device from email link (GET) ───
