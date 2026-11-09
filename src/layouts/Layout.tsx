@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from '../components/Sidebar'
 import { ReminderBell } from '../components/ReminderBell'
+import { FocusCards } from '../components/FocusCards'
 import { Menu } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useState } from 'react'
@@ -98,6 +99,9 @@ function LayoutInner({ onOpenSettings }: LayoutProps) {
           </div>
         </main>
       </div>
+
+      {/* Mode cartes : relances et points de statut du jour, à la connexion */}
+      <FocusCards />
     </div>
   )
 }

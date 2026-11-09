@@ -39,6 +39,7 @@ import { useCustomStages } from '../hooks/useCustomStages'
 import { useTags } from '../hooks/useTags'
 import { useContactedReminders, computeRelanceBadge, relanceCardLabel } from '../hooks/useContactedReminders'
 import { RelanceWorklistModal } from '../components/RelanceWorklistModal'
+import { FocusCardsButton } from '../components/FocusCards'
 import { ContactedRemindersModal } from '../components/ContactedRemindersModal'
 import { SharePerformanceButton } from '../components/SharePerformanceButton'
 import { ImportExportModal } from '../components/ImportExportModal'
@@ -658,6 +659,11 @@ export function Pipeline() {
               <span className="ml-0.5 bg-sky-600 text-white text-[10px] font-bold rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center">{worklistCount}</span>
             )}
           </button>
+          {/* Mode cartes (relances + points de statut, une carte à la fois) */}
+          <FocusCardsButton
+            label={lang === 'fr' ? 'Mode cartes' : 'Card mode'}
+            className="flex items-center gap-2 rounded-xl border border-sky-200 dark:border-sky-500/30 bg-white dark:bg-sky-500/10 px-4 py-2.5 text-sm font-bold text-sky-700 dark:text-sky-300 hover:border-sky-300 transition-all"
+          />
 
           <div className="relative">
             <select

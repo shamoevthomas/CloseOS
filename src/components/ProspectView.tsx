@@ -47,6 +47,8 @@ import { useCustomStages } from '../hooks/useCustomStages'
 import { useTags } from '../hooks/useTags'
 import { useProspectTasks } from '../hooks/useProspectTasks'
 import { supabase } from '../lib/supabase'
+import { useSalesWhatsAppTemplates } from '../lib/salesWhatsappTemplates'
+import { fillWhatsAppMessage, stepLabel, whatsAppLink, splitProspectName } from '../lib/whatsappMessage'
 import toast from 'react-hot-toast'
 
 // Helper to parse price
@@ -792,14 +794,49 @@ export function ProspectView({
     }
   }
 
-  const handleOpenWhatsApp = () => {
-    if (localProspect.phone) {
-      const cleanPhone = localProspect.phone.replace(/[^0-9+]/g, '')
-      window.open(`https://wa.me/${cleanPhone}`, '_blank')
-    } else {
-      showError(lang === 'fr' ? "Numéro de téléphone manquant !" : "Missing phone number!")
-    }
+  // WhatsApp : si des messages pré-remplis existent (engrenage « Contacté » → Messages WhatsApp),
+  // une bulle propose d'ouvrir WhatsApp avec le message de l'étape en cours déjà écrit.
+  const { templates: waTemplates } = useSalesWhatsAppTemplates()
+  const [waBubble, setWaBubble] = useState<null | 'bar' | 'side'>(null)
+  const [waStep, setWaStep] = useState(0)
+  const waSteps = Object.keys(waTemplates).map(Number).sort((a, b) => a - b)
+  const suggestedWaStep = localProspect.stage === 'contacted'
+    ? (Number(localProspect.relance_step) || 0) + (localProspect.responded_at ? 0 : 1)
+    : 0
+  const myFirstName = String(user?.user_metadata?.full_name || user?.user_metadata?.name || '').split(' ')[0].trim()
+  const waMessage = waTemplates[waStep] ? fillWhatsAppMessage(waTemplates[waStep], { ...splitProspectName(localProspect), mon_prenom: myFirstName }) : ''
+  const openWhatsApp = (text?: string) => {
+    if (!localProspect.phone) { showError(lang === 'fr' ? "Numéro de téléphone manquant !" : "Missing phone number!"); return }
+    window.open(whatsAppLink(localProspect.phone, text), '_blank')
+    setWaBubble(null)
   }
+  const handleOpenWhatsApp = (anchor: 'bar' | 'side' = 'bar') => {
+    if (!localProspect.phone) { showError(lang === 'fr' ? "Numéro de téléphone manquant !" : "Missing phone number!"); return }
+    if (waSteps.length === 0) { openWhatsApp(); return }
+    if (waBubble === anchor) { setWaBubble(null); return }
+    setWaStep(waTemplates[suggestedWaStep] ? suggestedWaStep : waSteps[0])
+    setWaBubble(anchor)
+  }
+  const renderWaBubble = (anchor: 'bar' | 'side') => waBubble === anchor && (
+    <>
+      <div className="fixed inset-0 z-40" onClick={() => setWaBubble(null)} />
+      <div className={cn('absolute z-50 top-full mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] p-3 shadow-2xl text-left', anchor === 'bar' ? 'left-1/2 -translate-x-1/2' : 'left-0')}>
+        <p className="text-sm font-bold text-slate-900 dark:text-white">{lang === 'fr' ? 'Préparer le message pré-rempli ?' : 'Prepare the pre-filled message?'}</p>
+        {waSteps.length > 1 ? (
+          <select value={waStep} onChange={(e) => setWaStep(Number(e.target.value))} className="mt-2 w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-2 py-1.5 text-xs font-semibold text-slate-700 dark:text-neutral-200 outline-none">
+            {waSteps.map((st) => <option key={st} value={st}>{stepLabel(st, lang === 'fr')}{st === suggestedWaStep ? (lang === 'fr' ? ' (conseillé)' : ' (suggested)') : ''}</option>)}
+          </select>
+        ) : (
+          <p className="mt-1 text-xs font-semibold text-slate-500">{stepLabel(waStep, lang === 'fr')}</p>
+        )}
+        <div className="mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap rounded-xl bg-[#dcf8c6] dark:bg-emerald-900/40 px-3 py-2 text-sm text-slate-900 dark:text-emerald-50">{waMessage}</div>
+        <div className="mt-3 flex gap-2">
+          <button onClick={() => openWhatsApp()} className="flex-1 rounded-full border border-slate-200 dark:border-white/10 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-white/5">{lang === 'fr' ? 'Sans message' : 'Without message'}</button>
+          <button onClick={() => openWhatsApp(waMessage)} className="flex-1 rounded-full bg-[#25D366] px-3 py-2 text-xs font-bold text-white hover:bg-[#1ebe5a]">{lang === 'fr' ? 'Oui, ouvrir WhatsApp' : 'Yes, open WhatsApp'}</button>
+        </div>
+      </div>
+    </>
+  )
 
   // Effective values with custom schedule + custom commission + acompte
   const hasEditDeposit = editDepositAmount > 0
@@ -1037,9 +1074,12 @@ export function ProspectView({
                 <button onClick={handleOpenGmail} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-3 py-2 text-sm font-medium text-slate-500 dark:text-neutral-400 transition-all hover:bg-slate-100 hover:text-slate-900">
                   <Mail className="h-4 w-4" /> Email
                 </button>
-                <button onClick={handleOpenWhatsApp} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-sky-500/20 bg-sky-500/10 px-3 py-2 text-sm font-medium text-sky-600 dark:text-sky-400 transition-all hover:bg-sky-500/20 hover:text-sky-700">
-                  <MessageCircle className="h-4 w-4" /> WhatsApp
-                </button>
+                <div className="relative flex flex-1">
+                  {renderWaBubble('bar')}
+                  <button onClick={() => handleOpenWhatsApp('bar')} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-sky-500/20 bg-sky-500/10 px-3 py-2 text-sm font-medium text-sky-600 dark:text-sky-400 transition-all hover:bg-sky-500/20 hover:text-sky-700">
+                    <MessageCircle className="h-4 w-4" /> WhatsApp
+                  </button>
+                </div>
                 <button onClick={() => { if (onCreateEvent) onCreateEvent() }} className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-sky-600 px-3 py-2 text-sm font-bold text-white transition-all hover:bg-sky-600 shadow-lg shadow-sky-500/20">
                   <Calendar className="h-4 w-4" /> {lang === 'fr' ? 'RDV' : 'Appt'}
                 </button>
@@ -1660,11 +1700,12 @@ export function ProspectView({
                             </button>
                           )}
                         </div>
-                        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-3">
+                        <div className="relative flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-3">
+                          {renderWaBubble('side')}
                           <Phone className="h-4 w-4 text-sky-600 dark:text-sky-400" />
                           <div className="min-w-0 flex-1">
                             <p className="text-xs text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Téléphone' : 'Phone'}</p>
-                            <button onClick={handleOpenWhatsApp} className="text-sm text-slate-500 dark:text-neutral-400 hover:text-slate-900 hover:underline text-left"><MaskedText value={localProspect.phone} type="name" /></button>
+                            <button onClick={() => handleOpenWhatsApp('side')} className="text-sm text-slate-500 dark:text-neutral-400 hover:text-slate-900 hover:underline text-left"><MaskedText value={localProspect.phone} type="name" /></button>
                           </div>
                           {localProspect.phone && (
                             <button onClick={() => copyToClipboard(localProspect.phone, lang === 'fr' ? 'Téléphone' : 'Phone')} title={lang === 'fr' ? 'Copier' : 'Copy'} className="shrink-0 p-1.5 rounded-lg text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-sky-600 transition-colors">
