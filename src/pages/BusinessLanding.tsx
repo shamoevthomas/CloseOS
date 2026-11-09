@@ -1,3 +1,4 @@
+import { ExplainerVideo } from '../components/ExplainerVideo'
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -100,18 +101,43 @@ export const BusinessLanding: React.FC = () => {
     return () => window.removeEventListener('message', handler);
   }, []);
 
-  // Demo popup after 45s (once per session)
+  // Pop-up démo : 2 min après l'arrivée (une fois par session).
+  // Si la vidéo est lancée : jamais moins d'1 min après son lancement, et jamais pendant que la vidéo joue.
+  const demoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const videoPlayingRef = useRef(false);
+  const demoPendingRef = useRef(false);
+  const videoLaunchedRef = useRef(false);
+  const pageStartRef = useRef(Date.now());
+  const openDemoPopup = () => {
+    if (sessionStorage.getItem('closeos_demo_popup_shown')) return;
+    if (videoPlayingRef.current) { demoPendingRef.current = true; return; }
+    demoPendingRef.current = false;
+    setShowDemoPopup(true);
+    sessionStorage.setItem('closeos_demo_popup_shown', '1');
+  };
   useEffect(() => {
     if (sessionStorage.getItem('closeos_demo_popup_shown')) return;
-    const timer = setTimeout(() => {
-      setShowDemoPopup(true);
-      sessionStorage.setItem('closeos_demo_popup_shown', '1');
-    }, 45000);
-    return () => clearTimeout(timer);
+    demoTimerRef.current = setTimeout(openDemoPopup, 120000);
+    pageStartRef.current = Date.now();
+    return () => { if (demoTimerRef.current) clearTimeout(demoTimerRef.current); };
   }, []);
+  const handleVideoPlay = () => {
+    videoPlayingRef.current = true;
+    if (videoLaunchedRef.current || sessionStorage.getItem('closeos_demo_popup_shown')) return;
+    videoLaunchedRef.current = true;
+    const remaining = 120000 - (Date.now() - pageStartRef.current);
+    if (remaining < 60000) {
+      if (demoTimerRef.current) clearTimeout(demoTimerRef.current);
+      demoTimerRef.current = setTimeout(openDemoPopup, 60000);
+    }
+  };
+  const handleVideoStop = () => {
+    videoPlayingRef.current = false;
+    if (demoPendingRef.current) openDemoPopup();
+  };
 
   // Précharge l'iframe du pop-up démo en arrière-plan (~6s après le chargement),
-  // pour qu'elle soit déjà prête et s'affiche instantanément quand le pop-up s'ouvre (45s).
+  // pour qu'elle soit déjà prête et s'affiche instantanément quand le pop-up s'ouvre (2 min).
   useEffect(() => {
     if (sessionStorage.getItem('closeos_demo_popup_shown')) return;
     const t = setTimeout(() => setPreloadDemoPopup(true), 6000);
@@ -560,6 +586,17 @@ export const BusinessLanding: React.FC = () => {
 
           </motion.div>
         </section>
+
+        {/* Vidéo, motion design CloseOS Business */}
+        <ExplainerVideo
+          src="/videos/closeos-business-explainer.mp4"
+          poster="/videos/closeos-business-explainer.jpg"
+          kicker={lang === 'fr' ? 'CloseOS Business en 2 minutes' : 'CloseOS Business in 2 minutes'}
+          title={lang === 'fr' ? 'Découvre CloseOS Business en vidéo' : 'See CloseOS Business in action'}
+          duration="1:51"
+          onPlay={handleVideoPlay}
+          onStop={handleVideoStop}
+        />
 
         {/* Compact Integrations Strip */}
         <section id="integrations" className="pt-8 pb-4 w-full overflow-hidden">

@@ -1,3 +1,4 @@
+import { ExplainerVideo } from '../components/ExplainerVideo'
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import { motion } from 'motion/react'
@@ -1144,6 +1145,16 @@ export function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ═══ VIDÉO, motion design CloseOS Sales ═══ */}
+      <ExplainerVideo
+        src="/videos/closeos-sales-explainer.mp4"
+        poster="/videos/closeos-sales-explainer.jpg"
+        kicker={lang === 'fr' ? 'CloseOS Sales en 1 min 20' : 'CloseOS Sales in 80 seconds'}
+        title={lang === 'fr' ? 'Découvre CloseOS Sales en vidéo' : 'See CloseOS Sales in action'}
+        duration="1:23"
+        accent="sky"
+      />
 
       {/* ═══ INTEGRATIONS ═══ */}
       <motion.section id="integrations" initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8 }} className="py-16 border-t border-slate-200 relative overflow-hidden">
