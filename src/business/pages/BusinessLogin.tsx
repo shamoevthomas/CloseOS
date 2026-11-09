@@ -5,7 +5,8 @@ import { Mail, Lock, Loader2, Check, AlertCircle, ArrowLeft, Eye, EyeOff } from 
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase';
-import BusinessVerification, { getDeviceFingerprint } from './BusinessVerification';
+import BusinessVerification from './BusinessVerification';
+import { checkDeviceTrust } from '../lib/deviceTrust';
 
 export default function BusinessLogin() {
   const navigate = useNavigate();
@@ -141,22 +142,8 @@ export default function BusinessLogin() {
     }
   };
 
-  const checkDeviceToken = async (userId: string): Promise<boolean> => {
-    const token = localStorage.getItem('closeos_device_token');
-    const fingerprint = getDeviceFingerprint();
-    if (!token) return false;
-    try {
-      const res = await fetch('/api/business-check-device', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, device_fingerprint: fingerprint, token })
-      });
-      const data = await res.json();
-      return !!data.verified;
-    } catch {
-      return false;
-    }
-  };
+  // Une vérification par semaine (dimanche 00:00, heure de Paris), sans redemander le code pour une panne réseau
+  const checkDeviceToken = (userId: string): Promise<boolean> => checkDeviceTrust(userId);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

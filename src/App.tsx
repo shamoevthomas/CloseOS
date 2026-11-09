@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { PrivacyProvider } from './contexts/PrivacyContext'
 import { MeetingsProvider } from './contexts/MeetingsContext'
 import { ProspectsProvider } from './contexts/ProspectsContext'
+import { getLastProduct, signHomeUrl } from './lib/lastProduct'
 import { OffersProvider } from './contexts/OffersContext'
 import { InternalContactsProvider } from './contexts/InternalContactsContext'
 import { CallsProvider } from './contexts/CallsContext'
@@ -244,7 +245,7 @@ function FacturesRouter() {
 }
 
 
-// Page d'accueil intelligente : landing immédiate si non connecté, loading si session détectée
+// Page d'accueil intelligente (ouvre le dernier outil utilisé) : landing immédiate si non connecté, loading si session détectée
 function SmartHome() {
   const { user, loading, isBusinessUser, profile, profileReady } = useAuth()
   const navigate = useNavigate()
@@ -274,7 +275,25 @@ function SmartHome() {
     // 2. Wait for auth AND profile to finish before deciding
     if (loading || !profileReady) return
 
-    // 3. If user is logged in, route to correct product
+    // 3. Dernier outil utilisé (Sales / Business / Sign) : prioritaire sur tout le reste
+    const last = getLastProduct()
+    if (last === 'sign') {
+      const url = signHomeUrl()
+      if (url.startsWith('http')) window.location.replace(url); else navigate(url, { replace: true })
+      return
+    }
+    if (last === 'business') {
+      navigate(user && isBusinessUser ? '/business/dashboard' : '/business', { replace: true })
+      return
+    }
+    if (last === 'sales') {
+      if (user && profile) { navigate('/dashboard', { replace: true }); return }
+      if (user && isBusinessUser) { navigate('/business/dashboard', { replace: true }); return }
+      setProduct('sales')
+      return
+    }
+
+    // 4. Pas encore d'outil utilisé : si connecté, produit du compte
     if (user) {
       if (isBusinessUser) {
         navigate('/business/dashboard', { replace: true })
@@ -283,21 +302,20 @@ function SmartHome() {
       return // Sales users handled by the render below
     }
 
-    // 4. Check localStorage preference (only for non-logged-in users)
+    // 5. Check localStorage preference (only for non-logged-in users)
     const saved = localStorage.getItem('closeos_product')
     if (saved === 'sales') { setProduct('sales'); return }
     if (saved === 'business') { navigate('/business', { replace: true }); return }
     if (saved === 'crm') { localStorage.setItem('closeos_product', 'business'); navigate('/business', { replace: true }); return }
 
-    // 5. No preference → show choice
+    // 6. No preference → show choice
     setProduct('choice')
-  }, [navigate, loading, user, isBusinessUser, profileReady])
+  }, [navigate, loading, user, isBusinessUser, profileReady, profile])
 
-  // Logged-in Business users → Business dashboard
-  if (!loading && user && isBusinessUser) return <Navigate to="/business/dashboard" replace />
-
-  // Logged-in Sales-only users → Sales dashboard
-  if (!loading && user && !isBusinessUser) return <Navigate to="/dashboard" replace />
+  // Sans « dernier outil » connu : comportement historique (Business → Business, sinon Sales)
+  const lastKnown = getLastProduct()
+  if (!lastKnown && !loading && user && isBusinessUser) return <Navigate to="/business/dashboard" replace />
+  if (!lastKnown && !loading && user && !isBusinessUser) return <Navigate to="/dashboard" replace />
 
   // While auth loads, check for cached session
   if (loading) {

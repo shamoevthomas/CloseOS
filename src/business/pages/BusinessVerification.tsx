@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { getDeviceFingerprint, rememberDeviceTrust } from '../lib/deviceTrust';
 import { ShieldCheck, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 
@@ -10,15 +11,6 @@ interface BusinessVerificationProps {
   onCancel: () => void;
 }
 
-function getDeviceFingerprint(): string {
-  const key = 'closeos_device_id';
-  let id = localStorage.getItem(key);
-  if (!id) {
-    id = crypto.randomUUID() + '-' + navigator.userAgent.slice(0, 50).replace(/\s/g, '_');
-    localStorage.setItem(key, id);
-  }
-  return id;
-}
 
 export default function BusinessVerification({ userId, email, authMethod = 'classic', onVerified, onCancel }: BusinessVerificationProps) {
   const { t } = useBusinessLang()
@@ -113,7 +105,7 @@ export default function BusinessVerification({ userId, email, authMethod = 'clas
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || t.verification_error_invalid);
       // Save device token
-      localStorage.setItem('closeos_device_token', data.token);
+      rememberDeviceTrust(data.token, data.expires_at);
       onVerified(data.token);
     } catch (err: any) {
       setError(err.message || t.verification_error_invalid);

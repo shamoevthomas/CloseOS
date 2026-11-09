@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { setLastProduct } from '../lib/lastProduct';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { Home, FileText, Users, Plus, LogOut, ShieldCheck, Menu, X, Settings, Briefcase } from 'lucide-react';
 import { signOutSign, useSignOwner } from '../lib/signAuth';
@@ -16,6 +17,8 @@ import { SignWhatsNewModal } from '../components/SignWhatsNewModal';
  */
 
 export default function SignLayout() {
+  // closeos.fr rouvrira Sign (dernier outil utilisé)
+  useEffect(() => { setLastProduct('sign'); }, []);
   const navigate = useNavigate();
   const { lang } = useSignLang();
   const { loading, owner } = useSignOwner();

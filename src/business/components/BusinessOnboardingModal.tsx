@@ -3,6 +3,8 @@ import { ArrowRight, Loader2, Building2, Briefcase, ChevronRight, Camera, User, 
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { countries } from '../../lib/countries';
+import { getDeviceFingerprint, rememberDeviceTrust } from '../lib/deviceTrust';
+import { nextSundayMidnightParis } from '../../lib/weeklyReset';
 import { CountrySelect } from '../../components/CountrySelect';
 import { getCountryRule } from '../../lib/countryRules';
 import { PhoneInput } from './PhoneInput';
@@ -39,22 +41,13 @@ function calculateAge(dateString: string): number | null {
   return age;
 }
 
-function getDeviceFingerprint(): string {
-  const key = 'closeos_device_id';
-  let id = localStorage.getItem(key);
-  if (!id) {
-    id = crypto.randomUUID() + '-' + navigator.userAgent.slice(0, 50).replace(/\s/g, '_');
-    localStorage.setItem(key, id);
-  }
-  return id;
-}
 
 async function registerDeviceAfterOnboarding(userId: string) {
   try {
     const fingerprint = getDeviceFingerprint();
     const token = crypto.randomUUID();
-    const expires = new Date();
-    expires.setFullYear(expires.getFullYear() + 1);
+    // Même règle que le code : confiance jusqu'au dimanche suivant 00:00 (heure de Paris)
+    const expires = nextSundayMidnightParis();
 
     // Remove any existing token for this device
     await supabase
@@ -73,7 +66,7 @@ async function registerDeviceAfterOnboarding(userId: string) {
         expires_at: expires.toISOString(),
       });
 
-    localStorage.setItem('closeos_device_token', token);
+    rememberDeviceTrust(token, expires.toISOString());
   } catch {
     // Non-blocking — worst case user will see A2F on next login
   }

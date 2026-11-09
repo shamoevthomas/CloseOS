@@ -4,7 +4,8 @@ import { ReminderBell } from '../components/ReminderBell'
 import { FocusCards } from '../components/FocusCards'
 import { Menu } from 'lucide-react'
 import { cn } from '../lib/utils'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { setLastProduct } from '../lib/lastProduct'
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext'
 
 interface LayoutProps {
@@ -37,6 +38,8 @@ export function Layout({ onOpenSettings }: LayoutProps) {
 }
 
 function LayoutInner({ onOpenSettings }: LayoutProps) {
+  // closeos.fr rouvrira Sales (dernier outil utilisé)
+  useEffect(() => { setLastProduct('sales') }, [])
   const { dark } = useTheme()
   const location = useLocation()
   const basePath = location.pathname.replace(/\/[^/]+$/, '')

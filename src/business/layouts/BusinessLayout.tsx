@@ -6,6 +6,7 @@ import { BusinessFocusCards } from '../components/BusinessFocusCards'
 import { Menu, Globe, X, AlertTriangle } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useState, useEffect, useMemo } from 'react'
+import { setLastProduct } from '../../lib/lastProduct'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { BusinessThemeProvider, useTheme } from '../contexts/BusinessThemeContext'
 import { supabase } from '../../lib/supabase'
@@ -55,6 +56,8 @@ const TEAM_PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
 }
 
 export function BusinessLayout() {
+  // closeos.fr rouvrira Business (dernier outil utilisé)
+  useEffect(() => { setLastProduct('business') }, [])
   const location = useLocation()
   const navigate = useNavigate()
   const { isTeamMember, teamMember, businessProfile, businessSettings, user, loading, refreshProfile, needsVerification, setNeedsVerification, logout, hasOnboarded, isSalesUser, authError, isLifetimeFree, isTrialActive, isSubscribed } = useBusinessAuth()

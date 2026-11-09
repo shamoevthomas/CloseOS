@@ -2,18 +2,10 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef, us
 import { supabase } from '../../lib/supabase';
 import { retryOnAbort, isTransientAbort } from '../../lib/supabaseHelpers';
 import { getBrowserTimezone } from '../../lib/timezone';
+import { checkDeviceTrust } from '../lib/deviceTrust';
 
 export const BusinessAuthContext = createContext<any>(null);
 
-function getDeviceFingerprint(): string {
-  const key = 'closeos_device_id';
-  let id = localStorage.getItem(key);
-  if (!id) {
-    id = crypto.randomUUID() + '-' + navigator.userAgent.slice(0, 50).replace(/\s/g, '_');
-    localStorage.setItem(key, id);
-  }
-  return id;
-}
 
 export function BusinessAuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
@@ -32,6 +24,8 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
   const isRegisteringRef = useRef(false);
   // Guard: tracks the latest initUser call to discard stale results
   const initVersionRef = useRef(0);
+  // Déconnexion volontaire en cours : seule celle-ci (ou la fin de la semaine) doit vider la session
+  const manualLogoutRef = useRef(false);
   // Refs to avoid stale closures in visibility/token handlers
   const businessProfileRef = useRef<any>(null);
   const teamMemberRef = useRef<any>(null);
@@ -88,9 +82,12 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       // transitoire (abort/réseau) sans aucune donnée, l'état est INDÉTERMINÉ.
       // On affiche "Erreur de connexion / Réessayer" au lieu de déconnecter ou de
       // rebasculer vers l'onboarding.
+      // Toute erreur (pas seulement un abort) sans aucune donnée = état indéterminé : on ne déconnecte JAMAIS
+      // sur une requête ratée (délai dépassé, 5xx, jeton en cours de renouvellement…).
       const inconclusive =
         !profileRes.data && !teamRes.data && !salesRes.data &&
-        (isTransientAbort(profileRes.error) || isTransientAbort(teamRes.error) || isTransientAbort(salesRes.error));
+        !!(profileRes.error || teamRes.error || salesRes.error ||
+           isTransientAbort(profileRes.error) || isTransientAbort(teamRes.error) || isTransientAbort(salesRes.error));
       if (inconclusive) {
         console.warn('[BusinessAuth] init indéterminée (erreurs transitoires) — pas de déconnexion');
         if (isMountedRef.current) { setAuthError(true); setLoading(false); }
@@ -219,22 +216,8 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
     teamMemberRef.current = null;
   }, []);
 
-  const checkDeviceVerified = useCallback(async (userId: string): Promise<boolean> => {
-    const token = localStorage.getItem('closeos_device_token');
-    const fingerprint = getDeviceFingerprint();
-    if (!token) return false;
-    try {
-      const res = await fetch('/api/business-check-device', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, device_fingerprint: fingerprint, token })
-      });
-      const data = await res.json();
-      return !!data.verified;
-    } catch {
-      return false;
-    }
-  }, []);
+  // Code de vérification : une fois par semaine (jusqu'au dimanche 00:00, heure de Paris), robuste aux pannes réseau
+  const checkDeviceVerified = useCallback((userId: string): Promise<boolean> => checkDeviceTrust(userId), []);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -264,6 +247,18 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
             await initUser(currentUser.id);
           }
         } else {
+          // SIGNED_OUT : avec plusieurs onglets, un renouvellement de jeton raté dans l'un peut émettre une fausse
+          // déconnexion alors qu'un autre onglet vient de renouveler la session. On revérifie avant de vider l'état.
+          if (!manualLogoutRef.current) {
+            await new Promise((r) => setTimeout(r, 1500));
+            const { data: again } = await supabase.auth.getSession().catch(() => ({ data: { session: null } } as any));
+            if (again?.session?.user && isMountedRef.current) {
+              console.warn('[BusinessAuth] fausse déconnexion évitée (session toujours valide)');
+              setUser(again.session.user);
+              return;
+            }
+          }
+          manualLogoutRef.current = false;
           clearUserData();
         }
       }
@@ -490,6 +485,7 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       currentTeamMemberIdRef.current = null;
     }
     await stopPresence();
+    manualLogoutRef.current = true;
     setUser(null);
     clearUserData();
     await supabase.auth.signOut();
