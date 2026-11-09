@@ -711,7 +711,7 @@ const fr: Translations = {
   crm_book_demo: 'Réserver une démo',
 
   // API Section
-  api_badge: 'Nouveau · Pilotable par IA',
+  api_badge: 'Pilotable par IA',
   api_title: 'CloseOS se pilote depuis Claude, ChatGPT et vos outils IA',
   api_subtitle: "Un vrai serveur MCP (Model Context Protocol) libère votre CRM de son interface : demandez à votre assistant IA de créer un prospect, planifier un rendez-vous ou générer une facture, il le fait directement dans CloseOS. Et pour les équipes techniques, une API REST et des Webhooks sortants permettent de tout connecter à votre stack existante.",
   api_card_rest_title: 'API REST entrante',
@@ -735,7 +735,7 @@ const fr: Translations = {
   api_cta_docs: 'Voir la documentation',
   api_cta_connect_ai: 'Connecter mon IA',
 
-  api_mcp_badge: 'Nouveau · Assistant IA',
+  api_mcp_badge: 'Assistant IA',
   api_mcp_title: 'Connectez Claude ou ChatGPT à CloseOS',
   api_mcp_desc: "Un vrai serveur MCP (Model Context Protocol) pour piloter votre CRM à la voix ou en langage naturel : demandez à votre assistant IA de créer un prospect, planifier un rendez-vous, lancer une relance No Show ou générer une facture, il le fait, directement dans CloseOS.",
   api_mcp_item_1: '31 outils exposés : prospects, campagnes, agenda, équipe, facturation, formulaires, tracking.',
@@ -1436,7 +1436,7 @@ const en: Translations = {
   crm_book_demo: 'Book a demo',
 
   // API Section
-  api_badge: 'New · AI-operable',
+  api_badge: 'AI-operable',
   api_title: 'CloseOS runs from Claude, ChatGPT and your AI tools',
   api_subtitle: "A real MCP (Model Context Protocol) server frees your CRM from its interface: ask your AI assistant to create a prospect, schedule an appointment, or generate an invoice, it happens directly inside CloseOS. And for technical teams, a REST API and outbound webhooks let you connect everything to your existing stack.",
   api_card_rest_title: 'Inbound REST API',
@@ -1460,7 +1460,7 @@ const en: Translations = {
   api_cta_docs: 'View documentation',
   api_cta_connect_ai: 'Connect your AI',
 
-  api_mcp_badge: 'New · AI Assistant',
+  api_mcp_badge: 'AI Assistant',
   api_mcp_title: 'Connect Claude or ChatGPT to CloseOS',
   api_mcp_desc: "A real MCP (Model Context Protocol) server to run your CRM in plain language: ask your AI assistant to create a prospect, schedule an appointment, trigger a No Show follow-up, or generate an invoice, it does it, directly inside CloseOS.",
   api_mcp_item_1: '31 tools exposed: prospects, campaigns, calendar, team, invoicing, forms, tracking.',

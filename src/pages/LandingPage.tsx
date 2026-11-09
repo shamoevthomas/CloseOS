@@ -1152,7 +1152,7 @@ export function LandingPage() {
         poster="/videos/closeos-sales-explainer.jpg"
         kicker={lang === 'fr' ? 'CloseOS Sales en 1 min 20' : 'CloseOS Sales in 80 seconds'}
         title={lang === 'fr' ? 'Découvre CloseOS Sales en vidéo' : 'See CloseOS Sales in action'}
-        duration="1:23"
+        duration="1:29"
         accent="sky"
       />
 
@@ -1460,6 +1460,71 @@ export function LandingPage() {
                   <h3 className="text-lg font-extrabold text-slate-900 mb-3" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat15_title}</h3>
                   <p className="text-slate-500 text-sm leading-[1.65]">{t.feat15_desc}</p>
                 </div>
+              </div>
+            </motion.div>
+
+            {/* CARD 16, Mode cartes (nouveauté) */}
+            <motion.div variants={itemVariants} className="md:col-span-2 glass-card rounded-2xl p-10 sm:p-12 hover:bg-slate-50 transition-all duration-500 group overflow-hidden relative">
+              <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-700">
+                <Layers className="w-72 h-72 text-sky-600" strokeWidth={0.8} />
+              </div>
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="p-3 rounded-xl bg-slate-100 text-sky-600 w-fit"><Layers className="h-7 w-7" strokeWidth={1.5} /></div>
+                  <span className="px-2.5 py-1 rounded-full bg-sky-600 text-white text-[0.62rem] font-extrabold uppercase tracking-[0.16em]">{lang === 'fr' ? 'Nouveau' : 'New'}</span>
+                </div>
+                <h3 className="text-[1.6rem] font-extrabold text-slate-900 mb-4" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{lang === 'fr' ? 'Le mode cartes : votre journée en un geste' : 'Card mode: your day in one swipe'}</h3>
+                <p className="text-slate-500 mb-8 max-w-lg leading-[1.7]">{lang === 'fr'
+                  ? "À la connexion, tout ce que vous avez à faire aujourd'hui s'affiche en grandes cartes, une par prospect. Vous traitez, vous passez à la suivante, jusqu'à « C'est bon pour aujourd'hui »."
+                  : "When you log in, everything you have to do today shows up as big cards, one per prospect. Handle it, move to the next, until \"You're done for today\"."}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {(lang === 'fr' ? [
+                    { title: 'Relances', desc: 'Relancer sur WhatsApp, déjà fait, il a répondu, plus tard.' },
+                    { title: 'Points de statut', desc: '« Toujours en discussion ? » Oui ou non, et le CRM se met à jour.' },
+                    { title: 'Rappels', desc: 'Fait, nouveau rappel, ouvrir la fiche ou changer le statut sans quitter la carte.' },
+                  ] : [
+                    { title: 'Follow-ups', desc: 'Follow up on WhatsApp, already done, they replied, later.' },
+                    { title: 'Status checks', desc: '"Still talking?" Yes or no, and the CRM updates itself.' },
+                    { title: 'Reminders', desc: 'Done, new reminder, open the record or change the status without leaving the card.' },
+                  ]).map((sub, idx) => (
+                    <div key={idx} className="rounded-xl bg-slate-50 border border-slate-200 p-5">
+                      <p className="text-[0.65rem] font-extrabold text-sky-600 uppercase tracking-[0.18em] mb-3" style={{ fontFamily: "'Manrope', sans-serif" }}>{sub.title}</p>
+                      <p className="text-[0.85rem] text-slate-500 leading-[1.65]">{sub.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+
+            {/* CARD 17, WhatsApp pré-rempli (nouveauté) */}
+            <motion.div variants={itemVariants} className="glass-card rounded-2xl p-10 hover:bg-slate-50 transition-all duration-500 group overflow-hidden relative">
+              <div className="absolute -right-6 -bottom-6 opacity-[0.04] group-hover:opacity-[0.1] transition-opacity duration-700">
+                <MessageSquare className="w-36 h-36 text-sky-600" strokeWidth={0.8} />
+              </div>
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="p-3 rounded-xl bg-slate-100 text-sky-600 w-fit"><Send className="h-7 w-7" strokeWidth={1.5} /></div>
+                  <span className="px-2.5 py-1 rounded-full bg-sky-600 text-white text-[0.62rem] font-extrabold uppercase tracking-[0.16em]">{lang === 'fr' ? 'Nouveau' : 'New'}</span>
+                </div>
+                <h3 className="text-xl font-extrabold text-slate-900 mb-4" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{lang === 'fr' ? 'WhatsApp, message déjà écrit' : 'WhatsApp, message ready'}</h3>
+                <p className="text-slate-500 text-sm leading-[1.7] mb-5">{lang === 'fr'
+                  ? "Préparez un message par étape : premier contact, relance 1, relance 2… Un clic sur WhatsApp ouvre la conversation avec le bon message et le prénom du prospect. Il ne reste qu'à envoyer."
+                  : 'Prepare one message per step: first contact, follow-up 1, follow-up 2… One click on WhatsApp opens the chat with the right message and the prospect\'s first name. Just hit send.'}</p>
+                <div className="rounded-2xl rounded-tr-sm bg-[#dcf8c6] px-4 py-3 text-sm text-slate-800 shadow-sm">{lang === 'fr' ? 'Salut Julie, tu as pu regarder la proposition ? 🙂' : 'Hi Julie, did you get a chance to look at the proposal? 🙂'}</div>
+              </div>
+            </motion.div>
+
+            {/* CARD 18, Facturation adaptée au pays (nouveauté) */}
+            <motion.div variants={itemVariants} className="md:col-span-3 glass-card rounded-2xl p-8 sm:p-10 hover:bg-slate-50 transition-all duration-500 group flex flex-col md:flex-row md:items-center gap-6">
+              <div className="p-3 rounded-xl bg-slate-100 text-sky-600 w-fit shrink-0"><Globe className="h-7 w-7" strokeWidth={1.5} /></div>
+              <div className="flex-1">
+                <h3 className="text-xl font-extrabold text-slate-900 mb-2" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{lang === 'fr' ? 'Des factures adaptées à votre pays' : 'Invoices adapted to your country'}</h3>
+                <p className="text-slate-500 text-sm leading-[1.7]">{lang === 'fr'
+                  ? "France, Belgique, Suisse, Québec, Canada, Maroc… Choisissez votre pays : le bon numéro d'entreprise (SIRET, BCE, IDE, NEQ…), le bon taux de taxe et les bonnes mentions légales. Pas de SIRET ? Aucun numéro n'est obligatoire."
+                  : 'France, Belgium, Switzerland, Quebec, Canada, Morocco… Pick your country: the right company number, the right tax rate and the right legal mentions. No company number? None is mandatory.'}</p>
+              </div>
+              <div className="flex flex-wrap gap-1.5 text-2xl md:max-w-[220px]" aria-hidden="true">
+                {['🇫🇷', '🇧🇪', '🇨🇭', '🇨🇦', '🇱🇺', '🇲🇦', '🇹🇳', '🇸🇳', '🇨🇮', '🇬🇪'].map((f) => <span key={f}>{f}</span>)}
               </div>
             </motion.div>
           </motion.div>

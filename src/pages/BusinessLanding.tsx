@@ -47,6 +47,8 @@ import {
   Sparkles,
   Star,
   Bot,
+  CalendarDays,
+  Eye,
 } from 'lucide-react';
 import { translations, detectLang, LangContext, useLang } from './businessLandingI18n';
 import type { Lang } from './businessLandingI18n';
@@ -593,7 +595,7 @@ export const BusinessLanding: React.FC = () => {
           poster="/videos/closeos-business-explainer.jpg"
           kicker={lang === 'fr' ? 'CloseOS Business en 2 minutes' : 'CloseOS Business in 2 minutes'}
           title={lang === 'fr' ? 'Découvre CloseOS Business en vidéo' : 'See CloseOS Business in action'}
-          duration="1:51"
+          duration="2:03"
           onPlay={handleVideoPlay}
           onStop={handleVideoStop}
         />
@@ -769,17 +771,20 @@ export const BusinessLanding: React.FC = () => {
             {/* Capture Section */}
             <CaptureSection />
 
+            {/* Confirmation page Section (juste après la capture) */}
+            <ConfirmationPageSection />
+
             {/* Qualification Section */}
             <QualificationSection />
 
             {/* Forms Section */}
             <FormsSection />
 
-            {/* Confirmation page Section */}
-            <ConfirmationPageSection />
-
             {/* Funnel tracking Section */}
             <FunnelTrackingSection />
+
+            {/* Nouveautés : mode cartes, WhatsApp pré-rempli, emailing, agenda, visibilité, factures multi-pays */}
+            <NewTeamFeaturesSection />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-16 border-t border-stone-200">
               <CRMKPIBox index={0} titleKey="crm_kpi_pipeline_title" valueKey="crm_kpi_pipeline_value" descKey="crm_kpi_pipeline_desc" />
@@ -1320,6 +1325,75 @@ const CRMFeature = ({ icon, title, description, extra, index, className = '' }: 
     </div>
   </motion.div>
 );
+
+// Nouveautés Business (novembre 2026) : ce que l'équipe gagne au quotidien
+const NewTeamFeaturesSection = () => {
+  const { lang } = useLang();
+  const fr = lang !== 'en';
+  const items = [
+    {
+      icon: <Layers className="size-5" />,
+      title: fr ? 'Le mode cartes' : 'Card mode',
+      desc: fr
+        ? "À la connexion, chaque membre voit ses relances, ses points « toujours en discussion ? » et ses rappels du jour en grandes cartes. Un geste par prospect, jusqu'à « C'est bon pour aujourd'hui »."
+        : 'At login, each member sees their follow-ups, "still talking?" checks and reminders for the day as big cards. One action per prospect, until "You\'re done for today".',
+    },
+    {
+      icon: <MessageSquare className="size-5" />,
+      title: fr ? 'WhatsApp, message déjà écrit' : 'WhatsApp, message ready',
+      desc: fr
+        ? 'Vous écrivez un message par étape de relance. Un clic sur WhatsApp ouvre la conversation avec le bon message et le prénom du prospect.'
+        : 'Write one message per follow-up step. One click on WhatsApp opens the chat with the right message and the prospect\'s first name.',
+    },
+    {
+      icon: <Mail className="size-5" />,
+      title: fr ? 'Emailing intégré' : 'Built-in emailing',
+      desc: fr
+        ? "Sélectionnez vos prospects par étape, tag, setter ou closer, écrivez votre email (texte ou HTML) et envoyez. Ou synchronisez tous vos contacts avec Brevo."
+        : 'Pick prospects by stage, tag, setter or closer, write your email (text or HTML) and send. Or sync all your contacts with Brevo.',
+    },
+    {
+      icon: <CalendarDays className="size-5" />,
+      title: fr ? 'Agenda des actions et calendrier' : 'Action agenda and calendar',
+      desc: fr
+        ? "Deux nouvelles vues du pipeline : ce qui est en retard, aujourd'hui, demain, cette semaine, et un calendrier de vos RDV, relances et rappels."
+        : 'Two new pipeline views: what is overdue, today, tomorrow, this week, and a calendar of your meetings, follow-ups and reminders.',
+    },
+    {
+      icon: <Eye className="size-5" />,
+      title: fr ? 'Vous choisissez ce que voit l’équipe' : 'You choose what the team sees',
+      desc: fr
+        ? "Un réglage suffit pour que setters et closers ne voient que leurs propres deals gagnés, et pas le total de l'entreprise."
+        : 'One setting and setters and closers only see their own won deals, not the company total.',
+    },
+    {
+      icon: <Globe className="size-5" />,
+      title: fr ? 'Factures dans tous les pays' : 'Invoices in every country',
+      desc: fr
+        ? "France, Belgique, Suisse, Québec, Maroc… Chacun choisit son pays : bon numéro d'entreprise, bonne taxe, bonnes mentions. Plus de SIRET obligatoire."
+        : 'France, Belgium, Switzerland, Quebec, Morocco… Everyone picks their country: right company number, tax and legal mentions. No mandatory company number.',
+    },
+  ];
+  return (
+    <div className="pt-16 mb-20 border-t border-stone-200">
+      <div className="text-center mb-12">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#006c49] text-white shadow-sm mb-6">
+          <Sparkles className="size-4" />
+          <span className="text-sm font-semibold uppercase tracking-widest">{fr ? 'Nouveau' : 'New'}</span>
+        </div>
+        <h3 className="text-4xl md:text-5xl font-bold mb-4 text-[#111111] tracking-tight">{fr ? 'Votre équipe garde le rythme' : 'Your team keeps the pace'}</h3>
+        <p className="text-stone-500 text-lg max-w-2xl mx-auto font-medium">
+          {fr ? 'Moins de clics, plus de relances faites, et un CRM qui dit à chacun quoi faire aujourd’hui.' : 'Fewer clicks, more follow-ups done, and a CRM that tells everyone what to do today.'}
+        </p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {items.map((it, i) => (
+          <CRMFeature key={it.title} index={i} icon={it.icon} title={it.title} description={it.desc} className="justify-start" />
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const CRMFeatureCard = ({ icon, titleKey, descKey, className = '' }: { icon: React.ReactNode; titleKey: keyof typeof translations.fr; descKey: keyof typeof translations.fr; className?: string }) => {
   const { t } = useLang();
