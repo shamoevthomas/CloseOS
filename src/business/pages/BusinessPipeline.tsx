@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import {
-  User, Users, ChevronDown, Search, LayoutGrid, List, Bell,
+  User, Users, ChevronDown, Search, LayoutGrid, List, Bell, ListChecks, CalendarDays,
   X, Filter, Calendar, Trash2, Plus, AlertTriangle, Tag, Settings, ToggleLeft, ToggleRight, RefreshCw,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
@@ -10,6 +10,8 @@ import { useBusinessProspects, type BusinessProspect } from '../contexts/Busines
 import { DMRBadge } from '../components/DMRBadge'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
+import { PipelineAgendaView, PipelineCalendarView } from '../components/PipelineActionViews'
+import { FocusCardsButton } from '../components/BusinessFocusCards'
 import { BusinessProspectView } from '../components/BusinessProspectView'
 import { BusinessDuplicatesModal } from '../components/BusinessDuplicatesModal'
 import { useBusinessDuplicates } from '../hooks/useBusinessDuplicates'
@@ -148,7 +150,12 @@ export function BusinessPipeline() {
   const crmProvider = businessSettings?.crm_provider || 'closeos'
   const hasCrmIntegration = crmProvider !== 'closeos' && crmProvider !== 'zapier' && crmProvider !== 'make' && crmProvider !== 'n8n'
 
-  const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban')
+  type PipelineView = 'kanban' | 'table' | 'agenda' | 'calendar'
+  const [viewMode, setViewModeState] = useState<PipelineView>(() => {
+    try { const v = localStorage.getItem('closeos_pipeline_view'); if (v === 'kanban' || v === 'table' || v === 'agenda' || v === 'calendar') return v } catch {}
+    return 'kanban'
+  })
+  const setViewMode = (v: PipelineView) => { setViewModeState(v); try { localStorage.setItem('closeos_pipeline_view', v) } catch {} }
   const [contactedRemindersOpen, setContactedRemindersOpen] = useState(false)
   const [noShowRelancesOpen, setNoShowRelancesOpen] = useState(false)
   const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
@@ -633,6 +640,12 @@ export function BusinessPipeline() {
           )}
         </button>
 
+        {/* Mode cartes (relances + points de statut, une carte à la fois) */}
+        <FocusCardsButton
+          label={lang === 'en' ? 'Card mode' : 'Mode cartes'}
+          className="flex items-center gap-2 rounded-full border border-violet-200 dark:border-violet-500/30 bg-violet-50 dark:bg-violet-500/10 px-3 sm:px-4 h-10 sm:h-auto sm:py-2.5 text-sm font-bold text-violet-700 dark:text-violet-300 hover:border-violet-300 transition-all shrink-0"
+        />
+
         {/* View toggle */}
         <div className="flex shrink-0 rounded-full bg-stone-100 dark:bg-neutral-800 p-1">
           <button
@@ -648,6 +661,22 @@ export function BusinessPipeline() {
             className={cn('p-2 rounded-full transition-all', viewMode === 'table' ? 'bg-white dark:bg-neutral-700 text-stone-900 dark:text-white shadow-sm' : 'text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white')}
           >
             <List className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setViewMode('agenda')}
+            aria-label={lang === 'en' ? 'Action agenda' : 'Agenda des actions'}
+            title={lang === 'en' ? 'Action agenda' : 'Agenda des actions'}
+            className={cn('p-2 rounded-full transition-all', viewMode === 'agenda' ? 'bg-white dark:bg-neutral-700 text-stone-900 dark:text-white shadow-sm' : 'text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white')}
+          >
+            <ListChecks className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setViewMode('calendar')}
+            aria-label={lang === 'en' ? 'Calendar' : 'Calendrier'}
+            title={lang === 'en' ? 'Calendar' : 'Calendrier'}
+            className={cn('p-2 rounded-full transition-all', viewMode === 'calendar' ? 'bg-white dark:bg-neutral-700 text-stone-900 dark:text-white shadow-sm' : 'text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white')}
+          >
+            <CalendarDays className="h-4 w-4" />
           </button>
         </div>
 
@@ -894,6 +923,29 @@ export function BusinessPipeline() {
           )
         })}
       </div>
+
+      {/* Agenda des actions / Calendrier : mêmes prospects filtrés que le Kanban */}
+      {(viewMode === 'agenda' || viewMode === 'calendar') && (() => {
+        const viewProps = {
+          prospects: filtered,
+          delays: relanceDelays,
+          ownerId: effectiveUserId || '',
+          userId: user?.id,
+          teamMemberId: teamMember?.id || null,
+          isTeamMember,
+          timezone: userTimezone,
+          lang,
+          stageInfo: (id: string) => {
+            const st = STAGES.find(s => s.id === id)
+            if (st) return { name: st.name, dot: st.color }
+            if (id === 'partial') return { name: lang === 'en' ? 'Incomplete' : 'Incomplet', dot: 'bg-amber-400' }
+            const cs = customStages.find(c => `custom_${c.id}` === id)
+            return { name: cs?.name || id, dot: 'bg-stone-400' }
+          },
+          onOpen: (p: BusinessProspect) => setSelectedProspect(p),
+        }
+        return viewMode === 'agenda' ? <PipelineAgendaView {...viewProps} /> : <PipelineCalendarView {...viewProps} />
+      })()}
 
       {/* Kanban View */}
       {viewMode === 'kanban' && (

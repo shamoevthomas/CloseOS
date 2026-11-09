@@ -28,6 +28,7 @@ import { applyUnqualification, unqualifiedReasonLabel } from '../lib/unqualified
 import { useChannelPrompt } from '../contexts/BusinessChannelPromptContext'
 import { appendRelanceChannel } from '../lib/contactChannels'
 import { supabase } from '../../lib/supabase'
+import { useWhatsAppTemplates, fillWhatsAppMessage, stepLabel, whatsAppLink } from '../lib/whatsappTemplates'
 import toast from 'react-hot-toast'
 import { ProspectFunnelJourney } from './ProspectFunnelJourney'
 
@@ -1080,12 +1081,54 @@ export function BusinessProspectView({
     if (local.email) window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${local.email}`, '_blank')
     else toast.error(t.prospect_toast_email_missing)
   }
-  const handleOpenWhatsApp = () => {
-    if (local.phone) {
-      const clean = local.phone.replace(/[^0-9+]/g, '')
-      window.open(`https://wa.me/${clean}`, '_blank')
-    } else toast.error(t.prospect_toast_phone_missing)
+  // WhatsApp : si des messages pré-remplis existent (engrenage « Contacté » → Messages WhatsApp),
+  // une bulle propose d'ouvrir WhatsApp avec le message de l'étape en cours déjà écrit.
+  const { templates: waTemplates } = useWhatsAppTemplates(ownerUserId || user?.id)
+  const [waBubble, setWaBubble] = useState<null | 'bar' | 'side'>(null)
+  const [waStep, setWaStep] = useState(0)
+  const waSteps = Object.keys(waTemplates).map(Number).sort((a, b) => a - b)
+  const suggestedWaStep = (() => {
+    if (local.stage === 'contacted' && !local.responded_at) return (Number(local.relance_step) || 0) + 1
+    if (local.stage === 'contacted') return Number(local.relance_step) || 0
+    return 0
+  })()
+  const myFirstName = (teamMember?.first_name || String(user?.user_metadata?.full_name || user?.user_metadata?.name || '').split(' ')[0] || '').trim()
+  const prospectFirst = (local.firstName || String(local.contact || '').trim().split(/\s+/)[0] || '').trim()
+  const prospectLast = (local.lastName || String(local.contact || '').trim().split(/\s+/).slice(1).join(' ') || '').trim()
+  const waMessage = waTemplates[waStep] ? fillWhatsAppMessage(waTemplates[waStep], { prenom: prospectFirst, nom: prospectLast, mon_prenom: myFirstName }) : ''
+  const openWhatsApp = (text?: string) => {
+    if (!local.phone) { toast.error(t.prospect_toast_phone_missing); return }
+    window.open(whatsAppLink(local.phone, text), '_blank')
+    setWaBubble(null)
   }
+  const handleOpenWhatsApp = (anchor: 'bar' | 'side' = 'bar') => {
+    if (!local.phone) { toast.error(t.prospect_toast_phone_missing); return }
+    if (waSteps.length === 0) { openWhatsApp(); return }
+    if (waBubble === anchor) { setWaBubble(null); return }
+    setWaStep(waTemplates[suggestedWaStep] ? suggestedWaStep : waSteps[0])
+    setWaBubble(anchor)
+  }
+  const renderWaBubble = (anchor: 'bar' | 'side') => waBubble === anchor && (
+    <>
+      <div className="fixed inset-0 z-40" onClick={() => setWaBubble(null)} />
+      <div className={cn('absolute z-50 top-full mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-[#c4c7c7]/30 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-3 shadow-2xl', anchor === 'bar' ? 'right-0' : 'left-0')}>
+        <div className={cn('absolute -top-1.5 h-3 w-3 rotate-45 border-l border-t border-[#c4c7c7]/30 dark:border-neutral-700 bg-white dark:bg-neutral-900', anchor === 'bar' ? 'right-4' : 'left-6')} />
+        <p className="text-sm font-business-display font-bold text-stone-900 dark:text-white">{lang === 'en' ? 'Prepare the pre-filled message?' : 'Préparer le message pré-rempli ?'}</p>
+        {waSteps.length > 1 ? (
+          <select value={waStep} onChange={(e) => setWaStep(Number(e.target.value))} className="mt-2 w-full rounded-lg border border-[#c4c7c7]/30 dark:border-neutral-700 bg-[#f5f3f2] dark:bg-neutral-800 px-2 py-1.5 text-xs font-semibold text-stone-700 dark:text-neutral-200 outline-none">
+            {waSteps.map((st) => <option key={st} value={st}>{stepLabel(st, lang !== 'en')}{st === suggestedWaStep ? (lang === 'en' ? ' (suggested)' : ' (conseillé)') : ''}</option>)}
+          </select>
+        ) : (
+          <p className="mt-1 text-xs font-semibold text-stone-500">{stepLabel(waStep, lang !== 'en')}</p>
+        )}
+        <div className="mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap rounded-xl bg-[#dcf8c6] dark:bg-emerald-900/40 px-3 py-2 text-sm text-stone-900 dark:text-emerald-50">{waMessage}</div>
+        <div className="mt-3 flex gap-2">
+          <button onClick={() => openWhatsApp()} className="flex-1 rounded-full border border-[#c4c7c7]/30 dark:border-neutral-700 px-3 py-2 text-xs font-semibold text-stone-600 dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800">{lang === 'en' ? 'Without message' : 'Sans message'}</button>
+          <button onClick={() => openWhatsApp(waMessage)} className="flex-1 rounded-full bg-[#25D366] px-3 py-2 text-xs font-business-display font-bold text-white hover:bg-[#1ebe5a]">{lang === 'en' ? 'Yes, open WhatsApp' : 'Oui, ouvrir WhatsApp'}</button>
+        </div>
+      </div>
+    </>
+  )
   const handleDelete = () => {
     if (confirm(t.prospect_confirm_delete.replace('{name}', local.contact))) { onDelete(prospect.id); onClose() }
   }
@@ -1409,10 +1452,11 @@ export function BusinessProspectView({
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center gap-2">
+                  <div className="relative flex items-center gap-2">
+                    {renderWaBubble('side')}
                     <Phone className="h-3.5 w-3.5 shrink-0 text-stone-400" strokeWidth={1.5} />
                     <button
-                      onClick={handleOpenWhatsApp}
+                      onClick={() => handleOpenWhatsApp('side')}
                       disabled={!local.phone}
                       className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-stone-900 dark:text-white hover:text-[#006c49] disabled:cursor-default disabled:text-stone-400 dark:disabled:text-neutral-500 transition-colors"
                     >
@@ -1935,14 +1979,17 @@ export function BusinessProspectView({
               <Mail className="h-4 w-4" strokeWidth={1.5} />
               <span className="sm:hidden font-business-display font-bold text-[11px]">Email</span>
             </button>
+            <div className="relative flex">
+            {renderWaBubble('bar')}
             <button
-              onClick={handleOpenWhatsApp}
+              onClick={() => handleOpenWhatsApp('bar')}
               aria-label="WhatsApp"
-              className="sm:w-10 sm:h-10 rounded-2xl sm:rounded-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-0 py-2.5 sm:py-0 text-stone-900 dark:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 active:scale-95 transition-colors"
+              className="w-full sm:w-10 sm:h-10 rounded-2xl sm:rounded-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-0 py-2.5 sm:py-0 text-stone-900 dark:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 active:scale-95 transition-colors"
             >
               <MessageCircle className="h-4 w-4" strokeWidth={1.5} />
               <span className="sm:hidden font-business-display font-bold text-[11px]">WhatsApp</span>
             </button>
+            </div>
           </div>
         </section>
 

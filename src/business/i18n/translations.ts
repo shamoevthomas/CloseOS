@@ -55,6 +55,7 @@ export interface BusinessTranslations {
   sidebar_pipeline: string;
   sidebar_campaigns: string;
   sidebar_forms: string;
+  sidebar_emailing: string;
   sidebar_acquisition: string;
   sidebar_objectives: string;
   sidebar_formulas: string;
@@ -2677,6 +2678,7 @@ export const fr: BusinessTranslations = {
   sidebar_pipeline: 'Pipeline',
   sidebar_campaigns: 'Campagnes',
   sidebar_forms: 'Formulaires',
+  sidebar_emailing: 'Emailing',
   sidebar_acquisition: 'Acquisition',
   sidebar_objectives: 'Objectifs',
   sidebar_formulas: 'Formules',
@@ -5913,6 +5915,7 @@ export const en: BusinessTranslations = {
   sidebar_pipeline: 'Pipeline',
   sidebar_campaigns: 'Campaigns',
   sidebar_forms: 'Forms',
+  sidebar_emailing: 'Emailing',
   sidebar_acquisition: 'Acquisition',
   sidebar_objectives: 'Objectives',
   sidebar_formulas: 'Plans',

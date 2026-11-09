@@ -25,6 +25,7 @@ import {
   Clock,
   DollarSign,
   ClipboardList,
+  Mail,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
@@ -57,6 +58,7 @@ const getOwnerNavigation = (t: BusinessTranslations): NavItem[] => [
   { name: t.sidebar_appointments, href: '/business/rendez-vous', icon: Calendar },
   { name: t.sidebar_agenda, href: '/business/agenda', icon: Calendar },
   { name: t.sidebar_reminders, href: '/business/rappels', icon: Bell },
+  { name: t.sidebar_emailing, href: '/business/emailing', icon: Mail },
   { name: t.sidebar_invoices, href: '/business/factures', icon: Receipt },
   { name: t.sidebar_revenue, href: '/business/revenue', icon: DollarSign },
   { name: t.sidebar_report, href: '/business/report', icon: FileText },
@@ -84,6 +86,7 @@ const getHeadOfSalesNavigation = (t: BusinessTranslations, canManageCampaigns?: 
     { name: t.sidebar_appointments, href: '/business/rendez-vous', icon: Calendar },
     { name: t.sidebar_agenda, href: '/business/agenda', icon: Calendar },
     { name: t.sidebar_reminders, href: '/business/rappels', icon: Bell },
+    { name: t.sidebar_emailing, href: '/business/emailing', icon: Mail },
     { name: t.sidebar_invoices, href: '/business/factures', icon: Receipt },
     { name: t.sidebar_revenue, href: '/business/revenue', icon: DollarSign },
     { name: t.sidebar_report, href: '/business/report', icon: FileText },

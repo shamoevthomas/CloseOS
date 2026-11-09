@@ -2,6 +2,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { BusinessSidebar } from '../components/BusinessSidebar'
 import { BusinessSettingsModal } from '../components/BusinessSettingsModal'
 import { BusinessReminderBell } from '../components/BusinessReminderBell'
+import { BusinessFocusCards } from '../components/BusinessFocusCards'
 import { Menu, Globe, X, AlertTriangle } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useState, useEffect, useMemo } from 'react'
@@ -26,6 +27,7 @@ const OWNER_PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/business/formules': { title: 'Formules', subtitle: 'Gérez vos formules tarifaires et ressources' },
   '/business/rendez-vous': { title: 'Rendez-vous', subtitle: 'Tous vos rendez-vous pris via les campagnes' },
   '/business/rappels': { title: 'Rappels', subtitle: 'Gérez vos rappels et suivis prospects' },
+  '/business/emailing': { title: 'Emailing', subtitle: 'Envoyez des emails à vos prospects et synchronisez vos contacts' },
   '/business/report': { title: 'Rapport', subtitle: 'Rapports détaillés et export PDF' },
   '/business/closers': { title: 'Closers', subtitle: 'Gérez vos closers et suivez leurs performances' },
   '/business/setters': { title: 'Setters', subtitle: 'Gérez vos setters et suivez leurs performances' },
@@ -343,6 +345,9 @@ function BusinessLayoutInner({
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
       />
+
+      {/* Mode cartes : relances et points de statut du jour, à la connexion */}
+      <BusinessFocusCards />
     </div>
   )
 }

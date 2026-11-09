@@ -10,6 +10,7 @@ import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { BusinessProspectView } from '../components/BusinessProspectView'
 import { BusinessRelanceWorklistModal } from '../components/BusinessRelanceWorklistModal'
+import { FocusCardsButton } from '../components/BusinessFocusCards'
 import { UnqualifiedReasonModal } from '../components/UnqualifiedReasonModal'
 import { applyUnqualification } from '../lib/unqualifiedReasons'
 import { useChannelPrompt } from '../contexts/BusinessChannelPromptContext'
@@ -294,6 +295,10 @@ export function CloserPipeline() {
                 <span className="ml-0.5 bg-sky-600 text-white text-[10px] font-bold rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center">{worklistCount}</span>
               )}
             </button>
+            <FocusCardsButton
+              label={lang === 'en' ? 'Card mode' : 'Mode cartes'}
+              className="flex items-center gap-2 rounded-full border border-violet-200 dark:border-violet-500/30 bg-violet-50 dark:bg-violet-500/10 px-4 max-sm:px-3 py-2.5 max-sm:py-0 max-sm:h-10 text-sm font-bold text-violet-700 dark:text-violet-300 hover:border-violet-300 transition-all shrink-0"
+            />
           </div>
         </div>
       </div>

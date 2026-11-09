@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { X, Plus, Trash2, Loader2, Save, Bell } from 'lucide-react'
+import { X, Plus, Trash2, Loader2, Save, Bell, MessageCircle } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import toast from 'react-hot-toast'
+import { loadWhatsAppTemplates, saveWhatsAppTemplates, stepLabel, fillWhatsAppMessage, type WhatsAppTemplates } from '../lib/whatsappTemplates'
 
 interface Props {
   isOpen: boolean
@@ -17,6 +18,16 @@ export function BusinessContactedRemindersModal({ isOpen, onClose, ownerId }: Pr
   const [days, setDays] = useState<number[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  // Deuxième page du pop-up : messages WhatsApp pré-remplis par relance
+  const [tab, setTab] = useState<'delays' | 'whatsapp'>('delays')
+  const [templates, setTemplates] = useState<WhatsAppTemplates>({})
+  const [templatesError, setTemplatesError] = useState(false)
+
+  useEffect(() => {
+    if (!isOpen || !ownerId) return
+    setTab('delays')
+    loadWhatsAppTemplates(ownerId).then((t) => { setTemplates(t); setTemplatesError(false) }).catch(() => setTemplatesError(true))
+  }, [isOpen, ownerId])
 
   useEffect(() => {
     if (!isOpen || !ownerId) return
@@ -54,7 +65,25 @@ export function BusinessContactedRemindersModal({ isOpen, onClose, ownerId }: Pr
     setDays(prev => prev.filter((_, i) => i !== idx))
   }
 
+  const handleSaveTemplates = async () => {
+    setSaving(true)
+    try {
+      await saveWhatsAppTemplates(ownerId, templates)
+      toast.success(fr ? 'Messages WhatsApp enregistrés' : 'WhatsApp messages saved')
+      onClose()
+    } catch {
+      toast.error(fr ? "Erreur lors de l'enregistrement" : 'Save failed')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Étapes affichées : premier contact + une par relance configurée (et celles qui ont déjà un message)
+  const stepCount = Math.max(sorted.length, ...Object.keys(templates).map(Number), 1)
+  const steps = Array.from({ length: stepCount + 1 }, (_, i) => i)
+
   const handleSave = async () => {
+    if (tab === 'whatsapp') return handleSaveTemplates()
     // Nettoyage : entiers 1..60, uniques
     const cleaned = Array.from(new Set(
       days.map(d => Math.floor(Number(d))).filter(d => Number.isFinite(d) && d >= 1 && d <= 60)
@@ -101,7 +130,9 @@ export function BusinessContactedRemindersModal({ isOpen, onClose, ownerId }: Pr
                 {fr ? 'Relances — Contacté' : 'Reminders — Contacted'}
               </h2>
               <p className="text-xs text-stone-500 dark:text-neutral-400">
-                {fr ? 'Emails automatiques au commercial assigné' : 'Automatic emails to the assigned rep'}
+                {tab === 'delays'
+                  ? (fr ? 'Emails automatiques au commercial assigné' : 'Automatic emails to the assigned rep')
+                  : (fr ? 'Messages pré-remplis du bouton WhatsApp' : 'Pre-filled messages for the WhatsApp button')}
               </p>
             </div>
           </div>
@@ -110,8 +141,70 @@ export function BusinessContactedRemindersModal({ isOpen, onClose, ownerId }: Pr
           </button>
         </div>
 
+        {/* Pages du pop-up */}
+        <div className="flex gap-1 px-4 sm:px-6 pt-3">
+          {([['delays', fr ? 'Délais de relance' : 'Follow-up delays', Bell], ['whatsapp', fr ? 'Messages WhatsApp' : 'WhatsApp messages', MessageCircle]] as const).map(([id, label, Icon]) => (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              className={cn('flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-all',
+                tab === id ? 'bg-stone-900 text-white dark:bg-white dark:text-stone-900' : 'bg-stone-100 dark:bg-white/5 text-stone-500 dark:text-neutral-400 hover:text-stone-800')}
+            >
+              <Icon className="h-3.5 w-3.5" /> {label}
+            </button>
+          ))}
+        </div>
+
+        {tab === 'whatsapp' && (
+          <div className="p-4 sm:p-6 space-y-4 min-h-0 flex-1 sm:max-h-[55vh] overflow-y-auto overscroll-contain">
+            <p className="text-sm text-stone-600 dark:text-neutral-300 leading-relaxed">
+              {fr
+                ? "Écris le message à envoyer à chaque étape. Sur la fiche prospect, le bouton WhatsApp proposera le bon message (selon la relance en cours) déjà écrit : il n'y aura plus qu'à appuyer sur Envoyer."
+                : 'Write the message for each step. On the prospect sheet, the WhatsApp button will offer the right message (based on the current follow-up), ready to send.'}
+            </p>
+            <p className="text-xs text-stone-500 dark:text-neutral-400">
+              {fr ? 'Variables : ' : 'Variables: '}
+              <code className="rounded bg-stone-100 dark:bg-white/10 px-1">{'{{prenom}}'}</code> {fr ? 'du prospect, ' : 'of the prospect, '}
+              <code className="rounded bg-stone-100 dark:bg-white/10 px-1">{'{{nom}}'}</code>,{' '}
+              <code className="rounded bg-stone-100 dark:bg-white/10 px-1">{'{{mon_prenom}}'}</code> {fr ? '(la personne qui envoie).' : '(the sender).'}
+            </p>
+            {templatesError ? (
+              <p className="rounded-lg bg-amber-50 dark:bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300">
+                {fr ? 'Les messages WhatsApp seront disponibles une fois la mise à jour de la base appliquée.' : 'WhatsApp messages will be available once the database update is applied.'}
+              </p>
+            ) : steps.map((step) => (
+              <div key={step} className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-stone-500 dark:text-neutral-400">
+                    {stepLabel(step, fr)}
+                    {step > 0 && sorted[step - 1] != null && <span className="ml-1 font-normal opacity-70">· {fr ? `${sorted[step - 1]} j après` : `${sorted[step - 1]} d after`}</span>}
+                  </label>
+                  {templates[step] && (
+                    <button onClick={() => setTemplates((t) => ({ ...t, [step]: '' }))} className="text-[11px] font-semibold text-stone-400 hover:text-red-500">{fr ? 'Effacer' : 'Clear'}</button>
+                  )}
+                </div>
+                <textarea
+                  value={templates[step] || ''}
+                  onChange={(e) => setTemplates((t) => ({ ...t, [step]: e.target.value }))}
+                  rows={3}
+                  maxLength={4000}
+                  placeholder={step === 0
+                    ? (fr ? 'Salut {{prenom}}, c’est {{mon_prenom}} ! …' : 'Hi {{prenom}}, it’s {{mon_prenom}}! …')
+                    : (fr ? '{{prenom}} ?' : '{{prenom}}?')}
+                  className="w-full resize-y rounded-lg border border-stone-200 dark:border-white/10 bg-stone-50 dark:bg-white/5 px-3 py-2 text-sm text-stone-900 dark:text-white focus:outline-none focus:border-[#25D366]"
+                />
+                {templates[step]?.includes('{{') && (
+                  <p className="text-[11px] text-stone-400 dark:text-neutral-500 truncate">
+                    {fr ? 'Aperçu : ' : 'Preview: '}{fillWhatsAppMessage(templates[step], { prenom: 'Camille', nom: 'Martin', mon_prenom: fr ? 'Thomas' : 'Thomas' })}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Body */}
-        <div className="p-4 sm:p-6 space-y-4 min-h-0 flex-1 sm:max-h-[55vh] overflow-y-auto overscroll-contain">
+        <div className={cn('p-4 sm:p-6 space-y-4 min-h-0 flex-1 sm:max-h-[55vh] overflow-y-auto overscroll-contain', tab !== 'delays' && 'hidden')}>
           <p className="text-sm text-stone-600 dark:text-neutral-300 leading-relaxed">
             {fr
               ? "Configurez les relances email envoyées au setter assigné (ou au closer). La 1ère part X jours après l'entrée en « Contacté » ; chaque suivante, X jours après la relance précédente (max 60 jours par intervalle)."
@@ -172,7 +265,7 @@ export function BusinessContactedRemindersModal({ isOpen, onClose, ownerId }: Pr
           </button>
           <button
             onClick={handleSave}
-            disabled={saving || loading}
+            disabled={saving || loading || (tab === 'whatsapp' && templatesError)}
             className={cn(
               'flex flex-1 sm:flex-none justify-center items-center gap-2 px-6 py-3 sm:py-2.5 rounded-full bg-[#006c49] text-sm font-bold text-white hover:bg-[#005a3d] transition-all shadow-lg disabled:opacity-50'
             )}

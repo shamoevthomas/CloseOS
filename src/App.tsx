@@ -152,6 +152,7 @@ const BusinessFormules = lazy(() => import('./business/pages/BusinessFormules').
 const BusinessObjectives = lazy(() => import('./business/pages/BusinessObjectives').then(m => ({ default: m.BusinessObjectives })))
 const BusinessAppointments = lazy(() => import('./business/pages/BusinessAppointments').then(m => ({ default: m.BusinessAppointments })))
 const BusinessReminders = lazy(() => import('./business/pages/BusinessReminders').then(m => ({ default: m.BusinessReminders })))
+const BusinessEmailing = lazy(() => import('./business/pages/BusinessEmailing').then(m => ({ default: m.BusinessEmailing })))
 const BusinessAcquisition = lazy(() => import('./business/pages/BusinessAcquisition').then(m => ({ default: m.BusinessAcquisition })))
 const BusinessReport = lazy(() => import('./business/pages/BusinessReport').then(m => ({ default: m.BusinessReport })))
 const BusinessPipeline = lazy(() => import('./business/pages/BusinessPipeline').then(m => ({ default: m.BusinessPipeline })))
@@ -550,6 +551,7 @@ function AuthenticatedApp() {
           <Route path="formules" element={<TeamOnboardingGuard><BusinessFormules /></TeamOnboardingGuard>} />
           <Route path="rendez-vous" element={<TeamOnboardingGuard><BusinessAppointments /></TeamOnboardingGuard>} />
           <Route path="rappels" element={<TeamOnboardingGuard><BusinessReminders /></TeamOnboardingGuard>} />
+          <Route path="emailing" element={<OwnerOnlyWrapper><BusinessEmailing /></OwnerOnlyWrapper>} />
           <Route path="report" element={<SoloRedirect><OwnerOnlyWrapper><BusinessReport /></OwnerOnlyWrapper></SoloRedirect>} />
           <Route path="revenue" element={<OwnerOnlyWrapper><BusinessRevenue /></OwnerOnlyWrapper>} />
           <Route path="team" element={<SoloRedirect><TeamOnboardingGuard><BusinessTeam /></TeamOnboardingGuard></SoloRedirect>} />
