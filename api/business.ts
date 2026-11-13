@@ -9,6 +9,7 @@ import Stripe from 'stripe'
 import { computeVisibleQuestionIds } from './_lib/questionnaireConditions.js'
 import { resolveDaySlots, type TempPeriod } from './_lib/temporaryAvailability.js'
 import { subPeriodEndIso } from './_lib/stripePeriod.js'
+import { cancelBusinessSubscriptions } from './_lib/cancelBusinessSubscriptions.js'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || ''
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
@@ -8777,9 +8778,25 @@ ${notesSection}
         .maybeSingle()
 
       if (!codeRow) return res.status(401).json({ error: 'Code invalide ou expiré' })
-      await supabase.from('business_verification_codes').update({ used: true }).eq('id', codeRow.id)
 
       const ownerId = user_id
+
+      // Annuler l'abonnement Stripe AVANT toute suppression : sinon le compte disparaît mais
+      // l'abonnement (essai ou actif) continue et la carte est prélevée. En cas d'échec Stripe,
+      // on s'arrête sans rien supprimer et sans consommer le code, pour pouvoir réessayer.
+      try {
+        const { data: ownerBilling } = await supabase
+          .from('business_users')
+          .select('stripe_customer_id')
+          .eq('id', ownerId)
+          .maybeSingle()
+        await cancelBusinessSubscriptions(ownerBilling?.stripe_customer_id, `Compte Business supprimé par le propriétaire (${ownerId})`)
+      } catch (stripeErr: any) {
+        console.error('[delete-owner-account] Stripe cancel failed:', stripeErr?.message)
+        return res.status(502).json({ error: "Impossible d'annuler votre abonnement pour le moment. Réessayez dans quelques minutes ou contactez support@closeos.fr." })
+      }
+
+      await supabase.from('business_verification_codes').update({ used: true }).eq('id', codeRow.id)
 
       // Get all team members
       const { data: members } = await supabase
@@ -8791,7 +8808,7 @@ ${notesSection}
       const { data: allProspects } = await supabase
         .from('business_prospects')
         .select('id, stage, value, assigned_to, assigned_setter, formula_id, campaign_id, created_at')
-        .eq('business_owner_id', ownerId)
+        .eq('user_id', ownerId)
 
       // Get formula commissions
       const { data: allCommissions } = await supabase
@@ -8883,7 +8900,6 @@ ${notesSection}
         const memberUserIds = members.filter(m => m.user_id).map(m => m.user_id)
 
         await Promise.all([
-          supabase.from('business_objectives').delete().in('team_member_id', memberIds),
           supabase.from('business_personal_objectives').delete().in('team_member_id', memberIds),
           supabase.from('business_availability_slots').delete().in('team_member_id', memberIds),
           supabase.from('business_temporary_availability').delete().in('team_member_id', memberIds),
@@ -8901,21 +8917,33 @@ ${notesSection}
         }
       }
 
-      // Delete org-level data
+      // Delete org-level data — colonnes vérifiées sur le schéma (même mapping que reset-organization) :
+      //   business_owner_id : team_members, teams, formula_commissions, custom_stages,
+      //     booking_links, call_history, round_robin_state
+      //   user_id : prospects, campaigns, appointments, formulas, objectives, custom_sources,
+      //     webhook_keys, verification_codes, device_tokens, invoices, reminders
+      //   owner_id : tags — inviter_id : invitations
       await Promise.all([
         supabase.from('business_team_members').delete().eq('business_owner_id', ownerId),
-        supabase.from('business_prospects').delete().eq('business_owner_id', ownerId),
-        supabase.from('business_campaigns').delete().eq('business_owner_id', ownerId),
-        supabase.from('business_appointments').delete().eq('business_owner_id', ownerId),
-        supabase.from('business_formulas').delete().eq('business_owner_id', ownerId),
+        supabase.from('business_teams').delete().eq('business_owner_id', ownerId),
         supabase.from('business_formula_commissions').delete().eq('business_owner_id', ownerId),
-        supabase.from('business_objectives').delete().eq('business_owner_id', ownerId),
-        supabase.from('business_custom_sources').delete().eq('business_owner_id', ownerId),
+        supabase.from('business_custom_stages').delete().eq('business_owner_id', ownerId),
         supabase.from('business_booking_links').delete().eq('business_owner_id', ownerId),
-        supabase.from('business_invitations').delete().eq('inviter_id', ownerId),
+        supabase.from('business_call_history').delete().eq('business_owner_id', ownerId),
+        supabase.from('business_round_robin_state').delete().eq('business_owner_id', ownerId),
+        supabase.from('business_prospects').delete().eq('user_id', ownerId),
+        supabase.from('business_campaigns').delete().eq('user_id', ownerId),
+        supabase.from('business_appointments').delete().eq('user_id', ownerId),
+        supabase.from('business_formulas').delete().eq('user_id', ownerId),
+        supabase.from('business_objectives').delete().eq('user_id', ownerId),
+        supabase.from('business_custom_sources').delete().eq('user_id', ownerId),
+        supabase.from('business_webhook_keys').delete().eq('user_id', ownerId),
         supabase.from('business_device_tokens').delete().eq('user_id', ownerId),
         supabase.from('business_verification_codes').delete().eq('user_id', ownerId),
+        supabase.from('invoices').delete().eq('user_id', ownerId),
         supabase.from('reminders').delete().eq('user_id', ownerId),
+        supabase.from('business_tags').delete().eq('owner_id', ownerId),
+        supabase.from('business_invitations').delete().eq('inviter_id', ownerId),
       ])
 
       // Delete owner's own data

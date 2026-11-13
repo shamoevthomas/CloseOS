@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { cancelBusinessSubscriptions } from '../_lib/cancelBusinessSubscriptions.js';
 
 export const config = {
     runtime: 'edge',
@@ -69,8 +70,22 @@ function emailWrap(badge: string, heading: string, bodyHtml: string, ctaText: st
 
 // ─── Delete entire organization (same as delete-owner-account in business.ts) ───
 
-async function deleteOrganization(ownerId: string) {
+async function deleteOrganization(ownerId: string): Promise<boolean> {
     console.log(`🗑️ [sub-grace] Deleting entire organization for owner ${ownerId}`);
+
+    // Annuler l'abonnement Stripe (impayé) avant de supprimer : sinon il reste vivant sur un
+    // compte qui n'existe plus. Si Stripe échoue, on ne supprime rien et on réessaie au prochain passage.
+    try {
+        const { data: ownerBilling } = await supabase
+            .from('business_users')
+            .select('stripe_customer_id')
+            .eq('id', ownerId)
+            .maybeSingle();
+        await cancelBusinessSubscriptions(ownerBilling?.stripe_customer_id, `Organisation supprimée pour impayé (${ownerId})`);
+    } catch (e: any) {
+        console.error(`[sub-grace] Stripe cancel failed for ${ownerId}, deletion postponed:`, e?.message);
+        return false;
+    }
 
     // Get all team members
     const { data: members } = await supabase
@@ -84,7 +99,6 @@ async function deleteOrganization(ownerId: string) {
         const memberUserIds = members.filter(m => m.user_id).map(m => m.user_id);
 
         await Promise.all([
-            supabase.from('business_objectives').delete().in('team_member_id', memberIds),
             supabase.from('business_personal_objectives').delete().in('team_member_id', memberIds),
             supabase.from('business_availability_slots').delete().in('team_member_id', memberIds),
             supabase.from('business_absences').delete().in('team_member_id', memberIds),
@@ -102,21 +116,28 @@ async function deleteOrganization(ownerId: string) {
         }
     }
 
-    // Delete org-level data
+    // Delete org-level data (colonnes vérifiées sur le schéma, même mapping que reset-organization)
     await Promise.all([
         supabase.from('business_team_members').delete().eq('business_owner_id', ownerId),
-        supabase.from('business_prospects').delete().eq('business_owner_id', ownerId),
-        supabase.from('business_campaigns').delete().eq('business_owner_id', ownerId),
-        supabase.from('business_appointments').delete().eq('business_owner_id', ownerId),
-        supabase.from('business_formulas').delete().eq('business_owner_id', ownerId),
+        supabase.from('business_teams').delete().eq('business_owner_id', ownerId),
         supabase.from('business_formula_commissions').delete().eq('business_owner_id', ownerId),
-        supabase.from('business_objectives').delete().eq('business_owner_id', ownerId),
-        supabase.from('business_custom_sources').delete().eq('business_owner_id', ownerId),
+        supabase.from('business_custom_stages').delete().eq('business_owner_id', ownerId),
         supabase.from('business_booking_links').delete().eq('business_owner_id', ownerId),
-        supabase.from('business_invitations').delete().eq('inviter_id', ownerId),
+        supabase.from('business_call_history').delete().eq('business_owner_id', ownerId),
+        supabase.from('business_round_robin_state').delete().eq('business_owner_id', ownerId),
+        supabase.from('business_prospects').delete().eq('user_id', ownerId),
+        supabase.from('business_campaigns').delete().eq('user_id', ownerId),
+        supabase.from('business_appointments').delete().eq('user_id', ownerId),
+        supabase.from('business_formulas').delete().eq('user_id', ownerId),
+        supabase.from('business_objectives').delete().eq('user_id', ownerId),
+        supabase.from('business_custom_sources').delete().eq('user_id', ownerId),
+        supabase.from('business_webhook_keys').delete().eq('user_id', ownerId),
         supabase.from('business_device_tokens').delete().eq('user_id', ownerId),
         supabase.from('business_verification_codes').delete().eq('user_id', ownerId),
+        supabase.from('invoices').delete().eq('user_id', ownerId),
         supabase.from('reminders').delete().eq('user_id', ownerId),
+        supabase.from('business_tags').delete().eq('owner_id', ownerId),
+        supabase.from('business_invitations').delete().eq('inviter_id', ownerId),
     ]);
 
     // Delete owner data
@@ -129,6 +150,7 @@ async function deleteOrganization(ownerId: string) {
     await supabase.auth.admin.deleteUser(ownerId).catch(() => {});
 
     console.log(`✅ [sub-grace] Organization ${ownerId} fully deleted`);
+    return true;
 }
 
 // ─── Main handler ───
@@ -177,7 +199,7 @@ export default async function handler(req: Request) {
             const { data: settings } = await supabase.from('business_settings').select('company_name').eq('user_id', ownerId).single();
             const orgName = settings?.company_name || 'votre organisation';
 
-            await deleteOrganization(ownerId);
+            if (!(await deleteOrganization(ownerId))) continue;
 
             // Send final deletion email (owner account is deleted, but email is sent before)
             if (ownerEmail) {
