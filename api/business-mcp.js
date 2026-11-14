@@ -101,7 +101,10 @@ async function callApi(ctx, path, action, method, { query = {}, body } = {}) {
   const text = await r.text()
   let data
   try { data = JSON.parse(text) } catch { throw new Error(`Réponse non-JSON de ${path}?action=${action} (${r.status})`) }
-  if (!r.ok) throw new Error(data?.error || `${action} a échoué (${r.status})`)
+  if (!r.ok) {
+    const details = Array.isArray(data?.problems) && data.problems.length ? `\n- ${data.problems.join('\n- ')}` : ''
+    throw new Error((data?.error || `${action} a échoué (${r.status})`) + details)
+  }
   return data
 }
 
@@ -287,6 +290,83 @@ function pick(obj, allowed) {
   const out = {}
   for (const [k, v] of Object.entries(obj || {})) if (allowed.has(k)) out[k] = v
   return out
+}
+
+// ───────── Formulaires : ids stables + références entre blocs ─────────
+
+const FORM_SETTINGS_KEYS = new Set(['submit_label', 'thankyou_title', 'thankyou_text', 'redirect_url', 'show_progress', 'accent_color', 'one_at_a_time'])
+
+/**
+ * Prépare les blocs envoyés par le client MCP :
+ *  - conserve l'`id` fourni ; sinon reprend l'id d'un bloc existant de même `ref`, ou de
+ *    même type + même libellé (évite de casser conditions et réponses à chaque update) ;
+ *    sinon génère un id ici, AVANT l'envoi, pour que les références se résolvent ;
+ *  - traduit `conditional.source_ref` (ref ou id d'un bloc du même appel) en `source_id`.
+ * `existing` = blocs actuels du formulaire (update) ou [] (create).
+ */
+function resolveFormBlocks(blocks, existing = []) {
+  if (!Array.isArray(blocks)) return blocks
+  const existingIds = new Set(existing.map((b) => b.id))
+  const usedExisting = new Set()
+  const refToId = new Map()
+
+  const out = blocks.map((raw, i) => {
+    const b = { ...(raw || {}) }
+    let id = typeof b.id === 'string' && b.id ? b.id : null
+    if (!id && b.ref) {
+      const byRef = existing.find((e) => e.ref === b.ref && !usedExisting.has(e.id))
+      if (byRef) id = byRef.id
+    }
+    if (!id && b.type && typeof b.text === 'string' && b.text.trim()) {
+      const same = existing.find((e) => !usedExisting.has(e.id) && e.type === b.type && (e.text || '').trim() === b.text.trim())
+      if (same) id = same.id
+    }
+    if (!id) id = crypto.randomUUID()
+    if (existingIds.has(id)) usedExisting.add(id)
+    b.id = id
+    if (b.ref != null) refToId.set(String(b.ref), id)
+    return b
+  })
+
+  const knownIds = new Set(out.map((b) => b.id))
+  for (const [i, b] of out.entries()) {
+    const c = b.conditional
+    if (c && typeof c === 'object') {
+      const ref = c.source_ref != null ? String(c.source_ref) : null
+      if (ref) {
+        const target = refToId.get(ref) || (knownIds.has(ref) ? ref : null)
+        if (!target) throw new Error(`Bloc ${i + 1} : conditional.source_ref « ${ref} » ne correspond à aucun ref/id de bloc de ce formulaire.`)
+        c.source_id = target
+      }
+      delete c.source_ref
+      b.conditional = {
+        enabled: c.enabled !== false,
+        source_id: c.source_id || '',
+        operator: c.operator || 'in',
+        values: Array.isArray(c.values) ? c.values : c.values != null ? [c.values] : [],
+      }
+    }
+    if (b.ref != null) b.ref = String(b.ref) // conservé en base : sert aux updates suivants
+  }
+  return out
+}
+
+async function getFormOrThrow(ctx, id) {
+  const data = await callApi(ctx, '/api/business-forms', 'forms-list', 'GET', { query: { user_id: ctx.owner } })
+  const form = (data.forms || []).find((f) => f.id === id)
+  if (!form) throw new Error('Formulaire introuvable sur ce compte.')
+  return form
+}
+
+/** Construit le patch d'un formulaire (champs autorisés, settings fusionnés et filtrés). */
+function buildFormPatch(a, currentSettings) {
+  const patch = pick(a.patch || a, FORM_WRITABLE)
+  if (patch.settings && typeof patch.settings === 'object') {
+    const unknown = Object.keys(patch.settings).filter((k) => !FORM_SETTINGS_KEYS.has(k))
+    if (unknown.length) throw new Error(`settings inconnus : ${unknown.join(', ')}. Autorisés : ${[...FORM_SETTINGS_KEYS].join(', ')}`)
+    patch.settings = { ...(currentSettings || {}), ...patch.settings }
+  }
+  return patch
 }
 
 // ───────── Page de confirmation de campagne ─────────
@@ -1594,30 +1674,59 @@ const impl = {
     }
     if (action === 'get') {
       if (!a.id) throw new Error('id requis.')
-      const data = await callApi(ctx, '/api/business-forms', 'forms-list', 'GET', { query: { user_id: ctx.owner } })
-      const form = (data.forms || []).find((f) => f.id === a.id)
-      if (!form) throw new Error('Formulaire introuvable sur ce compte.')
-      return { form }
+      return { form: await getFormOrThrow(ctx, a.id) }
     }
     if (action === 'create') {
       if (!a.name) throw new Error('name requis.')
+      // Blocs résolus AVANT de créer quoi que ce soit : une source_ref inconnue échoue sans
+      // laisser de formulaire vide derrière.
+      const patch = buildFormPatch(a, null)
+      delete patch.name
+      if (patch.blocks) patch.blocks = resolveFormBlocks(patch.blocks, [])
       const created = await callApi(ctx, '/api/business-forms', 'forms-create', 'POST', { body: { user_id: ctx.owner, name: a.name } })
       let form = created.form
-      // Création en un coup : on applique blocs / CRM / settings fournis au même appel.
-      const patch = pick(a.patch || a, FORM_WRITABLE)
-      delete patch.name
+      let warnings
       if (Object.keys(patch).length > 0) {
-        const updated = await callApi(ctx, '/api/business-forms', 'forms-update', 'PUT', { body: { user_id: ctx.owner, id: form.id, ...patch } })
-        form = updated.form
+        if (patch.settings) patch.settings = { ...(form.settings || {}), ...patch.settings }
+        try {
+          const updated = await callApi(ctx, '/api/business-forms', 'forms-update', 'PUT', { body: { user_id: ctx.owner, id: form.id, strict: true, ...patch } })
+          form = updated.form
+          warnings = updated.warnings
+        } catch (e) {
+          // Blocs refusés : on retire le formulaire vide créé à l'instant puis on remonte l'erreur.
+          await callApi(ctx, '/api/business-forms', 'forms-delete', 'DELETE', { query: { id: form.id, user_id: ctx.owner } }).catch(() => {})
+          throw e
+        }
       }
-      return { form, url: `${ctx.base}/f/${form.slug}` }
+      return { form, url: `${ctx.base}/f/${form.slug}`, ...(warnings ? { warnings } : {}) }
     }
     if (action === 'update') {
       if (!a.id) throw new Error('id requis.')
-      const patch = pick(a.patch || a, FORM_WRITABLE)
+      const current = await getFormOrThrow(ctx, a.id)
+      const patch = buildFormPatch(a, current.settings)
       if (Object.keys(patch).length === 0) throw new Error(`Aucun champ à modifier. Champs autorisés : ${[...FORM_WRITABLE].join(', ')}`)
-      const data = await callApi(ctx, '/api/business-forms', 'forms-update', 'PUT', { body: { user_id: ctx.owner, id: a.id, ...patch } })
-      return { form: data.form }
+      if (patch.blocks) patch.blocks = resolveFormBlocks(patch.blocks, Array.isArray(current.blocks) ? current.blocks : [])
+      const data = await callApi(ctx, '/api/business-forms', 'forms-update', 'PUT', { body: { user_id: ctx.owner, id: a.id, strict: true, ...patch } })
+      return { form: data.form, ...(data.warnings ? { warnings: data.warnings } : {}) }
+    }
+    if (action === 'update_blocks') {
+      // Modifie des blocs précis sans renvoyer toute la liste : ids, ordre et conditions des
+      // autres blocs restent intacts.
+      if (!a.id) throw new Error('id requis.')
+      const edits = Array.isArray(a.block_updates) ? a.block_updates : []
+      if (!edits.length) throw new Error('block_updates requis : [{ id ou ref, ...champs à modifier }].')
+      const current = await getFormOrThrow(ctx, a.id)
+      const blocks = (Array.isArray(current.blocks) ? current.blocks : []).map((b) => ({ ...b }))
+      for (const edit of edits) {
+        const target = blocks.find((b) => (edit.id && b.id === edit.id) || (edit.ref && b.ref === edit.ref))
+        if (!target) throw new Error(`Bloc introuvable : ${edit.id || edit.ref || '(ni id ni ref)'}`)
+        const { id: _id, ref: _ref, ...fields } = edit
+        Object.assign(target, fields)
+        if (edit.conditional === null) target.conditional = null
+      }
+      const resolved = resolveFormBlocks(blocks, blocks)
+      const data = await callApi(ctx, '/api/business-forms', 'forms-update', 'PUT', { body: { user_id: ctx.owner, id: a.id, strict: true, blocks: resolved } })
+      return { form: data.form, ...(data.warnings ? { warnings: data.warnings } : {}) }
     }
     if (action === 'delete') {
       if (!a.id) throw new Error('id requis.')
@@ -1629,7 +1738,7 @@ const impl = {
       if (!a.id) throw new Error('id requis.')
       return await callApi(ctx, '/api/business-forms', 'forms-responses', 'GET', { query: { form_id: a.id, user_id: ctx.owner } })
     }
-    throw new Error("action invalide ('list' | 'get' | 'create' | 'update' | 'delete' | 'responses').")
+    throw new Error("action invalide ('list' | 'get' | 'create' | 'update' | 'update_blocks' | 'delete' | 'responses').")
   },
 
   // ═══ Liens de tracking (/t/:slug) ═══
@@ -1925,22 +2034,26 @@ const TOOLS = [
   },
   {
     name: 'forms_manage',
-    description: "Formulaires type Tally (pages publiques /f/<slug>, une question par écran, transitions animées). Actions : list, get (blocs complets), create (name + optionnellement blocks/crm/settings dans le MÊME appel), update (id + champs à modifier), delete (confirm=true), responses. PRÉCAPTURE automatique : dès qu'un email ou téléphone valide est saisi, le lead est capturé — fiche prospect créée/complétée SI crm_enabled — avec toutes les réponses déjà remplies, même sans aller au bout. Blocs de SAISIE : short_text, long_text, email (validé), phone (validé, indicatifs internationaux), number, url, date, select, single_choice, multiple_choice, rating, linear_scale, yes_no, hidden (key=paramètre d'URL). Blocs de CONTENU : heading, subheading, paragraph, divider, image (url), video (YouTube/Vimeo/Drive/mp4 ; required + min_watch=secondes → visionnage OBLIGATOIRE avant de continuer, miniature affichée), page_break (nouvelle étape). Ids de blocs générés au serveur. CRM : passer crm_enabled=true suffit, le mapping email/téléphone/nom est déduit automatiquement des types de blocs.",
+    description: "Formulaires type Tally (pages publiques /f/<slug>, une question par écran, transitions animées). Actions : list, get (blocs complets avec leurs ids/ref), create (name + optionnellement blocks/crm/settings dans le MÊME appel), update (id + champs à modifier ; `blocks` REMPLACE toute la liste), update_blocks (id + block_updates : modifie des blocs précis sans toucher aux autres), delete (confirm=true), responses. PRÉCAPTURE automatique : dès qu'un email ou téléphone valide est saisi, le lead est capturé — fiche prospect créée/complétée SI crm_enabled — avec toutes les réponses déjà remplies, même sans aller au bout. Blocs de SAISIE : short_text, long_text, email (validé), phone (validé, indicatifs internationaux), number, url, date, select, single_choice, multiple_choice (min_choices / max_choices bloquants), rating, linear_scale, yes_no (valeurs « Oui » / « Non »), consent (case à cocher unique : text = phrase de consentement, placeholder = libellé à côté de la case, défaut « J'accepte » ; required=true → doit être cochée pour envoyer), hidden (key=paramètre d'URL). Blocs de CONTENU : heading, subheading, paragraph, divider, image (url), video (YouTube/Vimeo/Drive/mp4 ; required + min_watch=secondes → visionnage OBLIGATOIRE avant de continuer, miniature affichée), page_break (nouvelle étape). QUESTIONS CONDITIONNELLES : donne un `ref` court à la question source (ex. 'montre') et mets sur le bloc dépendant conditional={source_ref:'montre', operator:'in', values:['Autre']} — ça marche dans le même appel create. La source doit être placée AVANT le bloc et être de type select / single_choice / multiple_choice / yes_no (in, not_in, answered) ou number / rating / linear_scale / video (gte, lte, between, answered). Sur un multiple_choice, 'in' = au moins une des cases cochées est dans values. Un bloc dont la source est masquée est masqué aussi (cascade) et les réponses aux blocs masqués ne sont pas enregistrées. IDS : un bloc garde son id s'il est fourni ; en update, un bloc sans id reprend l'id d'un bloc existant de même ref, ou de même type + même libellé — sinon il devient une NOUVELLE question (réponses passées non rattachées). Toute écriture est vérifiée : condition orpheline, valeur absente des options, source mal placée → erreur détaillée, rien n'est enregistré. CRM : passer crm_enabled=true suffit, le mapping email/téléphone/nom est déduit automatiquement des types de blocs.",
     inputSchema: obj({
-      action: str("'list' (défaut) | 'get' | 'create' | 'update' | 'delete' | 'responses'"),
-      id: str('Id du formulaire (uuid) (get/update/delete/responses)'),
+      action: str("'list' (défaut) | 'get' | 'create' | 'update' | 'update_blocks' | 'delete' | 'responses'"),
+      id: str('Id du formulaire (uuid) (get/update/update_blocks/delete/responses)'),
       name: str('Nom du formulaire (create ; modifiable en update)'),
       description: str('Description affichée en tête'),
       blocks: {
         type: 'array',
-        description: 'Liste ordonnée des blocs. Ids auto-générés.',
+        description: "Liste ordonnée COMPLÈTE des blocs (create/update). Fournir l'id d'un bloc existant pour le conserver.",
         items: obj({
+          id: str("Id d'un bloc existant à conserver (update). Laisser vide pour une nouvelle question."),
+          ref: str("Référence courte et unique choisie par toi (ex. 'montre', 'sport_freq'), pour cibler ce bloc dans conditional.source_ref ou block_updates. Conservée en base."),
           type: str('Type de bloc (voir description du tool)'),
           text: str('Libellé de la question (saisie) ou contenu (heading/paragraph…)'),
-          required: bool('Champ obligatoire'),
+          required: bool('Champ obligatoire (consent : doit être cochée)'),
           description: str('Sous-texte optionnel'),
           placeholder: str('Placeholder'),
           options: { type: 'array', items: { type: 'string' }, description: 'select / single_choice / multiple_choice' },
+          min_choices: num('multiple_choice : nombre minimum de cases à cocher (si répondu)'),
+          max_choices: num('multiple_choice : nombre maximum de cases à cocher (bloquant)'),
           min: num('Borne basse (linear_scale)'),
           max: num("Borne haute (linear_scale) / nb d'icônes (rating)"),
           min_label: str('Légende du bas (linear_scale)'),
@@ -1948,9 +2061,29 @@ const TOOLS = [
           url: str('URL (image / video)'),
           min_watch: num('Secondes de visionnage obligatoires (video, avec required=true)'),
           key: str("Paramètre d'URL lu (hidden)"),
+          conditional: obj({
+            source_ref: str("ref (ou id) de la question source, placée AVANT ce bloc"),
+            source_id: str('Id de la question source (alternative à source_ref)'),
+            operator: str("'in' | 'not_in' | 'answered' (choix) ; 'gte' | 'lte' | 'between' | 'answered' (numérique)"),
+            values: { type: 'array', items: { type: ['string', 'number'] }, description: "Valeurs déclenchantes : options EXACTES de la source (in/not_in), [n] (gte/lte), [min,max] (between)" },
+            enabled: bool('Défaut true'),
+          }),
         }, ['type']),
       },
-      settings: obj({}, undefined),
+      block_updates: {
+        type: 'array',
+        description: "update_blocks : [{ id ou ref du bloc, puis les seuls champs à changer (text, options, required, max_choices, conditional…) }]. conditional=null retire la condition.",
+        items: { type: 'object' },
+      },
+      settings: obj({
+        submit_label: str('Texte du bouton d\'envoi (défaut « Envoyer »)'),
+        thankyou_title: str('Titre de la page de remerciement'),
+        thankyou_text: str('Texte de la page de remerciement'),
+        redirect_url: str('URL de redirection après envoi (prioritaire sur la page de remerciement) ; null pour aucune'),
+        show_progress: bool('Barre de progression sur les formulaires multi-étapes'),
+        accent_color: str('Couleur d\'accent hex (#RRGGBB)'),
+        one_at_a_time: bool('Une question par écran'),
+      }),
       is_active: bool('Formulaire en ligne (accepte les réponses)'),
       crm_enabled: bool('Relier au CRM : crée une fiche prospect (mapping email/tél/nom auto)'),
       crm_stage: str("Étape des prospects créés (défaut 'prospect')"),
@@ -1958,7 +2091,6 @@ const TOOLS = [
       crm_campaign_id: str('Campagne à rattacher (uuid, optionnel)'),
       notify_enabled: bool('Notifier par email à chaque réponse'),
       notify_email: str('Email de notification'),
-      patch: obj({}, undefined),
       confirm: bool('Requis pour delete'),
     }),
   },

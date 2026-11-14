@@ -4,7 +4,7 @@ import {
   Type, AlignLeft, Mail, Phone, Hash, Link2, Calendar, ChevronDownCircle,
   CircleDot, CheckSquare, Star, SlidersHorizontal, ToggleLeft, EyeOff,
   Heading1, Heading2, Minus, Image as ImageIcon, FileText, GripVertical,
-  Plus, Trash2, Copy, Settings2, GitBranch, X, Asterisk, Video, Play, AlertTriangle,
+  Plus, Trash2, Copy, Settings2, GitBranch, X, Asterisk, Video, Play, AlertTriangle, ShieldCheck,
 } from 'lucide-react'
 import {
   createBlock, newBlockId, isInputBlock, hasOptions, isEligibleSourceType, parseVideoUrl,
@@ -37,6 +37,7 @@ const LIBRARY: LibraryEntry[] = [
   { type: 'multiple_choice', label: 'Choix multiple', hint: 'Cases à cocher', icon: CheckSquare, group: 'choices', keywords: 'choix multiple cases cocher checkbox' },
   { type: 'select', label: 'Liste déroulante', hint: 'Menu déroulant', icon: ChevronDownCircle, group: 'choices', keywords: 'liste deroulante select dropdown menu' },
   { type: 'yes_no', label: 'Oui / Non', hint: 'Deux options', icon: ToggleLeft, group: 'choices', keywords: 'oui non yes no booleen binaire' },
+  { type: 'consent', label: 'Case à cocher', hint: 'Consentement, CGU', icon: ShieldCheck, group: 'choices', keywords: 'case cocher consentement accepte cgu rgpd checkbox opt in' },
   { type: 'rating', label: 'Note', hint: 'Étoiles', icon: Star, group: 'choices', keywords: 'note rating etoiles satisfaction score' },
   { type: 'linear_scale', label: 'Échelle', hint: 'De 1 à 10', icon: SlidersHorizontal, group: 'choices', keywords: 'echelle scale nps 1 10 curseur' },
   { type: 'hidden', label: 'Champ caché', hint: 'Lu dans l\'URL', icon: EyeOff, group: 'choices', keywords: 'cache hidden utm tracking url parametre' },
@@ -816,6 +817,15 @@ function FieldPreview({ block, accentColor, onUpdate }: { block: FormBlock; acce
           />
         </div>
       )
+    case 'consent':
+      return (
+        <div className="mt-2 flex items-center gap-2 pointer-events-none">
+          <span className="h-4 w-4 rounded border-2 border-[#c4c7c7] flex-shrink-0" />
+          <span className="text-xs text-[#444748]/60 dark:text-neutral-500 font-['Inter']">
+            {block.required ? 'Le visiteur doit cocher la case pour envoyer' : 'Case facultative'}
+          </span>
+        </div>
+      )
     case 'date':
       return <div className={fake}>jj/mm/aaaa</div>
     case 'email':
@@ -1008,7 +1018,34 @@ function OptionsEditor({ block, accentColor, onUpdate }: { block: FormBlock; acc
       >
         <Plus className="h-3 w-3" /> Ajouter une option
       </button>
+      {block.type === 'multiple_choice' && (
+        <div className="flex flex-wrap items-center gap-2 pl-6 pt-1 text-xs text-[#444748]/60 dark:text-neutral-500 font-['Inter']">
+          <span>Cases à cocher :</span>
+          <ChoiceLimitInput label="min" value={block.min_choices} max={options.length} onChange={v => onUpdate({ min_choices: v })} />
+          <ChoiceLimitInput label="max" value={block.max_choices} max={options.length} onChange={v => onUpdate({ max_choices: v })} />
+        </div>
+      )}
     </div>
+  )
+}
+
+function ChoiceLimitInput({ label, value, max, onChange }: { label: string; value?: number; max: number; onChange: (v: number | undefined) => void }) {
+  return (
+    <label className="flex items-center gap-1">
+      {label}
+      <input
+        type="number"
+        min={1}
+        max={max || undefined}
+        value={value ?? ''}
+        placeholder="—"
+        onChange={e => {
+          const n = Number(e.target.value)
+          onChange(e.target.value === '' || !Number.isFinite(n) || n < 1 ? undefined : Math.floor(n))
+        }}
+        className="w-14 bg-[#f5f3f2] dark:bg-neutral-800 border-0 rounded-lg px-2 py-1 text-[#1b1c1b] dark:text-white placeholder:text-[#444748]/40 focus:ring-1 focus:ring-[#006c49]/20"
+      />
+    </label>
   )
 }
 

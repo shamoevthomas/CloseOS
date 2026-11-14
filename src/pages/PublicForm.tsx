@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import { PhoneInput } from '../business/components/PhoneInput'
 import { DoodleSparkle, DoodleStar5, DoodleBubble, DoodleCross, DoodleZigzag, DoodleHeart } from '../components/doodles'
 import {
-  computeVisibleBlockIds, validateAnswer, isInputBlock, splitIntoPages,
+  computeVisibleBlockIds, validateAnswer, isInputBlock, splitIntoPages, choiceLimits, isConsentGiven,
   parseVideoUrl, videoSrcWithAutoplay, requiredWatchSeconds,
   type FormBlock, type FormSettings, type ValidationCode,
 } from '../lib/formBlocks'
@@ -32,6 +32,8 @@ const STRINGS = {
       invalid_number: 'Valeur numérique invalide',
       invalid_url: 'Lien invalide (https://…)',
       watch_required: 'Regardez la vidéo pour continuer',
+      too_many_choices: 'Trop de réponses cochées',
+      too_few_choices: 'Cochez plus de réponses',
     } as Record<ValidationCode, string>,
     oops: 'Oups',
     not_found: 'Formulaire introuvable.',
@@ -57,6 +59,10 @@ const STRINGS = {
     watch_remaining: (s: number) => `Encore ${s} s de visionnage avant de pouvoir continuer`,
     watch_done: 'Visionnage validé',
     video_missing: 'Vidéo indisponible.',
+    consent_agree: 'J\'accepte',
+    choices_hint: (min?: number, max?: number) =>
+      min && max ? (min === max ? `Cochez ${min} réponse${min > 1 ? 's' : ''}` : `Entre ${min} et ${max} réponses`)
+        : max ? `${max} réponse${max > 1 ? 's' : ''} maximum` : min ? `Au moins ${min} réponse${min > 1 ? 's' : ''}` : '',
   },
   en: {
     errors: {
@@ -66,6 +72,8 @@ const STRINGS = {
       invalid_number: 'Invalid number',
       invalid_url: 'Invalid link (https://…)',
       watch_required: 'Watch the video to continue',
+      too_many_choices: 'Too many options selected',
+      too_few_choices: 'Select more options',
     } as Record<ValidationCode, string>,
     oops: 'Oops',
     not_found: 'Form not found.',
@@ -91,6 +99,10 @@ const STRINGS = {
     watch_remaining: (s: number) => `${s}s of viewing left before you can continue`,
     watch_done: 'Viewing complete',
     video_missing: 'Video unavailable.',
+    consent_agree: 'I agree',
+    choices_hint: (min?: number, max?: number) =>
+      min && max ? (min === max ? `Select ${min} option${min > 1 ? 's' : ''}` : `Between ${min} and ${max} options`)
+        : max ? `${max} option${max > 1 ? 's' : ''} max` : min ? `At least ${min} option${min > 1 ? 's' : ''}` : '',
   },
 }
 
@@ -689,18 +701,31 @@ function BlockRenderer({
 
           case 'multiple_choice': {
             const selected = Array.isArray(value) ? (value as string[]) : []
+            const { min: minChoices, max: maxChoices } = choiceLimits(block)
+            const full = maxChoices != null && selected.length >= maxChoices
+            const hint = S.choices_hint(minChoices, maxChoices)
             return (
               <div className="space-y-2">
+                {hint && (
+                  <p className="text-xs sm:text-sm font-['Inter'] font-semibold -mt-1 mb-1" style={{ color: full ? accent : 'rgba(68,71,72,0.6)' }}>
+                    {hint}{maxChoices != null ? ` · ${selected.length}/${maxChoices}` : ''}
+                  </p>
+                )}
                 {(block.options || []).map(opt => {
                   const active = selected.includes(opt)
+                  // Limite atteinte : les cases non cochées sont verrouillées (on peut toujours décocher)
+                  const locked = full && !active
                   return (
                     <button
                       key={opt}
                       type="button"
-                      onClick={() =>
+                      disabled={locked}
+                      aria-disabled={locked}
+                      onClick={() => {
+                        if (locked) return
                         onChange(active ? selected.filter(v => v !== opt) : [...selected, opt])
-                      }
-                      className="w-full flex items-center gap-3 rounded-2xl border-2 bg-white px-4 py-3.5 sm:px-5 sm:py-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-14px_rgba(27,28,27,0.25)] active:scale-[0.99]"
+                      }}
+                      className={`w-full flex items-center gap-3 rounded-2xl border-2 bg-white px-4 py-3.5 sm:px-5 sm:py-4 text-left transition-all ${locked ? 'opacity-40 cursor-not-allowed' : 'hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-14px_rgba(27,28,27,0.25)] active:scale-[0.99]'}`}
                       style={{
                         borderColor: active ? accent : 'rgba(196,199,199,0.4)',
                         backgroundColor: active ? `${accent}0d` : '#ffffff',
@@ -720,6 +745,31 @@ function BlockRenderer({
                   )
                 })}
               </div>
+            )
+          }
+
+          case 'consent': {
+            const checked = isConsentGiven(value)
+            return (
+              <button
+                type="button"
+                role="checkbox"
+                aria-checked={checked}
+                onClick={() => onChange(!checked)}
+                className="w-full flex items-center gap-3 rounded-2xl border-2 bg-white px-4 py-3.5 sm:px-5 sm:py-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-14px_rgba(27,28,27,0.25)] active:scale-[0.99]"
+                style={{
+                  borderColor: checked ? accent : error ? '#ba1a1a' : 'rgba(196,199,199,0.4)',
+                  backgroundColor: checked ? `${accent}0d` : '#ffffff',
+                }}
+              >
+                <span
+                  className="h-5 w-5 rounded border-2 flex items-center justify-center flex-shrink-0"
+                  style={{ borderColor: checked ? accent : 'rgba(196,199,199,0.8)', backgroundColor: checked ? accent : 'transparent' }}
+                >
+                  {checked && <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />}
+                </span>
+                <span className="min-w-0 text-base sm:text-lg text-[#1b1c1b] font-['Inter']">{block.placeholder || S.consent_agree}</span>
+              </button>
             )
           }
 

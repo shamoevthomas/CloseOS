@@ -29,6 +29,8 @@ export const INPUT_BLOCK_TYPES = [
   'rating',
   'linear_scale',
   'yes_no',
+  // Case à cocher unique (consentement) : « obligatoire » = doit être cochée.
+  'consent',
   'hidden',
   // La vidéo est un bloc de saisie : sa « réponse » est le nombre de secondes
   // visionnées, ce qui permet d'exiger un visionnage minimum et de le consigner.
@@ -107,6 +109,9 @@ export interface FormBlock {
   required?: boolean
   /** select / single_choice / multiple_choice */
   options?: string[]
+  /** multiple_choice : nombre minimum / maximum de cases cochées (absent = pas de limite) */
+  min_choices?: number
+  max_choices?: number
   /** rating : nombre d'icônes ; linear_scale : borne haute */
   max?: number
   /** linear_scale : borne basse */
@@ -381,11 +386,29 @@ export type ValidationCode =
   | 'invalid_number'
   | 'invalid_url'
   | 'watch_required'
+  | 'too_many_choices'
+  | 'too_few_choices'
+
+/** Limites de choix effectives d'un bloc multiple_choice ({} si aucune). */
+export function choiceLimits(block: FormBlock): { min?: number; max?: number } {
+  if (block.type !== 'multiple_choice') return {}
+  const out: { min?: number; max?: number } = {}
+  const min = Number(block.min_choices)
+  const max = Number(block.max_choices)
+  if (Number.isFinite(min) && min >= 1) out.min = Math.floor(min)
+  if (Number.isFinite(max) && max >= 1) out.max = Math.floor(max)
+  return out
+}
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 const URL_RE = /^https?:\/\/[^\s.]+\.[^\s]{2,}$/i
 /** Au moins 6 chiffres, autorise +, espaces, points, tirets, parenthèses. */
 const PHONE_RE = /^\+?[\d\s.\-()]{6,}$/
+
+/** Une case de consentement n'est donnée que si elle vaut true (ou 'true'). */
+export function isConsentGiven(value: unknown): boolean {
+  return value === true || value === 'true'
+}
 
 /** Renvoie un code d'erreur, ou null si la valeur est acceptable. */
 export function validateAnswer(block: FormBlock, value: unknown): ValidationCode | null {
@@ -399,8 +422,20 @@ export function validateAnswer(block: FormBlock, value: unknown): ValidationCode
     return Number.isFinite(watched) && watched >= needed ? null : 'watch_required'
   }
 
+  // Consentement : seule une case cochée (true) compte comme une réponse.
+  if (block.type === 'consent') {
+    return block.required && !isConsentGiven(value) ? 'required' : null
+  }
+
   const empty = !isAnswered(value)
   if (empty) return block.required ? 'required' : null
+
+  if (block.type === 'multiple_choice' && Array.isArray(value)) {
+    const { min, max } = choiceLimits(block)
+    if (max != null && value.length > max) return 'too_many_choices'
+    if (min != null && value.length < min) return 'too_few_choices'
+    return null
+  }
 
   const str = typeof value === 'string' ? value.trim() : String(value)
 
@@ -443,6 +478,7 @@ export function answerToText(block: FormBlock, value: unknown): string {
     const watched = Number(value)
     return Number.isFinite(watched) && watched > 0 ? `${Math.floor(watched)} s visionnées` : 'Non visionnée'
   }
+  if (block.type === 'consent') return isConsentGiven(value) ? 'Accepté' : 'Non accepté'
   if (value == null || value === '') return ''
   if (block.type === 'yes_no') {
     if (typeof value === 'boolean') return value ? 'Oui' : 'Non'
@@ -535,6 +571,73 @@ export function normalizeSettings(raw: unknown): FormSettings {
   return { ...DEFAULT_FORM_SETTINGS, ...s }
 }
 
+function positiveInt(v: unknown): number | undefined {
+  const n = Number(v)
+  return v != null && v !== '' && Number.isFinite(n) && n >= 1 ? Math.floor(n) : undefined
+}
+
+/**
+ * Vérifie la cohérence structurelle des blocs avant enregistrement.
+ * Renvoie la liste des problèmes (vide = OK). Utilisé par l'API forms-update pour refuser
+ * un formulaire qui buguerait silencieusement (condition orpheline, id en double…).
+ */
+export function validateBlocksStructure(blocks: FormBlock[]): string[] {
+  const problems: string[] = []
+  const seen = new Map<string, number>()
+  const byId: Record<string, FormBlock> = {}
+  blocks.forEach((b, i) => {
+    if (seen.has(b.id)) problems.push(`Bloc ${i + 1} : id "${b.id}" en double (déjà utilisé par le bloc ${(seen.get(b.id) as number) + 1}).`)
+    else seen.set(b.id, i)
+    byId[b.id] = b
+  })
+
+  blocks.forEach((b, i) => {
+    const label = `Bloc ${i + 1}${b.text ? ` (« ${b.text.slice(0, 40)} »)` : ''}`
+
+    if (hasOptions(b.type) && (!b.options || b.options.length === 0)) {
+      problems.push(`${label} : aucune option.`)
+    }
+    if (b.type === 'multiple_choice') {
+      const { min, max } = choiceLimits(b)
+      const n = b.options?.length || 0
+      if (min != null && max != null && min > max) problems.push(`${label} : min_choices (${min}) > max_choices (${max}).`)
+      if (min != null && min > n) problems.push(`${label} : min_choices (${min}) supérieur au nombre d'options (${n}).`)
+    }
+
+    const rule = b.conditional
+    if (!rule || !rule.enabled) return
+    const srcIndex = rule.source_id ? seen.get(rule.source_id) : undefined
+    const src = rule.source_id ? byId[rule.source_id] : undefined
+    if (!src || srcIndex == null) {
+      problems.push(`${label} : la condition pointe vers une question inexistante (${rule.source_id || 'source_id vide'}).`)
+      return
+    }
+    if (srcIndex >= i) {
+      problems.push(`${label} : la question source d'une condition doit être placée AVANT le bloc.`)
+      return
+    }
+    if (!isEligibleSourceType(src.type)) {
+      problems.push(`${label} : une question de type « ${src.type} » ne peut pas servir de condition.`)
+      return
+    }
+    if (!isRuleValid(rule, byId)) {
+      problems.push(`${label} : condition invalide (opérateur « ${rule.operator} » ou valeurs incompatibles avec une question « ${src.type} »).`)
+      return
+    }
+    if (hasOptions(src.type) && (rule.operator === 'in' || rule.operator === 'not_in')) {
+      const opts = new Set((src.options || []).map(String))
+      const unknown = rule.values.map(String).filter(v => !opts.has(v))
+      if (unknown.length) problems.push(`${label} : valeur(s) de condition absente(s) des options de la question source : ${unknown.join(', ')}.`)
+    }
+    if (src.type === 'yes_no' && (rule.operator === 'in' || rule.operator === 'not_in')) {
+      const unknown = rule.values.map(String).filter(v => v !== 'Oui' && v !== 'Non')
+      if (unknown.length) problems.push(`${label} : pour une question Oui/Non, les valeurs doivent être « Oui » ou « Non ».`)
+    }
+  })
+
+  return problems
+}
+
 /** Normalise des blocs venus de la base (tolère un JSON partiel ou corrompu). */
 export function normalizeBlocks(raw: unknown): FormBlock[] {
   if (!Array.isArray(raw)) return []
@@ -551,6 +654,8 @@ export function normalizeBlocks(raw: unknown): FormBlock[] {
       placeholder: typeof b.placeholder === 'string' ? b.placeholder : undefined,
       required: !!b.required,
       options: Array.isArray(b.options) ? b.options.map(String) : undefined,
+      min_choices: positiveInt(b.min_choices),
+      max_choices: positiveInt(b.max_choices),
       max: typeof b.max === 'number' ? b.max : undefined,
       min: typeof b.min === 'number' ? b.min : undefined,
       min_label: typeof b.min_label === 'string' ? b.min_label : undefined,

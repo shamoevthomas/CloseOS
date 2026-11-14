@@ -5,6 +5,7 @@ import {
   normalizeSettings,
   computeVisibleBlockIds,
   validateAnswers,
+  validateBlocksStructure,
   isInputBlock,
   blockLabel,
   answerToText,
@@ -169,7 +170,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       for (const [key, value] of Object.entries(req.body)) {
         if (UPDATABLE_FIELDS.has(key)) updates[key] = value
       }
-      if (Array.isArray(updates.blocks)) updates.blocks = normalizeBlocks(updates.blocks)
+      // Contrôle de structure des blocs (le JSON `blocks` n'a aucune contrainte en base).
+      //  - Toujours bloquant : ids en double (un formulaire ne peut jamais en avoir).
+      //  - strict=true (MCP, scripts) : tout problème est bloquant — condition orpheline,
+      //    source placée après le bloc, valeurs hors options, min/max de choix incohérents.
+      //  - Sinon (éditeur, autosave toutes les secondes) : les états intermédiaires sont
+      //    tolérés, les problèmes sont renvoyés en `warnings` sans bloquer.
+      let warnings: string[] = []
+      if (Array.isArray(updates.blocks)) {
+        updates.blocks = normalizeBlocks(updates.blocks)
+        const problems = validateBlocksStructure(updates.blocks)
+        const fatal = problems.filter(p => p.includes('en double'))
+        if (fatal.length || (req.body.strict === true && problems.length)) {
+          return res.status(400).json({ error: 'Formulaire invalide', problems: req.body.strict === true ? problems : fatal })
+        }
+        warnings = problems
+      }
 
       // Auto-mapping CRM : si on active le pont CRM sans fournir de mapping, on le
       // déduit des types de blocs (email → 1er bloc email, tél → 1er phone, nom →
@@ -202,7 +218,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .single()
 
       if (error) return res.status(500).json({ error: error.message })
-      return res.status(200).json({ form: data })
+      return res.status(200).json({ form: data, ...(warnings.length ? { warnings } : {}) })
     }
 
     if (action === 'forms-delete' && req.method === 'DELETE') {
