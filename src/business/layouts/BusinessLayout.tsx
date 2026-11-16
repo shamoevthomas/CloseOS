@@ -12,6 +12,7 @@ import { BusinessThemeProvider, useTheme } from '../contexts/BusinessThemeContex
 import { supabase } from '../../lib/supabase'
 import { getBrowserTimezone, getTimezoneLabel } from '../../lib/timezone'
 import BusinessVerification from '../pages/BusinessVerification'
+import { WithMaintenance } from '../../components/MaintenanceBanner'
 import { BusinessPaywallModal } from '../components/BusinessPaywallModal'
 import { BusinessSubscriptionBlockModal } from '../components/BusinessSubscriptionBlockModal'
 import { useIsDesktopNav } from '../hooks/useIsDesktopNav'
@@ -183,6 +184,7 @@ export function BusinessLayout() {
   // Skip A2F for new accounts that haven't completed onboarding yet
   if (needsVerification && user && hasOnboarded) {
     return (
+      <WithMaintenance product="business">
       <BusinessVerification
         userId={user.id}
         email={user.email || ''}
@@ -195,6 +197,7 @@ export function BusinessLayout() {
           navigate('/business/login', { replace: true });
         }}
       />
+      </WithMaintenance>
     );
   }
 

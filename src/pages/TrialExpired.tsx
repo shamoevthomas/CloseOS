@@ -2,6 +2,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useUpgrade } from '../contexts/UpgradeContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { MaintenanceBanner } from '../components/MaintenanceBanner';
 import { CheckCircle2, LogOut, ShieldCheck, X, ArrowLeft, Square, CheckSquare, AlertCircle, TicketPercent, Loader2, Download } from 'lucide-react';
 import { DataExportModal } from '../components/DataExportModal';
 import { useState, useEffect, useCallback } from 'react';
@@ -287,6 +288,7 @@ export function TrialExpiredModal() {
 
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+            <MaintenanceBanner product="sales" lang={lang === 'en' ? 'en' : 'fr'} variant="overlay" />
 
             {/* ==================== PAYMENT FAILED ==================== */}
             {isPaymentFailedShow && !isUpgradeModalOpen && (
