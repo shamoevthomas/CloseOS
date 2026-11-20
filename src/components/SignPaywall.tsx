@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { AlertTriangle, Loader2, X } from 'lucide-react';
 import { openSignBillingPortal, type SignSubscription } from '../lib/signSubscription';
 import { useSignLang } from '../contexts/SignLangContext';
-import { MaintenanceBanner } from './MaintenanceBanner';
 
 /**
  * CloseOS Sign — pop-up de paiement.
@@ -29,7 +28,6 @@ export default function SignPaywall({ mode, sub }: { mode: 'grace' | 'blocked'; 
 
   return (
     <div className={`fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-5 ${blocked ? 'bg-[#191E1E]/95 backdrop-blur-md' : 'bg-[#191E1E]/70 backdrop-blur-sm'}`}>
-      <MaintenanceBanner product="sign" lang={lang === 'en' ? 'en' : 'fr'} variant="overlay" />
       <div className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-[#3A4242] bg-[#222828] p-6 shadow-2xl sm:p-8">
         {!blocked && (
           <button onClick={() => setClosed(true)} aria-label={lang === 'fr' ? 'Fermer' : 'Close'} className="absolute right-4 top-4 text-[#A1A9A9] transition-colors hover:text-white">

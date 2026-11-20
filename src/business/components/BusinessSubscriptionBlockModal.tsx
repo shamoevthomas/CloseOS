@@ -1,7 +1,6 @@
 import { Lock, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useBusinessLang } from '../i18n/BusinessLangContext';
-import { MaintenanceBanner } from '../../components/MaintenanceBanner';
 
 interface Props {
   deadline: string;
@@ -13,7 +12,6 @@ export function BusinessSubscriptionBlockModal({ deadline }: Props) {
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
-      <MaintenanceBanner product="business" lang={lang === 'en' ? 'en' : 'fr'} variant="overlay" />
       <div className="w-full sm:max-w-md max-h-[92dvh] sm:max-h-none overflow-y-auto overscroll-contain sm:overflow-visible rounded-t-3xl sm:rounded-2xl bg-white px-6 pt-8 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-10 shadow-2xl text-center">
         <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-red-50 mb-4 sm:mb-5">
           <Lock className="h-6 w-6 sm:h-7 sm:w-7 text-red-500" />

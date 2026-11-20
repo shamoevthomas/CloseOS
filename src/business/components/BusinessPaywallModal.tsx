@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Lock, ArrowRight, Loader2, X, Clock } from 'lucide-react';
 import { useBusinessLang } from '../i18n/BusinessLangContext';
-import { MaintenanceBanner } from '../../components/MaintenanceBanner';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
 
 export function BusinessPaywallModal({ daysLeft, dismissable }: { daysLeft?: number; dismissable?: boolean } = {}) {
@@ -40,7 +39,6 @@ export function BusinessPaywallModal({ daysLeft, dismissable }: { daysLeft?: num
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
-      <MaintenanceBanner product="business" lang={lang === 'en' ? 'en' : 'fr'} variant="overlay" />
       <div className="relative w-full sm:max-w-md max-h-[92dvh] sm:max-h-none overflow-y-auto overscroll-contain sm:overflow-visible rounded-t-3xl sm:rounded-2xl bg-white px-6 pt-8 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-10 shadow-2xl text-center">
         {/* Poignée de la feuille (mobile, uniquement si on peut la fermer) */}
         {dismissable && <div className="sm:hidden absolute top-2 left-1/2 -translate-x-1/2 h-1 w-10 rounded-full bg-stone-300" />}

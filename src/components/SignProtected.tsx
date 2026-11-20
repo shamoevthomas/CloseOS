@@ -7,7 +7,6 @@ import { useDeviceTrust } from '../lib/signDevice';
 import { getSignSubscription, subAccessState, type SignSubscription } from '../lib/signSubscription';
 import SignVerification from './SignVerification';
 import SignPaywall from './SignPaywall';
-import { WithMaintenance } from './MaintenanceBanner';
 
 /**
  * CloseOS Sign — garde des routes connectées.
@@ -37,7 +36,6 @@ export default function SignProtected({ children }: { children: ReactNode }) {
   if (state === 'checking') return <FullScreen><Loader2 className="h-6 w-6 animate-spin text-[#CEFF8F]" /></FullScreen>;
   if (state === 'untrusted') {
     return (
-      <WithMaintenance product="sign">
       <SignVerification
         userId={owner.id}
         email={owner.email}
@@ -47,7 +45,6 @@ export default function SignProtected({ children }: { children: ReactNode }) {
           await signOutSign();
         }}
       />
-      </WithMaintenance>
     );
   }
 

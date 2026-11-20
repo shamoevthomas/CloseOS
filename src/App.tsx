@@ -17,7 +17,6 @@ import { GcalProspectImporter } from './components/GcalProspectImporter'
 import { UpgradeProvider } from './contexts/UpgradeContext'
 import { OrganizationProvider } from './contexts/OrganizationContext'
 import { LanguageProvider } from './contexts/LanguageContext'
-import { WithMaintenance } from './components/MaintenanceBanner'
 
 // Imports des Composants
 const SettingsModal = lazy(() => import('./components/settings/SettingsModal').then(m => ({ default: m.SettingsModal })))
@@ -487,14 +486,14 @@ function AuthenticatedApp() {
         {/* CloseOS Sign — toutes les routes /sign partagent le provider de langue (FR/EN) */}
         <Route element={<SignLangProvider><Outlet /></SignLangProvider>}>
         <Route path="/sign" element={<SignLanding />} />
-        <Route path="/sign/login" element={<WithMaintenance product="sign"><SignLogin /></WithMaintenance>} />
+        <Route path="/sign/login" element={<SignLogin />} />
         <Route path="/sign/s/:token" element={<SignPublic />} />
-        <Route path="/sign/rep/:token" element={<WithMaintenance product="sign"><SignRepSpace /></WithMaintenance>} />
-        <Route path="/sign/join/:token" element={<WithMaintenance product="sign"><SignJoin /></WithMaintenance>} />
+        <Route path="/sign/rep/:token" element={<SignRepSpace />} />
+        <Route path="/sign/join/:token" element={<SignJoin />} />
         <Route path="/sign/team" element={<SignMemberProtected><SignMemberSpace /></SignMemberProtected>} />
         <Route path="/sign/verify/:certificateId" element={<SignVerify />} />
         <Route path="/sign/owner/:token" element={<SignOwnerSign />} />
-        <Route path="/sign/abonnement" element={<WithMaintenance product="sign"><SignCheckout /></WithMaintenance>} />
+        <Route path="/sign/abonnement" element={<SignCheckout />} />
         <Route path="/sign/cgv" element={<SignCGV />} />
         <Route path="/sign/confidentialite" element={<SignConfidentialite />} />
         <Route path="/sign/securite" element={<SignSecurite />} />
@@ -523,21 +522,21 @@ function AuthenticatedApp() {
         {/* Business Public Routes */}
         <Route path="/business/login" element={
           <BusinessAuthProvider>
-            <WithMaintenance product="business"><BusinessLogin /></WithMaintenance>
+            <BusinessLogin />
           </BusinessAuthProvider>
         } />
         <Route path="/business/register" element={<Navigate to="/business/checkout" replace />} />
         <Route path="/business/checkout" element={
           <BusinessAuthProvider>
-            <WithMaintenance product="business"><BusinessCheckout /></WithMaintenance>
+            <BusinessCheckout />
           </BusinessAuthProvider>
         } />
         <Route path="/business/return" element={
           <BusinessAuthProvider>
-            <WithMaintenance product="business"><BusinessReturn /></WithMaintenance>
+            <BusinessReturn />
           </BusinessAuthProvider>
         } />
-        <Route path="/business/invitation/:token" element={<WithMaintenance product="business"><BusinessInvitation /></WithMaintenance>} />
+        <Route path="/business/invitation/:token" element={<BusinessInvitation />} />
         <Route path="/business/admin-referral" element={<BusinessAdminReferral />} />
         <Route path="/sales/amb" element={<Suspense fallback={<LoadingScreen />}><SalesAmbassadorAdmin /></Suspense>} />
         <Route path="/sales/amb/d/:token" element={<Suspense fallback={<LoadingScreen />}><SalesAmbassadorDashboard /></Suspense>} />
@@ -618,8 +617,8 @@ function AuthenticatedApp() {
         </Route>
 
         {/* Routes Publiques */}
-        <Route path="/login" element={<WithMaintenance product="sales"><Login /></WithMaintenance>} />
-        <Route path="/register" element={<WithMaintenance product="sales"><Register /></WithMaintenance>} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/book/:slug" element={<PublicBooking />} />
         <Route path="/capture/:slug" element={<CaptureForm />} />
         <Route path="/c/:slug" element={<CRMCapture />} />
@@ -664,8 +663,8 @@ function AuthenticatedApp() {
 
 
         {/* Routes Paiement & Onboarding */}
-        <Route path="/checkout" element={<WithMaintenance product="sales"><CheckoutForm /></WithMaintenance>} />
-        <Route path="/return" element={<WithMaintenance product="sales"><Return /></WithMaintenance>} />
+        <Route path="/checkout" element={<CheckoutForm />} />
+        <Route path="/return" element={<Return />} />
         <Route
           path="/welcome-founder"
           element={
