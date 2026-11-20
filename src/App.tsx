@@ -767,7 +767,7 @@ function AuthenticatedApp() {
   )
 }
 
-import { Analytics } from "@vercel/analytics/react"
+import { SiteAnalytics } from './components/SiteAnalytics'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -794,7 +794,7 @@ function App() {
                           <AuthenticatedApp />
                         </UpgradeProvider>
                         <GcalProspectImporter />
-                        <Analytics />
+                        <SiteAnalytics />
                         <ErrorReportModal />
                         <ErrorReportTrigger />
                         <Toaster

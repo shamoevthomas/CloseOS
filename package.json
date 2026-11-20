@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:api": "tsx scripts/dev-api.ts",
+    "start": "tsx --tsconfig api/tsconfig.json server/prod-server.ts",
     "dev:local": "VITE_API_PROXY=http://localhost:3001 vite",
     "build": "node scripts/check-rewrites.mjs && vite build && node scripts/generate-sitemap.mjs && node scripts/prerender.mjs",
     "lint": "eslint .",
@@ -38,6 +39,7 @@
     "lucide-react": "^0.561.0",
     "marked": "^18.0.7",
     "motion": "^12.38.0",
+    "path-to-regexp": "6.3.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^4.10.38",
     "pg": "^8.18.0",
@@ -52,6 +54,7 @@
     "remotion": "^4.0.428",
     "stripe": "^20.3.1",
     "tailwind-merge": "^3.4.0",
+    "tsx": "4.20.6",
     "zod": "^3.25.76"
   },
   "devDependencies": {

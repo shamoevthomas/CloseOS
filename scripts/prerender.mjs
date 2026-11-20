@@ -86,15 +86,26 @@ async function prerender() {
   // Use @sparticuz/chromium on CI (Vercel), local Chrome otherwise
   let browser
   try {
-    const chromium = await import('@sparticuz/chromium')
-    const executablePath = await chromium.default.executablePath()
-    browser = await puppeteer.launch({
-      args: chromium.default.args,
-      defaultViewport: chromium.default.defaultViewport,
-      executablePath,
-      headless: true,
-    })
-    console.log('  Using @sparticuz/chromium')
+    // Serveur (Docker / Dokploy) : Chromium du système, indiqué par PUPPETEER_EXECUTABLE_PATH
+    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+      browser = await puppeteer.launch({
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      })
+      console.log('  Using system Chromium')
+    }
+    const chromium = browser ? null : await import('@sparticuz/chromium')
+    if (chromium) {
+      const executablePath = await chromium.default.executablePath()
+      browser = await puppeteer.launch({
+        args: chromium.default.args,
+        defaultViewport: chromium.default.defaultViewport,
+        executablePath,
+        headless: true,
+      })
+      console.log('  Using @sparticuz/chromium')
+    }
   } catch {
     // Fallback: local Chrome (dev machine)
     const localPuppeteer = await import('puppeteer')
