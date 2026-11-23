@@ -12,7 +12,7 @@
  */
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
-import { existsSync, statSync, createReadStream, readFileSync } from 'node:fs'
+import { existsSync, statSync, createReadStream, readFileSync, readdirSync } from 'node:fs'
 import { resolve, join, extname, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { Readable } from 'node:stream'
@@ -316,8 +316,11 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
   let url = new URL(req.url || '/', `https://${host}`)
 
   if (url.pathname === '/healthz') {
+    // 503 tant que les fonctions api/ ne sont pas préchargées : Docker ne bascule le trafic
+    // sur ce conteneur qu'une fois sain, l'ancien continue de servir en attendant.
+    res.statusCode = ready ? 200 : 503
     res.setHeader('Content-Type', 'text/plain')
-    res.end('ok')
+    res.end(ready ? 'ok' : 'warming')
     return
   }
 
@@ -420,13 +423,49 @@ server.requestTimeout = 300_000
 server.headersTimeout = 65_000
 server.keepAliveTimeout = 61_000
 
+// ─── Préchargement des fonctions api/ ───
+// tsx compile chaque fichier .ts au premier import : sans préchargement, le premier appel
+// à une route peut prendre plus de 10 s. On importe tout au démarrage, avant d'être « sain ».
+
+let ready = false
+
+function listRoutes(dir = API_DIR, prefix = ''): string[] {
+  const routes: string[] = []
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name.startsWith('_') || entry.name.startsWith('.')) continue
+    if (entry.isDirectory()) routes.push(...listRoutes(join(dir, entry.name), `${prefix}${entry.name}/`))
+    else if (/\.(ts|tsx|js|mjs)$/.test(entry.name) && !entry.name.endsWith('.d.ts')) {
+      routes.push(prefix + entry.name.replace(/\.(ts|tsx|js|mjs)$/, ''))
+    }
+  }
+  return routes
+}
+
+async function warmUp() {
+  const started = Date.now()
+  const routes = listRoutes()
+  let failed = 0
+  for (const route of routes) {
+    try {
+      await loadHandler(route)
+    } catch (err: any) {
+      failed++
+      console.error(`[warmup] ${route} : ${err?.message || err}`)
+    }
+  }
+  ready = true
+  console.log(`[warmup] ${routes.length - failed}/${routes.length} fonctions prêtes en ${Date.now() - started} ms`)
+}
+
 server.listen(PORT, () => {
   console.log(`CloseOS en écoute sur le port ${PORT} (${REWRITES.length} rewrites, ${REDIRECTS.length} redirects, ${HEADERS.length} règles d'en-têtes)`)
+  warmUp().then(startCrons)
 })
 
 // ─── Crons ───
 
 let stopCrons: (() => void) | null = null
+function startCrons() {
 if (process.env.CRON_ENABLED === 'true') {
   if (!process.env.CRON_SECRET) console.warn('[cron] CRON_SECRET absent : les crons protégés refuseront les appels')
   stopCrons = startCronScheduler(CRONS, async path => {
@@ -443,6 +482,7 @@ if (process.env.CRON_ENABLED === 'true') {
   console.log(`[cron] ${CRONS.length} crons planifiés (UTC)`)
 } else {
   console.log('[cron] désactivés (CRON_ENABLED != true)')
+}
 }
 
 function shutdown() {
