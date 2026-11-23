@@ -45,6 +45,23 @@ const REDIRECTS = ((vercel.redirects || []) as Redirect[]).map(compileRule)
 const HEADERS = ((vercel.headers || []) as HeaderRule[]).map(compileRule)
 const CRONS = (vercel.crons || []) as { path: string; schedule: string }[]
 
+// HOST_REDIRECTS="closeos.fr=www.closeos.fr,ancien.fr=nouveau.fr"
+const HOST_REDIRECTS = new Map<string, string>(
+  (process.env.HOST_REDIRECTS || '')
+    .split(',')
+    .map(pair => pair.trim().split('=') as [string, string])
+    .filter(([from, to]) => from && to),
+)
+
+// Géolocalisation par IP (base locale geoip-lite). Facultative : si le module manque, on s'en passe.
+let geoLookup: ((ip: string) => { country?: string; city?: string } | null) | null = null
+try {
+  const geoip: any = await import('geoip-lite' as string)
+  geoLookup = (geoip.default ?? geoip).lookup
+} catch (err: any) {
+  console.warn('[geo] geoip-lite indisponible, pas de géolocalisation :', err?.message)
+}
+
 interface Ctx {
   url: URL
   host: string
@@ -304,13 +321,24 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
     return
   }
 
-  // Géolocalisation : Vercel fournit x-vercel-ip-*, Cloudflare (si placé devant) fournit cf-ipcountry.
-  if (!req.headers['x-vercel-ip-country'] && req.headers['cf-ipcountry']) {
-    req.headers['x-vercel-ip-country'] = req.headers['cf-ipcountry']
+  // Redirections d'hôte (ex. closeos.fr → www.closeos.fr, comme le faisait Vercel).
+  const redirectHost = HOST_REDIRECTS.get(host)
+  if (redirectHost) {
+    res.statusCode = 307
+    res.setHeader('Location', `https://${redirectHost}${url.pathname}${url.search}`)
+    res.end()
+    return
   }
-  if (!req.headers['x-real-ip'] && req.headers['x-forwarded-for']) {
-    req.headers['x-real-ip'] = String(req.headers['x-forwarded-for']).split(',')[0].trim()
-  }
+
+  // Géolocalisation : Vercel fournissait x-vercel-ip-country / x-vercel-ip-city. On les recalcule
+  // à partir de l'adresse IP du visiteur (jamais depuis un en-tête envoyé par le client).
+  const clientIp = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim()
+  if (clientIp) req.headers['x-real-ip'] = clientIp
+  delete req.headers['x-vercel-ip-country']
+  delete req.headers['x-vercel-ip-city']
+  const geo = geoLookup?.(clientIp)
+  if (geo?.country) req.headers['x-vercel-ip-country'] = geo.country
+  if (geo?.city) req.headers['x-vercel-ip-city'] = encodeURIComponent(geo.city)
 
   const ctx: Ctx = { url, host, headers: req.headers, cookies: parseCookies(req.headers.cookie) }
 
