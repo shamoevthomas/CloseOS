@@ -506,6 +506,10 @@
       "destination": "/api/business-mcp?key=:key"
     },
     {
+      "source": "/api/plunk-mcp/:key",
+      "destination": "/api/plunk-mcp?key=:key"
+    },
+    {
       "source": "/.well-known/oauth-authorization-server",
       "destination": "/api/well-known-oauth"
     },
