@@ -29,7 +29,7 @@ const CODE_TTL_MIN = 10;
 const DEVICE_TTL_DAYS = 7;
 const MAX_CODE_ATTEMPTS = 5;
 const RESEND_COOLDOWN_MS = 60_000;
-const SEND_EMAIL_URL = "https://close-os.vercel.app/api/send-email";
+const SEND_EMAIL_URL = "https://www.closeos.fr/api/send-email";
 
 // Secret partagé avec le relais email (api/email.ts) : variable d'environnement, sinon sign_secrets.
 let EMAIL_HEADERS: Record<string, string> | null = null;

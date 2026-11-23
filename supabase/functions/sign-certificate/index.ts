@@ -20,7 +20,7 @@ const cors = {
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
 const clientIp = (req: Request): string | null => (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || null;
 const BUCKET = "sign-documents";
-const SEND_EMAIL_URL = "https://close-os.vercel.app/api/send-email";
+const SEND_EMAIL_URL = "https://www.closeos.fr/api/send-email";
 
 // Secret partagé avec le relais email (api/email.ts) : variable d'environnement, sinon sign_secrets.
 let EMAIL_HEADERS: Record<string, string> | null = null;

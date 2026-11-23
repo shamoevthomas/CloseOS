@@ -24,7 +24,7 @@ const MAX_ATTEMPTS = 3;
 const MAX_RESENDS = 3;
 const RESEND_COOLDOWN_MS = 90_000;
 const UNLOCK_BASE = "https://sign.closeos.fr";
-const SEND_EMAIL_URL = "https://close-os.vercel.app/api/send-email";
+const SEND_EMAIL_URL = "https://www.closeos.fr/api/send-email";
 
 // Secret partagé avec le relais email (api/email.ts) : variable d'environnement, sinon sign_secrets.
 let EMAIL_HEADERS: Record<string, string> | null = null;

@@ -50,7 +50,7 @@ export function linkExpired(signer: { link_expires_at?: string | null; status?: 
 }
 
 /** Scellement serveur (Vercel, api/sign-internal.ts) : PDF signé et certificat à la dernière signature. */
-export const SERVER_SEAL_URL = "https://close-os.vercel.app/api/sign-internal?action=seal";
+export const SERVER_SEAL_URL = "https://www.closeos.fr/api/sign-internal?action=seal";
 
 /**
  * Demande au serveur de sceller et certifier un contrat entièrement signé. Ne lève jamais :
