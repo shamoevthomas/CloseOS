@@ -30,6 +30,7 @@ import { SignLogo } from '../components/SignLogo';
 import SignContactModal from '../components/SignContactModal';
 import SignLangToggle from '../components/SignLangToggle';
 import { useSignLang } from '../contexts/SignLangContext';
+import { mainSiteUrl } from '../lib/lastProduct';
 
 /**
  * CloseOS Sign, landing (sign.closeos.fr)
@@ -242,10 +243,10 @@ export default function SignLanding() {
             <ChevronDown className="h-4 w-4 text-[#A1A9A9] transition-transform duration-300 group-hover:rotate-180 group-hover:text-white" />
             <div className="absolute left-0 top-full z-50 mt-3 w-64 translate-y-2 opacity-0 invisible transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-hover:visible">
               <div className="flex flex-col gap-1 rounded-xl border border-[#3A4242] bg-[#222828] p-2 shadow-2xl">
-                <a href="/landing" className="flex items-center justify-center rounded-lg px-4 py-3 transition-colors hover:bg-[#191E1E]">
+                <a href={mainSiteUrl('/sales')} className="flex items-center justify-center rounded-lg px-4 py-3 transition-colors hover:bg-[#191E1E]">
                   <img src="/logo-sales.png" alt="CloseOS Sales" className="h-auto w-[160px] object-contain" loading="lazy" />
                 </a>
-                <a href="/business" className="flex items-center justify-center rounded-lg px-4 py-3 transition-colors hover:bg-[#191E1E]">
+                <a href={mainSiteUrl('/business')} className="flex items-center justify-center rounded-lg px-4 py-3 transition-colors hover:bg-[#191E1E]">
                   <img src="/closeos-business-logo-ecrit-dark.png" alt="CloseOS Business" className="h-auto w-[160px] object-contain" loading="lazy" />
                 </a>
               </div>
@@ -911,8 +912,8 @@ export default function SignLanding() {
           <div>
             <h5 className="mb-4 text-xs font-bold uppercase tracking-widest text-white">{lang === 'fr' ? 'Écosystème' : 'Ecosystem'}</h5>
             <ul className="space-y-3">
-              <li><a href="/business" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">CloseOS Business</a></li>
-              <li><a href="/tarifs" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">{lang === 'fr' ? 'Tarifs' : 'Pricing'}</a></li>
+              <li><a href={mainSiteUrl('/business')} className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">CloseOS Business</a></li>
+              <li><a href={mainSiteUrl('/tarifs')} className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">{lang === 'fr' ? 'Tarifs' : 'Pricing'}</a></li>
               <li><a href="/sign/login" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">{lang === 'fr' ? 'Connexion' : 'Log in'}</a></li>
             </ul>
           </div>

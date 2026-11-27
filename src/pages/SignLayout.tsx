@@ -53,6 +53,26 @@ export default function SignLayout() {
     try {
       const { data } = await signSupabase.auth.getSession();
       const s = data.session;
+      // Sur sign.closeos.fr, Business vit sur une autre origine (www.closeos.fr) : son stockage n'est pas
+      // partagé. On passe la session dans le fragment d'URL (jamais envoyé au serveur), que le client
+      // Supabase de www lit au démarrage (detectSessionInUrl, flux implicite) puis efface de l'adresse.
+      if (window.location.hostname === 'sign.closeos.fr') {
+        let target = 'https://www.closeos.fr/business/dashboard';
+        if (s?.access_token && s?.refresh_token) {
+          const now = Math.floor(Date.now() / 1000);
+          const expiresAt = s.expires_at ?? now + (s.expires_in ?? 3600);
+          const hash = new URLSearchParams({
+            access_token: s.access_token,
+            refresh_token: s.refresh_token,
+            expires_in: String(Math.max(expiresAt - now, 60)),
+            expires_at: String(expiresAt),
+            token_type: 'bearer',
+          });
+          target += `#${hash.toString()}`;
+        }
+        window.location.href = target;
+        return;
+      }
       if (s?.access_token && s?.refresh_token) {
         await supabase.auth.setSession({ access_token: s.access_token, refresh_token: s.refresh_token });
       }

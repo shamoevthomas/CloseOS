@@ -30,3 +30,13 @@ export function signHomeUrl(): string {
   const host = typeof window !== 'undefined' ? window.location.hostname : ''
   return host === 'closeos.fr' || host.endsWith('.closeos.fr') ? 'https://sign.closeos.fr/sign' : '/sign'
 }
+
+/**
+ * URL d'une page du site principal (Sales, Business, tarifs…). Sur le sous-domaine sign.closeos.fr,
+ * un chemin relatif resterait sur sign.closeos.fr, qui renvoie tout ce qui n'est pas /sign vers /sign :
+ * il faut donc viser www.closeos.fr explicitement.
+ */
+export function mainSiteUrl(path: string): string {
+  const host = typeof window !== 'undefined' ? window.location.hostname : ''
+  return host === 'sign.closeos.fr' ? `https://www.closeos.fr${path}` : path
+}
